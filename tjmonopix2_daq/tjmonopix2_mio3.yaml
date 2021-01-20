@@ -1,35 +1,42 @@
 
 ---
-name    : tjmonopix-daq
+name    : tjmonopix2-daq
 version : 0.1.0
 
+# MIO3
 transfer_layer:
-    - name  : intf
-      type  : SiUsb
-      init : 
-        timeout  : 600
-        bit_file : tjmonopix_mio.bit
-        avoid_download : True
-        board_id : 129
+  - name  : intf
+    type  : SiTcp
+    init:
+        ip : "192.168.10.23"
+        udp_port : 4660
+        tcp_port : 24
+        tcp_connection : True
 
 hw_drivers:
+#	MIO3 start
+  - name      : i2c
+    type      : i2c
+    interface : intf
+    base_addr : 0x2000
+
   - name      : GPAC
     type      : GPAC
-    interface : intf
+    hw_driver : i2c
     base_addr : 0x00000
-    init :
+    init:
         no_calibration : False
+        no_power_reset : False
 
-  - name      : regs
-    type      : tjmonopix2_daq.sim.regs
-    interface : intf
-    base_addr : 0x12D00
-        
   - name      : fifo
     type      : sram_fifo
     interface : intf
-    base_addr : 0x18000
-    base_data_addr: 0x1000000000000
+#    base_addr : 0x18000              # MIO
+#    base_data_addr: 0x1000000000000  # MIO
+#    base_addr : 0x200000000           # MIO3
+#    base_data_addr : 0x100000000      # MIO3
+    base_addr : 0x200000000
+    base_data_addr : 0x100000000
 
   - name      : gpio
     type      : gpio
@@ -38,7 +45,7 @@ hw_drivers:
     size      : 24
 
   - name      : inj
-    type      : pulse_gen
+    type      : tjmonopix2_daq.pulse_gen640
     interface : intf
     base_addr : 0x10100
 
@@ -52,11 +59,28 @@ hw_drivers:
     interface : intf
     base_addr : 0x10500
 
+  - name      : tlu     # 8,a,b,c,d,e,f
+    type      : tjmonopix2_daq.tlu_slave
+    interface : intf
+    base_addr : 0x10600
+    size      : 8
+    
+  - name      : timestamp_rx0  #4
+    type      : tjmonopix.timestamp640
+    interface : intf
+    base_addr : 0x10C00
+    size      : 8
+
   - name      : timestamp_hitor  #6
     type      : tjmonopix2_daq.timestamp640
     interface : intf
     base_addr : 0x10900
-
+    
+  - name      : timestamp_inj  #5
+    type      : tjmonopix2_daq.timestamp640
+    interface : intf
+    base_addr : 0x10700
+    
   - name      : trig
     type      : pulse_gen
     interface : intf
@@ -67,17 +91,22 @@ hw_drivers:
     interface : intf
     base_addr : 0x10C00
 
+  - name      : timestamp_rx0  #4
+    type      : tjmonopix2_daq.timestamp640
+    interface : intf
+    base_addr : 0x10D00
+
   - name      : cmd
     type      : tjmonopix2_daq.cmd
     interface : intf
-    base_addr : 0x10D00
+    base_addr : 0x10E00
     
   - name        : NTC
     type        : NTCRegister
     NTC_type    : TDK_NTCG16H
     hw_driver   : GPAC
     arg_names   : [ value ]
-    arg_add     : { 'channel': 'ISRC0'}
+    arg_add     : { 'channel': 'ISRC8'}
 
   - name      : rx
     type      : tjmonopix2_daq.tjmono2_rx
@@ -666,6 +695,12 @@ registers:
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [value]
+    arg_add     : {'channel': 'PWR1'}
+
+  - name        : VDDP
+    type        : FunctionalRegister
+    hw_driver   : GPAC
+    arg_names   : [value]
     arg_add     : {'channel': 'PWR2'}
     
   - name        : VDDA_DAC
@@ -684,28 +719,46 @@ registers:
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [ value ]
-    arg_add     : { 'channel': 'ISRC2'}
+    arg_add     : { 'channel': 'ISRC0'}
+
+  - name        : MONOVR_ICASN 
+    type        : FunctionalRegister
+    hw_driver   : GPAC
+    arg_names   : [ value ]
+    arg_add     : { 'channel': 'ISRC1'}
 
   - name        : MONOVR_IDB 
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [ value ]
-    arg_add     : { 'channel': 'ISRC3'}
+    arg_add     : { 'channel': 'ISRC2'}
     
   - name        : MONOVR_ITUNE
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [ value ]
+    arg_add     : { 'channel': 'ISRC3'}
+
+  - name        : MONOVR_ITHR
+    type        : FunctionalRegister
+    hw_driver   : GPAC
+    arg_names   : [ value ]
     arg_add     : { 'channel': 'ISRC4'}
 
-  - name        : MONOVR_ITHR 
+  - name        : MONOVR_ICOMP 
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [ value ]
     arg_add     : { 'channel': 'ISRC5'}
     
-  - name        : MONOVR_ICASN
+  - name        : MONOVR_IRAM
     type        : FunctionalRegister
     hw_driver   : GPAC
     arg_names   : [ value ]
     arg_add     : { 'channel': 'ISRC6'}
+    
+  - name        : MONOVR_IDEL
+    type        : FunctionalRegister
+    hw_driver   : GPAC
+    arg_names   : [ value ]
+    arg_add     : { 'channel': 'ISRC7'}

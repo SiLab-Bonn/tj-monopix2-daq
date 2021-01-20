@@ -26,8 +26,12 @@ module tjmonopix2_core (
     input wire FIFO_FULL,
     input wire FIFO_NEAR_FULL,
     
-    // tlu, lemo
-    input wire TLU_TRIG,  // connect to TLU?
+    // tlu, lemo, led
+    output wire [4:0] LED,
+    input wire [2:0] LEMO_RX,
+    output wire [2:0] LEMO_TX,
+    input wire RJ45_TRIGGER,
+    input wire RJ45_RESET,
 
     // to chip
     output wire RESETB_EXT,
@@ -74,13 +78,13 @@ localparam PULSE_RST_HIGHADDR = 16'h0500-1;
 localparam DIRECT_RX_BASEADDR = 16'h0500;
 localparam DIRECT_RX_HIGHADDR = 16'h0600-1;
 
-//localparam TLU_BASEADDR = 16'h0600;
-//localparam TLU_HIGHADDR = 16'h0700-1;
+localparam TLU_BASEADDR = 16'h0600;
+localparam TLU_HIGHADDR = 16'h0700-1;
 
-//localparam TS_INJ_BASEADDR = 16'h0700;
-//localparam TS_INJ_HIGHADDR = 16'h0800-1;
-localparam TS_CMOS_HIT_OR_BASEADDR = 16'h0800;
-localparam TS_CMOS_HIT_OR_HIGHADDR = 16'h0900-1;
+localparam TS_INJ_BASEADDR = 16'h0700;
+localparam TS_INJ_HIGHADDR = 16'h0800-1;
+//localparam TS_CMOS_HIT_OR_BASEADDR = 16'h0800;
+//localparam TS_CMOS_HIT_OR_HIGHADDR = 16'h0900-1;
 localparam TS_HIT_OR_BASEADDR = 16'h0900;
 localparam TS_HIT_OR_HIGHADDR = 16'h0A00-1;
 
@@ -90,8 +94,11 @@ localparam PULSE_TRIG_HIGHADDR = 16'h0C00 - 1;
 localparam PULSE_CMD_START_LOOP_BASEADDR = 16'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 16'h0D00 - 1;
 
-localparam CMD_BASEADDR = 16'h0D00;
-localparam CMD_HIGHADDR = 16'h2D00 - 1;
+localparam TS_RX0_BASEADDR = 16'h0D00;
+localparam TS_RX0_HIGHADDR = 16'h0E00-1;
+
+localparam CMD_BASEADDR = 16'h0E00;
+localparam CMD_HIGHADDR = 16'h2E00 - 1;
 
 // -------  USER MODULES  ------- //
 localparam VERSION = 8'h01;
@@ -162,7 +169,12 @@ assign CMD_CLK = CLK160;
 assign LVDS_CMD_CLK = EN_LVDS_IN? CMD_CLK:1'b0;
 assign CMOS_CMD_CLK = EN_CMOS_IN? CMD_CLK:1'b0;
 wire HITOR;
-assign HITOR = EN_CMOS_OUT ? CMOS_HITOR_OUT : HITOR_OUT;
+`ifdef COCOTB_SIM
+    assign HITOR = EN_CMOS_OUT ? CMOS_HITOR_OUT : HITOR_OUT;
+`else
+    assign HITOR = HITOR_OUT;  //TODO change code here to use CMOS HITOR
+    //assign HITOR = CMOS_HITOR_OUT;
+`endif
 
 // -----Reset Pulser ---- //
 wire RST_PULSE;
@@ -191,9 +203,33 @@ pulse_gen
 );
 assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
 
-// -----Reset Pulser ---- //
-wire PULSE;
+//************************************************
+// external INJECTION
 wire EXT_TRIGGER;
+`ifdef CODE_FOR_MIO3
+pulse_gen640 #( 
+    .BASEADDR(PULSE_INJ_BASEADDR), 
+    .HIGHADDR(PULSE_INJ_HIGHADDR),
+    .ABUSWIDTH(16),
+    .CLKDV(4),
+    .OUTPUT_SIZE(3)
+) pulse_gen_inj (
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA[7:0]),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+
+    .PULSE_CLK320(CLK320),
+    .PULSE_CLK160(CLK160),
+    .PULSE_CLK(CLK40),
+    .EXT_START(EXT_TRIGGER),
+    .PULSE({LEMO_TX[2],CMOS_PULSE_EXT,PULSE_EXT}),
+    .DEBUG()
+);
+`else
+wire PULSE;
 pulse_gen
 #( 
     .BASEADDR(PULSE_INJ_BASEADDR), 
@@ -213,6 +249,8 @@ pulse_gen
 );
 assign CMOS_PULSE_EXT = EN_CMOS_IN? PULSE:1'b0;
 assign PULSE_EXT = EN_LVDS_IN? PULSE:1'b0;
+assign LEMO_TX[2] = PULSE;
+`endif
 
 // ----- Pulser for trigger command----- //
 wire EXT_START_VETO;
@@ -228,7 +266,7 @@ pulse_gen #(
     .BUS_WR(BUS_WR),
 
     .PULSE_CLK(CLK160),
-    .EXT_START(TLU_TRIG & ~EXT_START_VETO),   // don't send triggers during the az phase (for sync fe)
+    .EXT_START(RJ45_TRIGGER & ~EXT_START_VETO),   // don't send triggers during the az phase (for sync fe)
     .PULSE(EXT_TRIGGER)
 );
 
@@ -303,42 +341,82 @@ wire [31:0] TS_HIT_OR_FIFO_DATA;
 wire TS_HIT_OR_TRAILING_FIFO_READ,TS_HIT_OR_TRAILING_FIFO_EMPTY;
 wire [31:0] TS_HIT_OR_TRAILING_FIFO_DATA;
 
-//wire  TLU_FIFO_READ, TLU_FIFO_EMPTY;
-//wire [31:0] TLU_FIFO_DATA;
-//wire TS_TRIG_FIFO_READ,TS_TRIG_FIFO_EMPTY;
-//wire [31:0] TS_TRIG_FIFO_DATA;
-//wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
-//wire [31:0] TS_INJ_FIFO_DATA;
+wire  TLU_FIFO_READ, TLU_FIFO_EMPTY;
+wire [31:0] TLU_FIFO_DATA;
+wire TS_RX0_FIFO_READ,TS_RX0_FIFO_EMPTY;
+wire [31:0] TS_RX0_FIFO_DATA;
+wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
+wire [31:0] TS_INJ_FIFO_DATA;
 
 rrp_arbiter 
 #( 
-    .WIDTH(4)
+    .WIDTH(7)
 ) rrp_arbiter (
 
     .RST(BUS_RST),
     .CLK(BUS_CLK),
 
-    .WRITE_REQ({~TS_HIT_OR_TRAILING_FIFO_EMPTY,~TS_HIT_OR_FIFO_EMPTY, 
-                ~DIRECT_RX_FIFO_EMPTY, ~RX_FIFO_EMPTY}),
-    .HOLD_REQ(4'b0),
-    .DATA_IN({TS_HIT_OR_TRAILING_FIFO_DATA, TS_HIT_OR_FIFO_DATA,
-              DIRECT_RX_FIFO_DATA, RX_FIFO_DATA}),
-    .READ_GRANT({TS_HIT_OR_TRAILING_FIFO_READ, TS_HIT_OR_FIFO_READ, 
-                 DIRECT_RX_FIFO_READ, RX_FIFO_READ}),
+    .WRITE_REQ({~TS_RX0_FIFO_EMPTY, ~TS_INJ_FIFO_EMPTY,
+        ~TS_HIT_OR_TRAILING_FIFO_EMPTY,~TS_HIT_OR_FIFO_EMPTY, 
+        ~DIRECT_RX_FIFO_EMPTY, ~RX_FIFO_EMPTY, ~TLU_FIFO_EMPTY}),
+    .HOLD_REQ(5'b0),
+    .DATA_IN({TS_RX0_FIFO_DATA,TS_INJ_FIFO_DATA,
+        TS_HIT_OR_TRAILING_FIFO_DATA, TS_HIT_OR_FIFO_DATA,
+        DIRECT_RX_FIFO_DATA, RX_FIFO_DATA,TLU_FIFO_DATA}),
+    .READ_GRANT({TS_RX0_FIFO_READ,TS_INJ_FIFO_READ,
+        TS_HIT_OR_TRAILING_FIFO_READ, TS_HIT_OR_FIFO_READ, 
+        DIRECT_RX_FIFO_READ, RX_FIFO_READ,TLU_FIFO_READ}),
 
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
     .DATA_OUT(ARB_DATA_OUT)
 );
 
-/////// tlu
-reg [63:0] TIMESTAMP;
-always @(posedge CLK40) begin
-    if (BUS_RST == 1'b1)
-        TIMESTAMP <= 64'b0;
-    else
-        TIMESTAMP <= TIMESTAMP +1;
-end
+//************************************************
+// TLU
+wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
+assign TRIGGER_ACKNOWLEDGE_FLAG = TRIGGER_ACCEPTED_FLAG;
+wire [63:0] TIMESTAMP;
+wire TLU_BUSY, TLU_CLK, TLU_TRIGGER;
+tlu_slave #(
+    .BASEADDR(TLU_BASEADDR),
+    .HIGHADDR(TLU_HIGHADDR),
+    .DIVISOR(8)
+) i_tlu_slave (
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+    
+    .TRIGGER_CLK(CLK40),
+    
+    .FIFO_READ(TLU_FIFO_READ),
+    .FIFO_EMPTY(TLU_FIFO_EMPTY),
+    .FIFO_DATA(TLU_FIFO_DATA),
+    .FIFO_PREEMPT_REQ(),
+     
+    .TRIGGER_ENABLED(),
+    .TRIGGER_SELECTED(),
+    .TLU_ENABLED(),
+    .TRIGGER({8'b0}),
+    .TRIGGER_VETO({7'b0,FIFO_FULL}),
+    .TIMESTAMP_RESET(),
+    .EXT_TRIGGER_ENABLE(),     //.EXT_TRIGGER_ENABLE(TLU_EXT_TRIGGER_ENABLE)
+    .TRIGGER_ACKNOWLEDGE(TRIGGER_ACKNOWLEDGE_FLAG),
+    .TRIGGER_ACCEPTED_FLAG(TRIGGER_ACCEPTED_FLAG),
+
+    .TLU_TRIGGER(TLU_TRIGGER),
+    .TLU_RESET(1'b0),
+    .TLU_BUSY(TLU_BUSY),
+    .TLU_CLOCK(TLU_CLK),
+    .EXT_TIMESTAMP(),
+    .TIMESTAMP(TIMESTAMP)
+);
+assign LEMO_TX[0] = TLU_CLK;
+assign LEMO_TX[1] = TLU_BUSY;
+assign TLU_TRIGGER = RJ45_TRIGGER;
 
 timestamp640 #(
     .BASEADDR(TS_HIT_OR_BASEADDR),
@@ -367,6 +445,59 @@ timestamp640 #(
     .FIFO_DATA_TRAILING(TS_HIT_OR_TRAILING_FIFO_DATA)
 );
 
+timestamp640 #(
+    .BASEADDR(TS_RX0_BASEADDR),
+    .HIGHADDR(TS_RX0_HIGHADDR),
+    .IDENTIFIER(4'b0110)
+)i_timestamp640_rx0(
+    .BUS_CLK(BUS_CLK),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RST(BUS_RST),
+    .BUS_WR(BUS_WR),
+    .BUS_RD(BUS_RD),
+    
+    .CLK40(CLK40),
+    .CLK160(CLK160),
+    .CLK320(CLK320),
+    .DI(LEMO_RX[0]),
+    .EXT_ENABLE(),
+    .EXT_TIMESTAMP(TIMESTAMP),
+    .TIMESTAMP_OUT(),
+    .FIFO_READ(TS_RX0_FIFO_READ),
+    .FIFO_EMPTY(TS_RX0_FIFO_EMPTY),
+    .FIFO_DATA(TS_RX0_FIFO_DATA),
+    .FIFO_READ_TRAILING(),
+    .FIFO_EMPTY_TRAILING(),
+    .FIFO_DATA_TRAILING()
+);
+// LEMO_RX0 or flatcable 5 is loop back of injection pulse
+timestamp640 #(
+    .BASEADDR(TS_INJ_BASEADDR),
+    .HIGHADDR(TS_INJ_HIGHADDR),
+    .IDENTIFIER(4'b0110)
+)i_timestamp640_inj(
+    .BUS_CLK(BUS_CLK),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RST(BUS_RST),
+    .BUS_WR(BUS_WR),
+    .BUS_RD(BUS_RD),
+    
+    .CLK40(CLK40),
+    .CLK160(CLK160),
+    .CLK320(CLK320),
+    .DI(LEMO_RX[2]),
+    .EXT_ENABLE(),
+    .EXT_TIMESTAMP(TIMESTAMP),
+    .TIMESTAMP_OUT(),
+    .FIFO_READ(TS_INJ_FIFO_READ),
+    .FIFO_EMPTY(TS_INJ_FIFO_EMPTY),
+    .FIFO_DATA(TS_INJ_FIFO_DATA),
+    .FIFO_READ_TRAILING(),
+    .FIFO_EMPTY_TRAILING(),
+    .FIFO_DATA_TRAILING()
+);
 
 //************************************************
 // fast readout
