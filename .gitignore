@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# SiTCP
+firmware/src/SiTCP_Netlist_for_Kintex7/*
+
+# Firmware
+firmware/vivado/*
+!firmware/vivado/*.xpr
