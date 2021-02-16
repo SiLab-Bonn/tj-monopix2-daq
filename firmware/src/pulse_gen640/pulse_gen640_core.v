@@ -11,7 +11,7 @@ module pulse_gen640_core
 #(
     parameter ABUSWIDTH = 16,
     parameter CLKDV = 4, //only 4 will work for now
-    parameter OUTPUT_SIZE =2 
+    parameter OUTPUT_SIZE = 2 
 )
 (
     input wire BUS_CLK,
@@ -22,7 +22,6 @@ module pulse_gen640_core
     input wire BUS_WR,
     input wire BUS_RD,
 
-    
     input wire PULSE_CLK,
     input wire PULSE_CLK160,
     input wire PULSE_CLK320,
@@ -95,8 +94,8 @@ always@(posedge BUS_CLK) begin
     end
 end
 
-assign SOFT_RST = (BUS_ADD==0 && BUS_WR);
-assign START = (BUS_ADD==1 && BUS_WR);
+assign SOFT_RST = (BUS_ADD == 0 && BUS_WR);
+assign START = (BUS_ADD == 1 && BUS_WR);
 
 wire RST;
 assign RST = BUS_RST | SOFT_RST;

@@ -162,12 +162,12 @@ assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
 
 wire SER_CLK;
 assign SER_CLK = SEL_SER_CLK ? CLK320:CLK160;
-assign LVDS_SER_CLK = EN_LVDS_IN? SER_CLK:1'b0;
-assign CMOS_SER_CLK = EN_CMOS_IN? SER_CLK:1'b0;
+assign LVDS_SER_CLK = EN_LVDS_IN ? SER_CLK : 1'b0;
+assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
 wire CMD_CLK;
 assign CMD_CLK = CLK160;
-assign LVDS_CMD_CLK = EN_LVDS_IN? CMD_CLK:1'b0;
-assign CMOS_CMD_CLK = EN_CMOS_IN? CMD_CLK:1'b0;
+assign LVDS_CMD_CLK = EN_LVDS_IN ? CMD_CLK : 1'b0;
+assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK : 1'b0;
 wire HITOR;
 `ifdef COCOTB_SIM
     assign HITOR = EN_CMOS_OUT ? CMOS_HITOR_OUT : HITOR_OUT;
@@ -502,8 +502,8 @@ timestamp640 #(
 //************************************************
 // fast readout
 wire  RX_CLKX2,RX_CLKW;
-assign  RX_CLKX2 = SEL_SER_CLK ? CLK320:CLK160;
-assign  RX_CLKW = SEL_SER_CLK ? CLK32:CLK16;
+assign  RX_CLKX2 = SEL_SER_CLK ? CLK320 : CLK160;
+assign  RX_CLKW = SEL_SER_CLK ? CLK32 : CLK16;
 tjmono2_rx #(
         .BASEADDR(RX_BASEADDR),
         .HIGHADDR(RX_HIGHADDR),

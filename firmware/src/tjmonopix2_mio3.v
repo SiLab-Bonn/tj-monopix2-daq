@@ -37,6 +37,7 @@
 `include "spi/blk_mem_gen_8_to_1_2k.v"
 
 `include "gpio/gpio.v"
+`include "gpio/gpio_core.v"
 
 `include "tlu_slave/tlu_slave.v"
 `include "tlu_slave/tlu_slave_core.v"
@@ -62,6 +63,7 @@
 `include "timestamp640/timestamp640_core.v"
 `include "pulse_gen640/pulse_gen640.v"
 `include "pulse_gen640/pulse_gen640_core.v"
+
 `define CODE_FOR_MIO3
 
 module tjmonopix2_mio3(
@@ -345,7 +347,7 @@ module tjmonopix2_mio3(
         .RST(RST)                    ,    // in    : System reset
         // Configuration parameters
         .FORCE_DEFAULTn(1'b0)        ,    // in    : Load default parameters
-        .EXT_IP_ADDR(32'hc0a80a17)            ,    // in    : IP address[31:0] //192.168.10.16
+        .EXT_IP_ADDR(32'hc0a80a17)            ,    // in    : IP address[31:0] //192.168.10.23
         .EXT_TCP_PORT(16'd24)        ,    // in    : TCP port #[15:0]
         .EXT_RBCP_PORT(16'd4660)        ,    // in    : RBCP port #[15:0]
         .PHY_ADDR(5'd3)            ,    // in    : PHY-device MIF address[4:0]
