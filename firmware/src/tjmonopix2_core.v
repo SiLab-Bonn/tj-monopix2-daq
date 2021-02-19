@@ -59,7 +59,6 @@ module tjmonopix2_core (
     input wire LVDS_CHSYNC_CLK_OUT,
     input wire LVDS_CHSYNC_LOCKED_OUT,
     inout wire [1:0] CHIP_ID
-
 );
 
 // -------  MODULE ADREESSES  ------- //
@@ -161,12 +160,12 @@ assign CHIP_ID[1] = GPIO_MODE[1] ? 1'bz : IO[4];
 assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
 
 wire SER_CLK;
-assign SER_CLK = SEL_SER_CLK ? CLK320:CLK160;
-assign LVDS_SER_CLK = EN_LVDS_IN ? SER_CLK : 1'b0;
+assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
+assign LVDS_SER_CLK = EN_LVDS_IN ? ~SER_CLK : 1'b0;
 assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
 wire CMD_CLK;
 assign CMD_CLK = CLK160;
-assign LVDS_CMD_CLK = EN_LVDS_IN ? CMD_CLK : 1'b0;
+assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK : 1'b0;
 assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK : 1'b0;
 wire HITOR;
 `ifdef COCOTB_SIM
@@ -247,8 +246,9 @@ pulse_gen
     .EXT_START(EXT_TRIGGER), //TODO maybe not needed?
     .PULSE(PULSE)
 );
-assign CMOS_PULSE_EXT = EN_CMOS_IN? PULSE:1'b0;
-assign PULSE_EXT = EN_LVDS_IN? PULSE:1'b0;
+assign CMOS_PULSE_EXT = EN_CMOS_IN ? PULSE : 1'b0;
+assign PULSE_EXT = EN_LVDS_IN ? ~PULSE : 1'b0;
+
 assign LEMO_TX[2] = PULSE;
 `endif
 
@@ -312,8 +312,8 @@ cmd #(
 
     .BYPASS_MODE(BYPASS_MODE)
 );
-assign LVDS_CMD = EN_LVDS_IN? CMD:1'b0;
-assign CMOS_CMD = EN_CMOS_IN? CMD:1'b0;
+assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
+assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
 
 // ----- CMD_START_LOOP -> TDC pulse generator ----- // TODO delete??
 pulse_gen #(
