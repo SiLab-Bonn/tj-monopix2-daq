@@ -30,6 +30,7 @@
 `include "TIMER.v"
 
 ////User core and its modules
+`define CODE_FOR_MIO3
 `include "tjmonopix2_core.v"
 
 `include "spi/spi_core.v"
@@ -63,8 +64,6 @@
 `include "timestamp640/timestamp640_core.v"
 `include "pulse_gen640/pulse_gen640.v"
 `include "pulse_gen640/pulse_gen640_core.v"
-
-`define CODE_FOR_MIO3
 
 module tjmonopix2_mio3(
 

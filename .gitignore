@@ -117,6 +117,9 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+# VS Code project settings
+.vscode
+
 # mkdocs documentation
 /site
 
@@ -129,8 +132,10 @@ dmypy.json
 .pyre/
 
 # SiTCP
-firmware/src/SiTCP_Netlist_for_Kintex7/*
+firmware/SiTCP/*
 
 # Firmware
 firmware/vivado/*
 !firmware/vivado/*.xpr
+!firmware/vivado/run.tcl
+

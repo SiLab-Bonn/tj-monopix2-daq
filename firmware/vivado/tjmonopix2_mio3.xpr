@@ -60,28 +60,28 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/SiTCP_Netlist_for_Kintex7/TIMER.v">
+      <File Path="$PPRDIR/../SiTCP/TIMER.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/SiTCP_Netlist_for_Kintex7/WRAP_SiTCP_GMII_XC7K_32K.V">
+      <File Path="$PPRDIR/../SiTCP/WRAP_SiTCP_GMII_XC7K_32K.V">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/SiTCP_Netlist_for_Kintex7/SiTCP_XC7K_32K_BBT_V110.V">
+      <File Path="$PPRDIR/../SiTCP/SiTCP_XC7K_32K_BBT_V110.V">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/SiTCP_Netlist_for_Kintex7/SiTCP_XC7K_32K_BBT_V110.ngc">
+      <File Path="$PPRDIR/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -91,7 +91,7 @@
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="tjmonopix2_mio3"/>
         <Option Name="VerilogDir" Val="$PPRDIR/../src"/>
-        <Option Name="VerilogDir" Val="$PPRDIR/../src/SiTCP_Netlist_for_Kintex7"/>
+        <Option Name="VerilogDir" Val="$PPRDIR/../SiTCP"/>
         <Option Name="VerilogDir" Val="$PPRDIR/../../../basil/basil/firmware/modules"/>
         <Option Name="VerilogDir" Val="$PPRDIR/../../../basil/basil/firmware/modules/utils"/>
         <Define Name="CODE_FOR_MIO3" Val="1"/>
@@ -251,9 +251,7 @@
     </Run>
     <Run Id="impl_4" Type="Ft2:EntireDesign" Part="xc7k160tfbg676-1" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="synth_4" IncludeInArchive="true" GenFullBitstream="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2019">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2019"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

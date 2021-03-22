@@ -118,9 +118,9 @@ always @ (posedge BUS_CLK) begin
 end
 
 wire ready_rec;
-assign RX_READY = (ready_rec==1'b1) ? 1'b1 : 1'b0;
-assign RX_8B10B_DECODER_ERR = (decoder_err_cnt!=8'b0);
-assign RX_FIFO_OVERFLOW_ERR = (lost_err_cnt!=8'b0);
+assign RX_READY = (ready_rec == 1'b1) ? 1'b1 : 1'b0;
+assign RX_8B10B_DECODER_ERR = (decoder_err_cnt != 8'b0);
+assign RX_FIFO_OVERFLOW_ERR = (lost_err_cnt != 8'b0);
 
 wire [26:0] FE_DATA;
 assign FIFO_DATA = {DATA_IDENTIFIER, 1'b0, FE_DATA};

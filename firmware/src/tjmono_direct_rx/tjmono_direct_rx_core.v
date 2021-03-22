@@ -147,7 +147,7 @@ always @(posedge BUS_CLK) begin
             BUS_DATA_OUT <= CONF_READ_SHIFT[7:0];
         else if(BUS_ADD == 15)
             BUS_DATA_OUT <= CONF_READ_SHIFT[15:8];
-         else if (BUS_ADD ==18)  ///debug
+        else if (BUS_ADD ==18)  ///debug
             BUS_DATA_OUT <= TIMESTAMP[8:0];
         else
             BUS_DATA_OUT <= 8'b0;
