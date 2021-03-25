@@ -8,8 +8,13 @@
 #       vivado -mode tcl -source run.tcl
 #
 
+# Use current environment python instead of vivado included python
+unset ::env(PYTHONPATH)
+unset ::env(PYTHONHOME)
+
 set vivado_dir [exec pwd]
-set include_dirs [list $vivado_dir/../src $vivado_dir/../SiTCP $vivado_dir/../../../basil/basil/firmware/modules $vivado_dir/../../../basil/basil/firmware/modules/utils]
+set basil_dir [exec python -c "import basil, os; print(str(os.path.dirname(os.path.dirname(basil.__file__))))"]
+set include_dirs [list $vivado_dir/../src $vivado_dir/../SiTCP $basil_dir/basil/firmware/modules $basil_dir/basil/firmware/modules/utils]
 
 file mkdir ../bit reports
 
@@ -33,7 +38,7 @@ proc run_bit { part board xdc_file size} {
     report_timing -file "reports/report_timing.$board.log"
     write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_$board
 
-    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$board.bit" -force -file $vivado_dir/../bit/tjmonopix2_$board
+    write_cfgmem -format mcs -size 64 -interface SPIx1 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$board.bit" -force -file $vivado_dir/../bit/tjmonopix2_$board
     close_project
 }
 
@@ -43,7 +48,7 @@ proc run_bit { part board xdc_file size} {
 # Create projects and bitfiles
 #
 
-#       FPGA type           board name	    constraints file                flash size
-run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/tjmonopix2_mio3.xdc    256
+#       FPGA type           board name	  constraints file                          flash size
+run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/tjmonopix2_mio3.xdc    64
 
 exit

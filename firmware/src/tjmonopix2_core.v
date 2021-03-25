@@ -247,7 +247,7 @@ pulse_gen
     .PULSE(PULSE)
 );
 assign CMOS_PULSE_EXT = EN_CMOS_IN ? PULSE : 1'b0;
-assign PULSE_EXT = EN_LVDS_IN ? ~PULSE : 1'b0;
+assign PULSE_EXT = EN_LVDS_IN ? PULSE : 1'b0;
 
 assign LEMO_TX[2] = PULSE;
 `endif
