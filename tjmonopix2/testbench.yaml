@@ -1,0 +1,52 @@
+general: # General configuration
+  output_directory: # Top-level output data directory, default is the current folder where the bdaq script is started
+
+periphery: # Configuration of the BDAQ53 Periphery module
+  enable_periphery: False
+  monitoring: False # Monitor all connected powersupplies and sensors regularly
+  monitoring_interval: 10 # Interval for DCS monitoring in seconds
+  analog_monitoring_board: False
+
+# Connected Modules
+modules:
+  module_0: # Arbitrary name of module, defines folder name with chip sub folders
+    identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
+    # powersupply:
+    #   lv_name: LV-0
+    #   lv_voltage: 1.7
+    #   lv_current_limit: 2.0
+    # #   hv_name: HV-0
+    # #   hv_voltage: 5
+    # #   hv_current_limit: 1e-6
+    # power_cycle: False # power cycle all chip of this module before scan start
+    chip_0: # Arbitrary name of chip, defines folder name with chip data
+      chip_sn: "W11R07"
+      chip_id: 0
+      receiver: "rx0"
+      chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+      record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
+      use_good_pixels_diff: False
+      send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor
+
+notifications: # Notification settings
+  enable_notifications: False
+  slack_token: "~/slack_api_token"
+  slack_users:
+    - AAAAAA123
+
+# Standard analysis settings
+# Scans might overwrite these settings if needed.
+# Detailed description of parameters in bdaq53/analysis/analysis.py
+analysis:
+  skip: True # Omit analysis in scans
+  create_pdf: True # Create analysis summary pdf
+  # module_plotting: True  # Create combined plots for chip in a module
+  # store_hits: False # store hit table
+  # cluster_hits: False # store cluster data
+  # analyze_tdc: False # analyze TDC words
+  # analyze_ptot: False  # analyze PTOT words (only possible for RD53B)
+  # use_tdc_trigger_dist: False # analyze TDC to TRG distance
+  # align_method: 0 # how to detect new events
+  # chunk_size: 1000000 # scales amount of data in RAM (~150 MB)
+  # blocking: True # block main process during analysis
+

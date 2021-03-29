@@ -166,72 +166,72 @@ class cmd(RegisterHardwareLayer):
         else:
             return self._intf.read(self._conf['base_addr'] + self._mem_offset + addr, size)
 
-    def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False):
-        assert (0 < repetitions < 65536), "Repetition value must be 0<n<2^16"
-        if repetitions > 1:
-            logging.debug("Repeating command %i times." % (repetitions))
+    # def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False):
+    #     assert (0 < repetitions < 65536), "Repetition value must be 0<n<2^16"
+    #     if repetitions > 1:
+    #         logging.debug("Repeating command %i times." % (repetitions))
 
-        if wait_for_ready:
-            while (not self.is_done()):
-                pass
-        self.set_data(data)
-        self.set_size(len(data))
-        self.set_repetitions(repetitions)
-        self.start()
-        if wait_for_done:
-            while (not self.is_done()):
-                pass
+    #     if wait_for_ready:
+    #         while (not self.is_done()):
+    #             pass
+    #     self.set_data(data)
+    #     self.set_size(len(data))
+    #     self.set_repetitions(repetitions)
+    #     self.start()
+    #     if wait_for_done:
+    #         while (not self.is_done()):
+    #             pass
 
-    def write_register(self, address, data, chip_id, write=True):
-        '''
-            Sends write command to register with data
+    # def write_register(self, address, data, chip_id, write=True):
+    #     '''
+    #         Sends write command to register with data
 
-            Parameters:
-            ----------
-                address : int or str
-                    Address or name of the register to be written to
-                data : int
-                    Value to write into register
-                chip_id : int
-                    16(default)=broad cast
-            Returns:
-            ----------
-                indata : binarray
-                    Boolean representation of register write command.
-        '''
+    #         Parameters:
+    #         ----------
+    #             address : int or str
+    #                 Address or name of the register to be written to
+    #             data : int
+    #                 Value to write into register
+    #             chip_id : int
+    #                 16(default)=broad cast
+    #         Returns:
+    #         ----------
+    #             indata : binarray
+    #                 Boolean representation of register write command.
+    #     '''
 
-        indata = [self.CMD_REGISTER]  # Write Command
-        indata += [self.cmd_data_map[chip_id]]
-        indata += [self.cmd_data_map[address >> 5]]  # Write mode + first 4 bits of address
-        indata += [self.cmd_data_map[address & 0x1f]]  # Last 5 bits of address
-        indata += [self.cmd_data_map[data >> 11]]  # First 5 bits of data
-        indata += [self.cmd_data_map[(data >> 6) & 0x1f]]  # Middle 5 bits of data
-        indata += [self.cmd_data_map[(data >> 1) & 0x1f]]  # Middle 5 bits of data
-        indata += [self.cmd_data_map[(data & 0x1) << 4]]  # Last bit of data
-        if write:
-            self.write_command(indata)
+    #     indata = [self.CMD_REGISTER]  # Write Command
+    #     indata += [self.cmd_data_map[chip_id]]
+    #     indata += [self.cmd_data_map[address >> 5]]  # Write mode + first 4 bits of address
+    #     indata += [self.cmd_data_map[address & 0x1f]]  # Last 5 bits of address
+    #     indata += [self.cmd_data_map[data >> 11]]  # First 5 bits of data
+    #     indata += [self.cmd_data_map[(data >> 6) & 0x1f]]  # Middle 5 bits of data
+    #     indata += [self.cmd_data_map[(data >> 1) & 0x1f]]  # Middle 5 bits of data
+    #     indata += [self.cmd_data_map[(data & 0x1) << 4]]  # Last bit of data
+    #     if write:
+    #         self.write_command(indata)
 
-        return indata
+    #     return indata
 
-    def read_register(self, address, chip_id, write=True):
-        '''
-            Sends read command to register with data
+    # def read_register(self, address, chip_id, write=True):
+    #     '''
+    #         Sends read command to register with data
 
-            Parameters:
-            ----------
-                address : int
-                    Address of the register to be written to
+    #         Parameters:
+    #         ----------
+    #             address : int
+    #                 Address of the register to be written to
 
-            Returns:
-            ----------
-                indata : binarray
-                    Boolean representation of register write command.
-        '''
-        indata = [self.CMD_RDREG]
-        indata += [self.cmd_data_map[chip_id]]
-        indata += [self.cmd_data_map[address >> 5]]  # first 4 bits of address
-        indata += [self.cmd_data_map[address & 0x1f]]  # last 5 bits of address
+    #         Returns:
+    #         ----------
+    #             indata : binarray
+    #                 Boolean representation of register write command.
+    #     '''
+    #     indata = [self.CMD_RDREG]
+    #     indata += [self.cmd_data_map[chip_id]]
+    #     indata += [self.cmd_data_map[address >> 5]]  # first 4 bits of address
+    #     indata += [self.cmd_data_map[address & 0x1f]]  # last 5 bits of address
 
-        if write:
-            self.write_command(indata)
-        return indata
+    #     if write:
+    #         self.write_command(indata)
+    #     return indata

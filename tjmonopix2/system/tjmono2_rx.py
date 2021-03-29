@@ -39,6 +39,9 @@ class tjmono2_rx(RegisterHardwareLayer):
     def rx_reset(self):
         self.RX_RESET = 0
 
+    def set_en(self, value):
+        self.ENABLE = value
+
     def is_done(self):
         return self.is_ready
 
@@ -47,10 +50,10 @@ class tjmono2_rx(RegisterHardwareLayer):
         return self.READY
 
     def set_invert_rx(self, value):
-        self.INVERT_RX = value
+        self.INVERT = value
 
     def get_invert_rx(self):
-        return self.INVERT_RX
+        return self.INVERT
 
     def get_fifo_size(self):
         return self.FIFO_SIZE

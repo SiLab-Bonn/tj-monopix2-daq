@@ -1,0 +1,827 @@
+registers:
+# Current DAC
+  - address: 0
+    offset: 0
+    default: '100'
+    name: IBIAS
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 0
+    offset: 8
+    default: '64'
+    name: ITHR
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 1
+    offset: 0
+    default: '0'
+    name: ICASN
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 1 
+    offset: 8
+    default: '100'
+    name: IDB
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 2
+    offset: 0
+    default: '53'
+    name: ITUNE
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 2
+    offset: 8
+    default: '80'
+    name: ICOMP
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 3
+    offset: 0
+    default: '88'
+    name: IDEL
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 3
+    offset: 8
+    default: '50'
+    name: IRAM
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+# Current monitor/override
+  - address: 4
+    offset: 0
+    default: '0'
+    name: MON_EN_IBIAS
+    size: 1
+    description: Enable monitoring of IBIAS
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 1
+    default: '0'
+    name: MON_EN_ITHR
+    size: 1
+    description: Enable monitoring of ITHR
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 2
+    default: '0'
+    name: MON_EN_ICASN
+    size: 1
+    description: Enable monitoring of ICASN
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 3
+    default: '0'
+    name: MON_EN_IDB
+    size: 1
+    description: Enable monitoring of IDB
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 4
+    default: '0'
+    name: MON_EN_IRAM
+    size: 1
+    description: Enable monitoring of IRAM
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 5
+    default: '0'
+    name: MON_EN_ICOMP
+    size: 1
+    description: Enable monitoring of ICOMP
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 6
+    default: '0'
+    name: MON_EN_IDEL
+    size: 1
+    description: Enable monitoring of IDEL
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 7
+    default: '0'
+    name: MON_EN_ITUNE
+    size: 1
+    description: Enable monitoring of ITUNE
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 8
+    default: '0'
+    name: OVR_EN_IBIAS
+    size: 1
+    description: Enable overriding IBIAS
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 9
+    default: '0'
+    name: OVR_EN_ITHR
+    size: 1
+    description: Enable overriding ITHR
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 10
+    default: '0'
+    name: OVR_EN_ICASN
+    size: 1
+    description: Enable overriding ICASN
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 11
+    default: '0'
+    name: OVR_EN_IDB
+    size: 1
+    description: Enable overriding IDB
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 12
+    default: '0'
+    name: OVR_EN_IRAM
+    size: 1
+    description: Enable overriding IRAM
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 13
+    default: '0'
+    name: OVR_EN_ICOMP
+    size: 1
+    description: Enable overriding ICOMP
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 14
+    default: '0'
+    name: OVR_EN_IDEL
+    size: 1
+    description: Enable overriding IDEL
+    reset: 1
+    mode: 1
+  - address: 4
+    offset: 15
+    default: '0'
+    name: OVR_EN_ITUNE
+    size: 1
+    description: Enable overriding ITUNE
+    reset: 1
+    mode: 1
+# Voltage monitor/override
+  - address: 5
+    offset: 0
+    default: '0'
+    name: MON_EN_VRESET
+    size: 1
+    description: Enable monitoring of VRESET
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 1
+    default: '0'
+    name: MON_EN_VL
+    size: 1
+    description: Enable monitoring of VL (injection voltage low)
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 2
+    default: '0'
+    name: MON_EN_VH
+    size: 1
+    description: Enable monitoring of VH (injection voltage high)
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 3
+    default: '0'
+    name: MON_EN_VCASP
+    size: 1
+    description: Enable monitoring of VCASP
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 4
+    default: '0'
+    name: MON_EN_VCASC
+    size: 1
+    description: Enable monitoring of VCASC
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 5
+    default: '0'
+    name: MON_EN_VCLIP
+    size: 1
+    description: Enable monitoring of VCLIP
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 6
+    default: '0'
+    name: OVR_EN_VRESET
+    size: 1
+    description: Enable overriding VRESET
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 7
+    default: '0'
+    name: OVR_EN_VL
+    size: 1
+    description: Enable overriding VL
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 8
+    default: '0'
+    name: OVR_EN_VH
+    size: 1
+    description: Enable overriding VH
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 9
+    default: '0'
+    name: OVR_EN_VCASP
+    size: 1
+    description: Enable overriding VCASP
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 10
+    default: '0'
+    name: OVR_EN_VCASC
+    size: 1
+    description: Enable overriding VCASC
+    reset: 1
+    mode: 1
+  - address: 5
+    offset: 11
+    default: '0'
+    name: OVR_EN_VCLIP
+    size: 1
+    description: Enable overriding VCLIP
+    reset: 1
+    mode: 1
+# Voltage DAC
+  - address: 6
+    offset: 0
+    default: '143'
+    name: VRESET
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 6
+    offset: 8
+    default: '93'
+    name: VCASP
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 7
+    offset: 0
+    default: '228'
+    name: VCASC
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 7
+    offset: 8
+    default: '255'
+    name: VCLIP
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 8
+    offset: 0
+    default: '64'
+    name: VL
+    size: 8
+    description: Injection voltage low level
+    reset: 1
+    mode: 1
+  - address: 8
+    offset: 8
+    default: '115'
+    name: VH
+    size: 8
+    description: Injection voltage high level 
+    reset: 1
+    mode: 1
+# Analog pixels
+  - address: 9
+    offset: 0
+    default: '5'
+    name: ANAMON_SFN_R
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 9
+    offset: 4
+    default: '5'
+    name: ANAMON_SFN_L
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 9
+    offset: 8
+    default: '5'
+    name: ANAMON_SFP_R
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 9
+    offset: 12
+    default: '5'
+    name: ANAMON_SFP_L
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 10
+    offset: 0
+    default: '3'
+    name: ANAMONIN_SFN1_R
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 10
+    offset: 4
+    default: '3'
+    name: ANAMONIN_SFN1_L
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 10
+    offset: 8
+    default: '4'
+    name: ANAMONIN_SFP_R
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 10
+    offset: 12
+    default: '4'
+    name: ANAMONIN_SFP_L
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 11
+    offset: 0
+    default: '5'
+    name: ANAMONIN_SFN2_R
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 11
+    offset: 4
+    default: '5'
+    name: ANAMONIN_SFN2_L
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 11
+    offset: 8
+    default: '0'
+    name: EN_PULSE_ANAMON_L
+    size: 1
+    description: Enable pulsing in analog monitoring pixels on left side
+    reset: 1
+    mode: 1
+  - address: 11
+    offset: 9
+    default: '1'
+    name: EN_PULSE_ANAMON_R
+    size: 1
+    description: Enable pulsing in analog monitoring pixels on right side
+    reset: 1
+    mode: 1
+# Periphery
+  - address: 12
+    offset: 0
+    default: '1'
+    name: EN_LVDS_TX
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 12
+    offset: 1
+    default: '0b11100'
+    name: EN_LVDS_TX_HBRIDGE
+    size: 5
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 12
+    offset: 6
+    default: '0b10000'
+    name: EN_LVDS_TX_CMFB
+    size: 5
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 12
+    offset: 11
+    default: '0b0111'
+    name: LVDS_TX_IBCMFB
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 13
+    offset: 0
+    default: '0'
+    name: EN_LVDS_TX_PRE
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 14
+    offset: 0
+    default: '13'
+    name: LVDS_TX_IVNH
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 14
+    offset: 4
+    default: '7'
+    name: LVDS_TX_IVNL
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 14
+    offset: 8
+    default: '2'
+    name: LVDS_TX_IVPH
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 14
+    offset: 12
+    default: '13'
+    name: LVDS_TX_IVPL
+    size: 4
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 15
+    offset: 0
+    default: '0b000'
+    name: GPIO_TXOUT
+    size: 3
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 15
+    offset: 3
+    default: '0b111'
+    name: GPIO_MODE
+    size: 3
+    description: ''
+    reset: 1
+    mode: 1
+  # Pixel configuration
+  - address: 17
+    offset: 0
+    default: '0'
+    name: ROW_SELECT
+    size: 9
+    description: Pixel portal row
+    reset: 1
+    mode: 1
+  - address: 17
+    offset: 7
+    default: '0'
+    name: COLUMN_GROUP
+    size: 8
+    description: Pixel portal column group (0 - 127)
+    reset: 1
+    mode: 1
+  - address: 16
+    offset: 0
+    default: '0'
+    name: PIXEL_PORTAL
+    size: 16
+    description: 'Pixel portal'
+    reset: 1
+    mode: 1
+  - address: 18
+    offset: 0
+    default: '0'
+    name: EN_HITOR_COL
+    size: 512
+    description: HitOr column enable
+    reset: 1
+    mode: 1
+  - address: 50
+    offset: 0
+    default: '0'
+    name: EN_HITOR_ROW
+    size: 512
+    description: HitOr row enable
+    reset: 1
+    mode: 1
+  - address: 82
+    offset: 0
+    default: '0'
+    name: EN_INJ_COL
+    size: 512
+    description: Injection column enable
+    reset: 1
+    mode: 1
+  - address: 114
+    offset: 0
+    default: '0'
+    name: EN_INJ_ROW
+    size: 512
+    description: Injection row enable
+    reset: 1
+    mode: 1
+# Digitals
+  - address: 146
+    offset: 0
+    default: '0'
+    name: RO_RST_DEF_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 1
+    default: '0'
+    name: CHSYNC_WR_LOCKLOSS_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 2
+    default: '0'
+    name: WR_BCID_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 3
+    default: '0'
+    name: WR_TRIG_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 4
+    default: '0'
+    name: WR_ERR_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 5
+    default: '0'
+    name: WR_BITFLIP_WNG_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 6
+    default: '0'
+    name: WR_BITFLIP_ERR_CNT_RST
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 7
+    default: '1'
+    name: SEL_PULSE_EXT_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 146
+    offset: 8
+    default: '4'
+    name: DirectRO_DLY_CONF
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 147
+    offset: 0
+    default: '4'
+    name: CHSYNC_THR_HIGH_CONF
+    size: 5
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 147
+    offset: 5
+    default: '31'
+    name: CHSYNC_THR_LOW_CONF
+    size: 5
+    description: ''
+    reset: 1
+    mode: 1
+# RO Controller
+  - address: 148
+    offset: 0
+    default: '8'
+    name: STOP_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 149
+    offset: 0
+    default: '3'
+    name: READ_START_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 150
+    offset: 0
+    default: '5'
+    name: READ_STOP_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 151
+    offset: 0
+    default: '1'
+    name: FREEZE_START_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 152
+    offset: 0
+    default: '8'
+    name: FREEZE_STOP_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 153
+    offset: 0
+    default: '7'
+    name: LOAD_CONF
+    size: 16
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 0
+    default: '0'
+    name: CMOS_TX_EN_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 1
+    default: '1'
+    name: EN_INTERNAL_RO_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 2
+    default: '0'
+    name: EN_TRIGGER_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 3
+    default: '0'
+    name: EN_TESTPATTERN_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 4
+    default: '0'
+    name: NO_8B10B_MODE_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 5
+    default: '0'
+    name: CLK_TO_OUT_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 6
+    default: '0'
+    name: SEL_DIRECT_RO_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 7
+    default: '0'
+    name: SEL_DIRECT_DATAOUT_CONF
+    size: 1
+    description: ''
+    reset: 1
+    mode: 1
+  - address: 154
+    offset: 8
+    default: '0'
+    name: EMPTY_RECORD_CONF
+    size: 8
+    description: ''
+    reset: 1
+    mode: 1
+# Pixel rreadout conf
+  - address: 155
+    offset: 0
+    default: '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    name: EN_RO_CONF
+    size: 256
+    description: Enable of double column readout
+    reset: 1
+    mode: 1
+  - address: 171
+    offset: 0
+    default: '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    name: EN_BCID_CONF
+    size: 256
+    description: Enable of double column BCID distribution
+    reset: 1
+    mode: 1
+  - address: 187
+    offset: 0
+    default: '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    name: EN_RO_RST_CONF
+    size: 256
+    description: Enable of double column readout reset
+    reset: 1
+    mode: 1
+  - address: 203
+    offset: 0
+    default: '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
+    name: EN_FREEZE_CONF
+    size: 256
+    description: Enable of double column FREEZE distribution
+    reset: 1
+    mode: 1
