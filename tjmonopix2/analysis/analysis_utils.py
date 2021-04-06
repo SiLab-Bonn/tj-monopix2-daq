@@ -39,16 +39,3 @@ class ConfigDict(dict):
             return key, ast.literal_eval(val)
         except (ValueError, SyntaxError):  # fallback to return the object
             return key, val
-
-
-@njit(cache=True, fastmath=True)
-def make_tj_data_list(raw_data):
-    res = np.zeros(3 * len(raw_data), dtype=np.int16)
-    res_idx = 0
-
-    for word in raw_data:
-        res[res_idx] = (word & 0x7FC0000) >> 18
-        res[res_idx + 1] = (word & 0x003FE00) >> 9
-        res[res_idx + 2] = (word & 0x00001FF)
-        res_idx += 3
-    return res[:res_idx]
