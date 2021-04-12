@@ -38,7 +38,7 @@ from tjmonopix2.system.mio3 import MIO3
 # from tjmonopix2_daq.system.bdaq import BDAQ
 
 # from tjmonopix2_daq.system.periphery import BDAQ53Periphery
-from tjmonopix2.system.fifo_readout import FifoReadout, ReadoutChannel
+from tjmonopix2.system.fifo_readout import FifoReadout
 
 # Compression for data files
 FILTER_RAW_DATA = tb.Filters(complib='blosc', complevel=5, fletcher32=False)
@@ -286,6 +286,9 @@ class ScanBase(object):
             # Create general FIFO readout (for all chips/modules)
             self._configure_fifo_readout()
 
+            # Enable receivers
+            for _ in self.iterate_chips():
+                self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
             # # Make sure monitor filter is blocking for all receivers before starting scan
             # self.daq.set_monitor_filter(mode='block')
 
@@ -441,34 +444,34 @@ class ScanBase(object):
         with self._logging_through_handlers():
             self._set_readout_status()
 
-    def enable_hitor(self, enable=True):
-        '''
-            Configure the hitor display port connectors depending on scan type.
-            If enable is False all HitOr ports are disabled.
-            If enable is True and the scan is a parallel scan (e.g. external trigger scan, source scan),
-            there is parallel data readout and thus all HitOr ports get activated and or-ed in the FPGA.
-            If enable is True and the scan is *not* a parallel scan, the available HitOr ports
-            are activated one after another, always one during the scan of one chip;
-            the order depends on the sorting order in 'testbench.yaml' module section (see wiki...).
+    # def enable_hitor(self, enable=True):
+    #     '''
+    #         Configure the hitor display port connectors depending on scan type.
+    #         If enable is False all HitOr ports are disabled.
+    #         If enable is True and the scan is a parallel scan (e.g. external trigger scan, source scan),
+    #         there is parallel data readout and thus all HitOr ports get activated and or-ed in the FPGA.
+    #         If enable is True and the scan is *not* a parallel scan, the available HitOr ports
+    #         are activated one after another, always one during the scan of one chip;
+    #         the order depends on the sorting order in 'testbench.yaml' module section (see wiki...).
 
-            Note: the TDC feature does currently only work with *one* chip.
-        '''
-        if enable:
-            if self.is_parallel_scan:  # Enable all HitOr ports simultaneously
-                active_ports_conf = 0b000
-                for _ in range(len(self.chips)):
-                    active_ports_conf = (active_ports_conf << 1) + 0b001
-                self.daq.configure_hitor_inputs(active_ports_conf=active_ports_conf)
-            else:
-                if not hasattr(self, 'hitor_en'):
-                    self.hitor_en = 0b001  # Enable first HitOr port (DP)
-                else:
-                    self.hitor_en = self.hitor_en << 1  # Enable next HitOr port (mDP)
-                if self.hitor_en == 0b100:
-                    self.hitor_en = 0b000  # Only two HitOr ports available
-                self.daq.configure_hitor_inputs(active_ports_conf=self.hitor_en)
-        else:
-            self.daq.configure_hitor_inputs(active_ports_conf=0b000)  # Disable all ports
+    #         Note: the TDC feature does currently only work with *one* chip.
+    #     '''
+    #     if enable:
+    #         if self.is_parallel_scan:  # Enable all HitOr ports simultaneously
+    #             active_ports_conf = 0b000
+    #             for _ in range(len(self.chips)):
+    #                 active_ports_conf = (active_ports_conf << 1) + 0b001
+    #             self.daq.configure_hitor_inputs(active_ports_conf=active_ports_conf)
+    #         else:
+    #             if not hasattr(self, 'hitor_en'):
+    #                 self.hitor_en = 0b001  # Enable first HitOr port (DP)
+    #             else:
+    #                 self.hitor_en = self.hitor_en << 1  # Enable next HitOr port (mDP)
+    #             if self.hitor_en == 0b100:
+    #                 self.hitor_en = 0b000  # Only two HitOr ports available
+    #             self.daq.configure_hitor_inputs(active_ports_conf=self.hitor_en)
+    #     else:
+    #         self.daq.configure_hitor_inputs(active_ports_conf=0b000)  # Disable all ports
 
     def store_scan_par_values(self, scan_param_id, **kwargs):
         '''
@@ -1036,6 +1039,7 @@ class ScanBase(object):
 
     def _configure_fifo_readout(self):
         self.fifo_readout = FifoReadout(self.daq)
+        self._first_read = False
         # for receiver in self.daq.receivers:
         #     if self.daq.board_version != 'SIMULATION':  # Causes a timing issue in simulation
         #         self.daq.rx_channels[receiver].reset_logic()  # TODO: was done before at readout start, maybe not needed here
@@ -1136,14 +1140,14 @@ class ScanBase(object):
         if kwargs:
             self.store_scan_par_values(scan_param_id, **kwargs)
 
-        receivers_readout = []
-        if not self.is_parallel_scan:
-            self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
-            receivers_readout.append(self.chip.receiver)
-        else:
-            for _ in self.iterate_chips():
-                self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
-                receivers_readout.append(self.chip.receiver)
+        # receivers_readout = []
+        # if not self.is_parallel_scan:
+        #     self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
+        #     receivers_readout.append(self.chip.receiver)
+        # else:
+        #     for _ in self.iterate_chips():
+        #         self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
+        #         receivers_readout.append(self.chip.receiver)
 
         self.start_readout(*args, **kwargs)
         try:
@@ -1155,29 +1159,33 @@ class ScanBase(object):
             self.stop_readout(timeout=timeout)
 
     def start_readout(self, *args, **kwargs):
-        errback = kwargs.pop('errback', self.handle_err)
-        reset_rx = kwargs.pop('reset_rx', False)
+        # Pop parameters for fifo_readout.start
+        callback = kwargs.pop('callback', self.handle_data)
+        clear_buffer = kwargs.pop('clear_buffer', False)
+        fill_buffer = kwargs.pop('fill_buffer', False)
         reset_sram_fifo = kwargs.pop('reset_sram_fifo', True)
+        errback = kwargs.pop('errback', self.handle_err)
         no_data_timeout = kwargs.pop('no_data_timeout', None)
 
-        self.fifo_readout.start(errback=errback, reset_rx=reset_rx, reset_sram_fifo=reset_sram_fifo, no_data_timeout=no_data_timeout)
+        self.fifo_readout.start(reset_sram_fifo=reset_sram_fifo, fill_buffer=fill_buffer, clear_buffer=clear_buffer,
+                                callback=callback, errback=errback, no_data_timeout=no_data_timeout)
 
     def stop_readout(self, timeout=10.0):
         self.fifo_readout.stop(timeout=timeout)
 
-    def add_trigger_table_data(self, cmd_repetitions, scan_param_id):
-        '''
-            Mapping data to scan_param_id.
-        '''
-        self.trigger_table.row['cmd_number_start'] = self.ext_trig_num
-        self.trigger_table.row['cmd_number_stop'] = self.ext_trig_num + cmd_repetitions
-        self.trigger_table.row['cmd_length'] = cmd_repetitions
-        self.trigger_table.row['scan_param_id'] = scan_param_id
+    # def add_trigger_table_data(self, cmd_repetitions, scan_param_id):
+    #     '''
+    #         Mapping data to scan_param_id.
+    #     '''
+    #     self.trigger_table.row['cmd_number_start'] = self.ext_trig_num
+    #     self.trigger_table.row['cmd_number_stop'] = self.ext_trig_num + cmd_repetitions
+    #     self.trigger_table.row['cmd_length'] = cmd_repetitions
+    #     self.trigger_table.row['scan_param_id'] = scan_param_id
 
-        self.ext_trig_num += cmd_repetitions
+    #     self.ext_trig_num += cmd_repetitions
 
-        self.trigger_table.row.append()
-        self.trigger_table.flush()
+    #     self.trigger_table.row.append()
+    #     self.trigger_table.flush()
 
     # def add_ptot_table_data(self, cmd_repetitions, scan_param_id, active_pixels):
     #     '''
@@ -1212,15 +1220,6 @@ class ScanBase(object):
         '''
             Handling of the data.
         '''
-        # This function is called asynchrounesly for each receiver
-        # Thus setting chip handles requires a lock
-        self.chip_handle_lock.acquire()
-
-        if self.is_parallel_scan:
-            if receiver is None:
-                raise ValueError('Callback function for parallel scan needs receiver ID!')
-            if not self._get_chip_at_rx(receiver):
-                raise RuntimeError('No chip at ' + receiver)
 
         total_words = self.raw_data_earray.nrows
 
@@ -1243,8 +1242,6 @@ class ScanBase(object):
         if self.socket:
             send_data(self.socket, data=data_tuple, scan_par_id=self.scan_param_id)
 
-        self.chip_handle_lock.release()
-
     def handle_err(self, exc):
         ''' Handle errors when readout is started '''
         msg = '%s' % exc[1]
@@ -1254,13 +1251,6 @@ class ScanBase(object):
             if issubclass(exc[0], fifo_readout.FifoError):
                 self.log.error('Aborting run...')
                 self.fifo_readout.stop_readout.set()
-
-    @property
-    def data_buffer(self):
-        '''
-            Access data buffer of current receiver
-        '''
-        return self.fifo_readout.get_data_buffer(self.chip.receiver)
 
 
 if __name__ == '__main__':
