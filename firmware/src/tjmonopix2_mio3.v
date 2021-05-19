@@ -40,9 +40,9 @@
 `include "gpio/gpio.v"
 `include "gpio/gpio_core.v"
 
-`include "tlu_slave/tlu_slave.v"
-`include "tlu_slave/tlu_slave_core.v"
-`include "tlu_slave/tlu_slave_fsm.v"
+`include "tlu/tlu_controller.v"
+`include "tlu/tlu_controller_core.v"
+`include "tlu/tlu_controller_fsm.v"
 
 `include "timestamp/timestamp.v"
 `include "timestamp/timestamp_core.v"
