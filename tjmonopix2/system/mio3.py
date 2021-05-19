@@ -149,6 +149,9 @@ class MIO3(Dut):
         self['tlu']['TRIGGER_ENABLE'] = False
         self.tlu_module_enabled = False
 
+    def get_trigger_counter(self):
+        return self['tlu']['TRIGGER_COUNTER']
+
     def set_trigger_data_delay(self, trigger_data_delay):
         self['tlu']['TRIGGER_DATA_DELAY'] = trigger_data_delay
 

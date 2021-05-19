@@ -59,7 +59,7 @@ hw_drivers:
   #   base_addr : 0x10500
 
   - name      : tlu     # 8,a,b,c,d,e,f
-    type      : tjmonopix2.tlu_slave
+    type      : tlu
     interface : intf
     base_addr : 0x10600
     size      : 8

@@ -30,6 +30,26 @@ class_spec = [
 ]
 
 
+@numba.njit
+def is_tjmono(word):
+    return (word & 0xF8000000) == 0x40000000
+
+
+@numba.njit
+def is_tlu(word):
+    return word & 0x80000000 == 0x80000000
+
+
+@numba.njit
+def get_tlu_number(word):
+    return word & 0xFFFF
+
+
+@numba.njit
+def get_tlu_timestamp(word):
+    return (word >> 12) & 0x7FFF0
+
+
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
     def __init__(self):
@@ -56,56 +76,77 @@ class RawDataInterpreter(object):
     def interpret(self, raw_data, meta_data, hit_data):
         hit_index = 0
         raw_i = 0
-        raw_data = raw_data[(raw_data & 0xF8000000) == 0x40000000]
-
+        
         for raw_data_word in raw_data:
-            dat = np.zeros(3, dtype=np.uint16)
-            dat[0] = (raw_data_word & 0x7FC0000) >> 18
-            dat[1] = (raw_data_word & 0x003FE00) >> 9
-            dat[2] = (raw_data_word & 0x00001FF)
+            #############################
+            # Part 1: interpret TJ word #
+            #############################
+            if is_tjmono(raw_data_word):
+                dat = np.zeros(3, dtype=np.uint16)
+                dat[0] = (raw_data_word & 0x7FC0000) >> 18
+                dat[1] = (raw_data_word & 0x003FE00) >> 9
+                dat[2] = (raw_data_word & 0x00001FF)
 
-            for d in dat:
-                if d == 0x1bc:  # SOF hit data
-                    if self.sof:
-                        self.error_cnt += 1  # SOF before EOF
-                    self.sof = True
-                    self.col = self.row = self.le = self.te = -1
-                elif d == 0x17c:  # EOF hit data
-                    if not self.sof:
-                        self.error_cnt += 1  # EOF before SOF
-                    self.sof = False
-                    self.token_id += 1
-                elif d == 0x13c:  # IDLE
-                    pass
-                else:
-                    if not self.sof:
-                        self.error_cnt += 1
-
-                    if not self.tj_data_flag:  # Start block of hit words
-                        self.tj_data_flag = 1  # Starting with column data
-                        self.col = (d & 0xFF) << 1
-                    elif self.tj_data_flag == 1:
-                        self.tj_data_flag = 2
-                        self.le = self.gray2bin((d & 0xfe) >> 1)
-                        self.te = (d & 0x01) << 6
-                    elif self.tj_data_flag == 2:
-                        self.tj_data_flag = 3
-                        self.te = self.gray2bin(self.te | ((d & 0xfc) >> 2))
-                        self.row = (d & 0x01) << 8
-                        self.col = self.col + ((d & 0x02) >> 1)
-                    elif self.tj_data_flag == 3:
-                        self.tj_data_flag = 0  # Reset data flag, all blocks should be there
-                        self.row = self.row | (d & 0xff)
-
-                        hit_data[hit_index]["col"] = self.col
-                        hit_data[hit_index]["row"] = self.row
-                        hit_data[hit_index]["le"] = self.le
-                        hit_data[hit_index]["te"] = self.te
-                        hit_data[hit_index]["token_id"] = self.token_id
-                        hit_data[hit_index]["scan_param_id"] = self.raw_idx
-                        hit_index += 1
+                for d in dat:
+                    if d == 0x1bc:  # SOF hit data
+                        if self.sof:
+                            self.error_cnt += 1  # SOF before EOF
+                        self.sof = True
+                        self.col = self.row = self.le = self.te = -1
+                    elif d == 0x17c:  # EOF hit data
+                        if not self.sof:
+                            self.error_cnt += 1  # EOF before SOF
+                        self.sof = False
+                        self.token_id += 1
+                    elif d == 0x13c:  # IDLE
+                        pass
                     else:
-                        self.error_cnt += 1
+                        if not self.sof:
+                            self.error_cnt += 1
+
+                        if not self.tj_data_flag:  # Start block of hit words
+                            self.tj_data_flag = 1  # Starting with column data
+                            self.col = (d & 0xFF) << 1
+                        elif self.tj_data_flag == 1:
+                            self.tj_data_flag = 2
+                            self.le = self.gray2bin((d & 0xfe) >> 1)
+                            self.te = (d & 0x01) << 6
+                        elif self.tj_data_flag == 2:
+                            self.tj_data_flag = 3
+                            self.te = self.gray2bin(self.te | ((d & 0xfc) >> 2))
+                            self.row = (d & 0x01) << 8
+                            self.col = self.col + ((d & 0x02) >> 1)
+                        elif self.tj_data_flag == 3:
+                            self.tj_data_flag = 0  # Reset data flag, all blocks should be there
+                            self.row = self.row | (d & 0xff)
+
+                            hit_data[hit_index]["col"] = self.col
+                            hit_data[hit_index]["row"] = self.row
+                            hit_data[hit_index]["le"] = self.le
+                            hit_data[hit_index]["te"] = self.te
+                            hit_data[hit_index]["token_id"] = self.token_id
+                            hit_data[hit_index]["scan_param_id"] = self.raw_idx
+                            hit_index += 1
+                        else:
+                            self.error_cnt += 1
+
+            ##############################
+            # Part 2: interpret TLU word #
+            ##############################
+            elif is_tlu(raw_data_word):
+                tlu_word = get_tlu_number(raw_data_word)
+                tlu_timestamp_low_res = get_tlu_timestamp(raw_data_word)  # TLU data contains a 15bit timestamp
+
+                hit_data[hit_index]["col"] = 0x400
+                hit_data[hit_index]["row"] = 0
+                hit_data[hit_index]["le"] = 0
+                hit_data[hit_index]["te"] = 0
+                hit_data[hit_index]["token_id"] = tlu_word
+                # hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
+                hit_data[hit_index]["scan_param_id"] = self.raw_idx
+
+                # Prepare for next data block. Increase hit index
+                hit_index += 1
 
             self.raw_idx += 1
         hit_data = hit_data[:hit_index]
