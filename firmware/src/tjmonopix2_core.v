@@ -3,7 +3,7 @@
 `default_nettype none
 
 module tjmonopix2_core (
-    
+
     //local bus
     input wire BUS_CLK,
     inout wire [7:0] BUS_DATA,
@@ -13,9 +13,8 @@ module tjmonopix2_core (
     input wire BUS_RST,
 
     //clocks
-    input wire CLK8,
-    input wire CLK40,
     input wire CLK16,
+    input wire CLK40,
     input wire CLK160,
     input wire CLK320,
     

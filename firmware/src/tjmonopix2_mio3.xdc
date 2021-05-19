@@ -5,23 +5,35 @@ set_property PACKAGE_PIN AA3 [get_ports FCLK_IN]
 set_property IOSTANDARD LVCMOS15 [get_ports FCLK_IN]
 create_clock -period 10.000 -name FCLK_IN -add [get_ports FCLK_IN]
 
-set_false_path -from [get_clocks CLK40_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK40_PLL]
-
-set_false_path -from [get_clocks CLK160_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK160_PLL]
-
-#set_false_path -from [get_clocks CLK16_PLL] -to [get_clocks BUS_CLK_PLL]
-#set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK16_PLL]
+create_generated_clock -name i_clock_divisor_spi/I2C_CLK -source [get_pins {PLLE2_BASE_inst_clk/CLKOUT5}] -divide_by 1500 [get_pins {i_clock_divisor_spi/CLOCK_reg/Q}]
+set_false_path -from [get_clocks i_clock_divisor_spi/I2C_CLK] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks i_clock_divisor_spi/I2C_CLK]
 
 set_false_path -from [get_clocks CLK8_PLL] -to [get_clocks BUS_CLK_PLL]
 set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK8_PLL]
+set_false_path -from [get_clocks CLK16_PLL] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK16_PLL]
+set_false_path -from [get_clocks CLK40_PLL] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK40_PLL]
+set_false_path -from [get_clocks CLK160_PLL] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK160_PLL]
+set_false_path -from [get_clocks CLK320_PLL] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK320_PLL]
 
 create_clock -period 8.000 -name rgmii_rxc -add [get_ports rgmii_rxc]
 set_false_path -from [get_clocks CLK125PLLTX] -to [get_clocks BUS_CLK_PLL]
 set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK125PLLTX]
 set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks rgmii_rxc]
 set_false_path -from [get_clocks rgmii_rxc] -to [get_clocks BUS_CLK_PLL]
+set_false_path -from [get_clocks rgmii_rxc] -to [get_clocks CLK125PLLTX]
+
+# SiTCP
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii_tx_ctl] 4
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4
+set_property ASYNC_REG true [get_cells { sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0 sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1 }]
+
+set_property BITSTREAM.CONFIG.UNUSEDPIN PULLUP [current_design]
 
 # ------ LED
 set_property PACKAGE_PIN M17 [get_ports {LED[0]}]
@@ -269,3 +281,5 @@ set_property PACKAGE_PIN G12 [get_ports LEMO_TX2]
 set_property IOSTANDARD LVCMOS33 [get_ports LEMO_TX2]
 set_property DRIVE 16 [get_ports LEMO_TX2]
 set_property SLEW FAST [get_ports LEMO_TX2]
+
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 1 [current_design]

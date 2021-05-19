@@ -19,14 +19,17 @@ set include_dirs [list $vivado_dir/../src $vivado_dir/../SiTCP $basil_dir/basil/
 file mkdir ../bit reports
 
 proc run_bit { part board xdc_file size} {
-    global include_dirs
     global vivado_dir
 
     create_project -force -part $part $board designs
 
     read_verilog $vivado_dir/../src/tjmonopix2_$board.v
+    read_verilog $vivado_dir/../src/tjmonopix2_core.v
     read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc
     read_xdc $xdc_file
+    read_xdc $vivado_dir/../SiTCP/SiTCP.xdc
+
+    global include_dirs
     generate_target -verbose -force all [get_ips]
 
     synth_design -top tjmonopix2_mio3 -include_dirs $include_dirs -verilog_define "SYNTHESIS=1"

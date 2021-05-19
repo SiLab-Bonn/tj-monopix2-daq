@@ -157,7 +157,7 @@ module tjmonopix2_mio3(
 
         .CLKOUT4_DIVIDE(8),     // Divide amount for CLKOUT0 (1-128)
         .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
-        .CLKOUT4_PHASE(-5.6)      // Phase offset for CLKOUT0 (-360.000-360.000).
+        .CLKOUT4_PHASE(-5.625)      // Phase offset for CLKOUT0 (-360.000-360.000).
         //-65 -> 0?; - 45 -> 39;  -25 -> 100; -5 -> 0;
      )
      PLLE2_BASE_inst_comm (
@@ -471,8 +471,8 @@ module tjmonopix2_mio3(
 
 // -------  MODULES for fast data readout(FIFO) - cdc_fifo is for timing reasons
     wire ARB_READY_OUT,ARB_WRITE_OUT;
-    wire [31:0]ARB_DATA_OUT;
-    wire FIFO_FULL,FIFO_NEAR_FULL;
+    wire [31:0] ARB_DATA_OUT;
+    wire FIFO_FULL, FIFO_NEAR_FULL;
     wire [31:0] cdc_data_out;
     wire full_32to8, cdc_fifo_empty;
     cdc_syncfifo #(.DSIZE(32), .ASIZE(3)) cdc_syncfifo_i
@@ -485,7 +485,7 @@ module tjmonopix2_mio3(
         .rinc(!full_32to8), .rclk(BUS_CLK), .rrst(BUS_RST)
     );
     assign ARB_READY_OUT = !FIFO_FULL;
-    
+
     wire FIFO_EMPTY, FIFO_FULL;
     fifo_32_to_8 #(.DEPTH(256*1024)) i_data_fifo (
         .RST(BUS_RST),
@@ -518,7 +518,6 @@ tjmonopix2_core i_tjmonopix2_core(
     .BUS_RST(BUS_RST),
     
     //clocks
-    .CLK8(CLK8),
     .CLK40(CLK40),
     .CLK16(CLK16),
     .CLK160(CLK160),
