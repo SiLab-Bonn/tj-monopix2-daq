@@ -160,7 +160,7 @@ class FifoReadout(object):
 
         if any(discard_count):
             try:
-                queue_size = self._data_queue.qsize()
+                queue_size = len(self._data_deque)
             except NotImplementedError as e:
                 self.log.warning(e)
                 queue_size = -1
@@ -208,7 +208,7 @@ class FifoReadout(object):
                     self._data_buffer.append((data, last_time, curr_time, status))
                 self._words_per_read.append(n_words)
                 # FIXME: busy FE prevents scan termination? To be checked
-                if n_words == 0 and self.stop_readout.is_set():
+                if self.stop_readout.is_set():
                     break
             finally:
                 time_wait = self.readout_interval - (time() - time_read)
@@ -244,9 +244,12 @@ class FifoReadout(object):
         self.log.debug('Starting %s', self.watchdog_thread.name)
         while True:
             try:
-                cnt = self.get_rx_fifo_discard_count()
-                if any(cnt):
-                    raise FifoError('RX FIFO discard error(s) detected ', cnt)
+                error_count = self.get_rx_8b10b_error_count()
+                if any(error_count):
+                    raise EightbTenbError('RX 8b10b error(s) detected ', error_count)
+                discard_count = self.get_rx_fifo_discard_count()
+                if any(discard_count):
+                    raise FifoError('RX FIFO discard error(s) detected ', discard_count)
             except Exception:
                 self.errback(sys.exc_info())
             if self.stop_readout.wait(self.readout_interval * 10):
@@ -291,6 +294,12 @@ class FifoReadout(object):
         else:
             [rx for _, rx in self.daq.rx_channels.items() if rx.reset()]
         sleep(0.1)  # Sleep here for a while
+
+    def get_rx_8b10b_error_count(self, rx_channel=None):
+        if rx_channel is None:
+            return [rx.get_decoder_error_counter() for _, rx in sorted(self.daq.rx_channels.items())]
+        else:
+            return self.daq.rx_channels[rx_channel].get_decoder_error_counter()
 
     def get_rx_fifo_discard_count(self, rx_channel=None):
         if rx_channel is None:
