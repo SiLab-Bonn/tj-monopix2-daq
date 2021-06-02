@@ -131,7 +131,7 @@ class Register(dict):
             value = self._assert_value(value)
             self['value'] = value
         self.log.debug(('Writing value 0b{0:0' + str(self['size']) + 'b} to register {1}').format(self['value'], self['name']))
-        
+
         if self['size'] <= 16:
             wr_value = 0x0000
             for reg in self.chip.registers.get_all_at_address(self['address']):
@@ -139,12 +139,7 @@ class Register(dict):
 
             self.chip._write_register(self['address'], wr_value)
         else:
-            wr_value = eval('0b' + '0' * self['size'])
-            indata = []
-            for i in range(0, self['size'], 16):
-                reg_value = (self['value'] & (0xFF << i)) >> i
-                indata += self.chip._write_register(self['address'] + self['size'] // 16 - 1, reg_value, write=False)
-            self.chip.write_command(indata)
+            raise RuntimeError("Register size is too big, set with _write_register()")
 
         if verify:
             if self.read() != value:
@@ -169,7 +164,6 @@ class Register(dict):
                 reg_value = (self['value'] & (0xFF << i)) >> i
                 indata += self.chip._write_register(self['address'] + self['size'] // 16 - 1, reg_value, write=False)
             return indata
-
 
     def get_read_command(self):
         return self.chip._read_register(self['address'], write=False)
@@ -1109,8 +1103,8 @@ class TJMonoPix2(Dut):
 
             Parameters:
             ----------
-                address : int or str
-                    Address or name of the register to be written to
+                address : int
+                    Address of the register to be written to
                 data : int
                     Value to write into register
 
@@ -1119,9 +1113,6 @@ class TJMonoPix2(Dut):
                 indata : binarray
                     Boolean representation of register write command.
         '''
-        if type(address) == str:
-            address = self.register_name_map[address]
-
         indata = [self.CMD_REGISTER, self.cmd_data_map[self.chip_id]] + encode_cmd(address, data)
 
         if write:

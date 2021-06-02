@@ -535,10 +535,10 @@ registers:
     reset: 1
     mode: 1
   - address: 17
-    offset: 7
+    offset: 9
     default: '0'
     name: COLUMN_GROUP
-    size: 8
+    size: 7
     description: Pixel portal column group (0 - 127)
     reset: 1
     mode: 1
