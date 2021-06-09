@@ -86,8 +86,8 @@ localparam TS_INJ_BASEADDR = 16'h0700;
 localparam TS_INJ_HIGHADDR = 16'h0800-1;
 //localparam TS_CMOS_HIT_OR_BASEADDR = 16'h0800;
 //localparam TS_CMOS_HIT_OR_HIGHADDR = 16'h0900-1;
-localparam TS_HIT_OR_BASEADDR = 16'h0900;
-localparam TS_HIT_OR_HIGHADDR = 16'h0A00-1;
+localparam TS_HOR_BASEADDR = 16'h0900;
+localparam TS_HOR_HIGHADDR = 16'h0A00-1;
 
 localparam PULSE_TRIG_BASEADDR = 16'h0B00;
 localparam PULSE_TRIG_HIGHADDR = 16'h0C00 - 1;
@@ -170,14 +170,9 @@ assign CMD_CLK = CLK160;
 assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK : 1'b0;
 assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK : 1'b0;
 wire HITOR;
-`ifdef COCOTB_SIM
-    assign HITOR = EN_CMOS_OUT ? CMOS_HITOR_OUT : HITOR_OUT;
-`else
-    assign HITOR = HITOR_OUT;  //TODO change code here to use CMOS HITOR
-    //assign HITOR = CMOS_HITOR_OUT;
-`endif
+assign HITOR = HITOR_OUT;  // LVDS HITOR
 
-// -----Reset Pulser ---- //
+// ----- Reset pulser ----- //
 wire RST_PULSE;
 reg [2:0] IO_FF;
 always @(posedge CLK40) begin
@@ -204,10 +199,8 @@ pulse_gen
 );
 assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
 
-//************************************************
-// external INJECTION
+// ----- Pulser for injection ----- //
 wire EXT_TRIGGER;
-`ifdef CODE_FOR_MIO3
 pulse_gen640 #( 
     .BASEADDR(PULSE_INJ_BASEADDR), 
     .HIGHADDR(PULSE_INJ_HIGHADDR),
@@ -226,35 +219,11 @@ pulse_gen640 #(
     .PULSE_CLK160(CLK160),
     .PULSE_CLK(CLK40),
     .EXT_START(EXT_TRIGGER),
-    .PULSE({LEMO_TX[2],CMOS_PULSE_EXT,PULSE_EXT}),
+    .PULSE({LEMO_TX[2], CMOS_PULSE_EXT, PULSE_EXT}),
     .DEBUG()
 );
-`else
-wire PULSE;
-pulse_gen
-#( 
-    .BASEADDR(PULSE_INJ_BASEADDR), 
-    .HIGHADDR(PULSE_INJ_HIGHADDR)
-) pulse_gen_inj
-(
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA[7:0]),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK40),
-    .EXT_START(EXT_TRIGGER), //TODO maybe not needed?
-    .PULSE(PULSE)
-);
-assign CMOS_PULSE_EXT = EN_CMOS_IN ? PULSE : 1'b0;
-assign PULSE_EXT = EN_LVDS_IN ? PULSE : 1'b0;
-
-assign LEMO_TX[2] = PULSE;
-`endif
-
-// ----- Pulser for trigger command----- //
+// ----- Pulser for trigger command ----- //
 wire EXT_START_VETO;
 pulse_gen #(
     .BASEADDR(PULSE_TRIG_BASEADDR),
@@ -338,10 +307,10 @@ wire RX_FIFO_READ, RX_FIFO_EMPTY;
 wire [31:0] RX_FIFO_DATA;
 wire DIRECT_RX_FIFO_READ, DIRECT_RX_FIFO_EMPTY;
 wire [31:0] DIRECT_RX_FIFO_DATA;
-wire TS_HIT_OR_FIFO_READ,TS_HIT_OR_FIFO_EMPTY;
-wire [31:0] TS_HIT_OR_FIFO_DATA;
-wire TS_HIT_OR_TRAILING_FIFO_READ,TS_HIT_OR_TRAILING_FIFO_EMPTY;
-wire [31:0] TS_HIT_OR_TRAILING_FIFO_DATA;
+wire TS_HOR_FIFO_READ,TS_HOR_FIFO_EMPTY;
+wire [31:0] TS_HOR_FIFO_DATA;
+wire TS_HOR_TRAILING_FIFO_READ,TS_HOR_TRAILING_FIFO_EMPTY;
+wire [31:0] TS_HOR_TRAILING_FIFO_DATA;
 
 wire  TLU_FIFO_READ, TLU_FIFO_EMPTY;
 wire [31:0] TLU_FIFO_DATA;
@@ -387,8 +356,7 @@ rrp_arbiter
     .DATA_OUT(ARB_DATA_OUT)
 );
 
-//************************************************
-// TLU
+// ----- TLU ----- //
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
 assign TRIGGER_ACKNOWLEDGE_FLAG = TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
@@ -429,7 +397,7 @@ tlu_controller #(
     .EXT_TIMESTAMP(),
     .TIMESTAMP(TIMESTAMP)
 );
-assign LEMO_TX[0] = TLU_CLK;
+// assign LEMO_TX[0] = TLU_CLK;
 assign LEMO_TX[1] = TLU_BUSY;
 
 // ----- TDC ----- //
@@ -569,7 +537,7 @@ assign  RX_CLKW = SEL_SER_CLK ? CLK32 : CLK16;
 tjmono2_rx #(
         .BASEADDR(RX_BASEADDR),
         .HIGHADDR(RX_HIGHADDR),
-        .DATA_IDENTIFIER(4'h4),
+        .DATA_IDENTIFIER(4'b0100),
         .ABUSWIDTH(16),
         .USE_FIFO_CLK(0)
 ) tjmono2_rx (

@@ -27,7 +27,7 @@ proc run_bit { part board xdc_file size} {
     read_verilog $vivado_dir/../src/tjmonopix2_core.v
     read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc
     read_xdc $xdc_file
-    read_xdc $vivado_dir/../SiTCP/SiTCP.xdc
+    read_xdc $vivado_dir/../src/SiTCP.xdc
 
     global include_dirs
     generate_target -verbose -force all [get_ips]
@@ -41,12 +41,10 @@ proc run_bit { part board xdc_file size} {
     report_timing -file "reports/report_timing.$board.log"
     write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_$board
 
-    write_cfgmem -format mcs -size 64 -interface SPIx1 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$board.bit" -force -file $vivado_dir/../bit/tjmonopix2_$board
+    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$board.bit" -force -file $vivado_dir/../bit/tjmonopix2_$board
     close_project
 }
 
-
-#########
 #
 # Create projects and bitfiles
 #
