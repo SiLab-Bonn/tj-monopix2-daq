@@ -18,11 +18,15 @@ from tjmonopix2.system import logger
 data_iterable = ("data", "timestamp_start", "timestamp_stop", "error")
 
 
-class EightbTenbError(Exception):
+class FifoError(Exception):
     pass
 
 
-class FifoError(Exception):
+class EightbTenbError(FifoError):
+    pass
+
+
+class FifoDiscardError(FifoError):
     pass
 
 
@@ -249,7 +253,7 @@ class FifoReadout(object):
                     raise EightbTenbError('RX 8b10b error(s) detected ', error_count)
                 discard_count = self.get_rx_fifo_discard_count()
                 if any(discard_count):
-                    raise FifoError('RX FIFO discard error(s) detected ', discard_count)
+                    raise FifoDiscardError('RX FIFO discard error(s) detected ', discard_count)
             except Exception:
                 self.errback(sys.exc_info())
             if self.stop_readout.wait(self.readout_interval * 10):
