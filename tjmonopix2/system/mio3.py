@@ -124,22 +124,19 @@ class MIO3(Dut):
     #     '''Disables automatic sending of sync commands'''
     #     self['cmd'].set_auto_sync(0)
 
-    def configure_tdc_modules(self, modules=(0, 1, 2, 3)):
-        self.log.info('Configuring TDC modules {0}...'.format(modules))
-        for module in modules:
-            self['tdc_hitor{0}'.format(module)].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
-            self['tdc_hitor{0}'.format(module)].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
-            self['tdc_hitor{0}'.format(module)].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
-            self['tdc_hitor{0}'.format(module)].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
-            self['tdc_hitor{0}'.format(module)].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
+    def configure_tdc_module(self):
+        self.log.info('Configuring TDC module')
+        self['tdc'].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
+        self['tdc'].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
+        self['tdc'].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
+        self['tdc'].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
+        self['tdc'].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
 
-    def enable_tdc_modules(self, modules=(0, 1, 2, 3)):
-        for module in modules:
-            self['tdc_hitor{0}'.format(module)].ENABLE = 1
+    def enable_tdc_module(self):
+        self['tdc'].ENABLE = 1
 
-    def disable_tdc_modules(self, modules=(0, 1, 2, 3)):
-        for module in modules:
-            self['tdc_hitor{0}'.format(module)].ENABLE = 0
+    def disable_tdc_module(self):
+        self['tdc'].ENABLE = 0
 
     def enable_tlu_module(self):
         self['tlu']['TRIGGER_ENABLE'] = True

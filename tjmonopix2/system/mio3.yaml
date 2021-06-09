@@ -58,22 +58,26 @@ hw_drivers:
   #   interface : intf
   #   base_addr : 0x10500
 
-  - name      : tlu     # 8,a,b,c,d,e,f
+  - name      : tlu
     type      : tlu
     interface : intf
     base_addr : 0x10600
-    size      : 8
     
+  - name      : tdc
+    type      : tdc_s3
+    interface : intf
+    base_addr : 0x12E00
+  
   # - name      : timestamp_rx0  #4
   #   type      : tjmonopix2.timestamp640
   #   interface : intf
   #   base_addr : 0x10C00
   #   size      : 8
 
-  - name      : timestamp_hitor  #6
-    type      : tjmonopix2.timestamp640
-    interface : intf
-    base_addr : 0x10900
+  # - name      : timestamp_hitor  #6
+  #   type      : tjmonopix2.timestamp640
+  #   interface : intf
+  #   base_addr : 0x10900
     
   - name      : timestamp_inj  #5
     type      : tjmonopix2.timestamp640
@@ -90,10 +94,10 @@ hw_drivers:
     interface : intf
     base_addr : 0x10C00
 
-  - name      : timestamp_rx0  #4
-    type      : tjmonopix2.timestamp640
-    interface : intf
-    base_addr : 0x10D00
+  # - name      : timestamp_rx0  #4
+  #   type      : tjmonopix2.timestamp640
+  #   interface : intf
+  #   base_addr : 0x10D00
 
   - name      : cmd
     type      : tjmonopix2.cmd

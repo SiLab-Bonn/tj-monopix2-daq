@@ -44,6 +44,9 @@
 `include "tlu/tlu_controller_core.v"
 `include "tlu/tlu_controller_fsm.v"
 
+`include "tdc_s3/tdc_s3.v"
+`include "tdc_s3/tdc_s3_core.v"
+
 `include "timestamp/timestamp.v"
 `include "timestamp/timestamp_core.v"
 

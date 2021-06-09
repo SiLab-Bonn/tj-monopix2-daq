@@ -79,6 +79,9 @@ localparam DIRECT_RX_HIGHADDR = 16'h0600-1;
 localparam TLU_BASEADDR = 16'h0600;
 localparam TLU_HIGHADDR = 16'h0700-1;
 
+localparam TDC_BASEADDR = 16'h2E00;
+localparam TDC_HIGHADDR = 16'h2F00-1;
+
 localparam TS_INJ_BASEADDR = 16'h0700;
 localparam TS_INJ_HIGHADDR = 16'h0800-1;
 //localparam TS_CMOS_HIT_OR_BASEADDR = 16'h0800;
@@ -347,27 +350,38 @@ wire [31:0] TS_RX0_FIFO_DATA;
 wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
 wire [31:0] TS_INJ_FIFO_DATA;
 
+// TDC
+wire TDC_FIFO_EMPTY;
+wire [31:0] TDC_FIFO_DATA;
+wire TDC_FIFO_READ;
+
 wire TLU_FIFO_PREEMPT_REQ;
 
 rrp_arbiter 
 #( 
-    .WIDTH(7)
+    .WIDTH(4)
 ) rrp_arbiter (
-
     .RST(BUS_RST),
     .CLK(BUS_CLK),
 
-    .WRITE_REQ({~TS_RX0_FIFO_EMPTY, ~TS_INJ_FIFO_EMPTY,
-        ~TS_HIT_OR_TRAILING_FIFO_EMPTY,~TS_HIT_OR_FIFO_EMPTY, 
-        ~DIRECT_RX_FIFO_EMPTY, ~RX_FIFO_EMPTY, ~TLU_FIFO_EMPTY}),
-    .HOLD_REQ({6'b0, TLU_FIFO_PREEMPT_REQ}),
-    .DATA_IN({TS_RX0_FIFO_DATA,TS_INJ_FIFO_DATA,
-        TS_HIT_OR_TRAILING_FIFO_DATA, TS_HIT_OR_FIFO_DATA,
-        DIRECT_RX_FIFO_DATA, RX_FIFO_DATA,TLU_FIFO_DATA}),
-    .READ_GRANT({TS_RX0_FIFO_READ,TS_INJ_FIFO_READ,
-        TS_HIT_OR_TRAILING_FIFO_READ, TS_HIT_OR_FIFO_READ, 
-        DIRECT_RX_FIFO_READ, RX_FIFO_READ,TLU_FIFO_READ}),
-
+    .WRITE_REQ({
+        ~TS_INJ_FIFO_EMPTY, 
+        ~RX_FIFO_EMPTY,
+        ~TLU_FIFO_EMPTY,
+        ~TDC_FIFO_EMPTY
+    }),
+    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .DATA_IN({
+        TS_INJ_FIFO_DATA,
+        RX_FIFO_DATA,
+        TLU_FIFO_DATA,
+        TDC_FIFO_DATA}),
+    .READ_GRANT({
+        TS_INJ_FIFO_READ, 
+        RX_FIFO_READ,
+        TLU_FIFO_READ,
+        TDC_FIFO_READ
+    }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
     .DATA_OUT(ARB_DATA_OUT)
@@ -418,59 +432,107 @@ tlu_controller #(
 assign LEMO_TX[0] = TLU_CLK;
 assign LEMO_TX[1] = TLU_BUSY;
 
-timestamp640 #(
-    .BASEADDR(TS_HIT_OR_BASEADDR),
-    .HIGHADDR(TS_HIT_OR_HIGHADDR),
-    .IDENTIFIER(4'b0110)
-)i_timestamp640_hit_or(
+// ----- TDC ----- //
+localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
+wire TDC_FIFO_READ;
+wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
+// wire LEMO_RX0_FROM_TDC;
+// wire HITOR_FROM_TDC;
+
+tdc_s3 #(
+    .BASEADDR(TDC_BASEADDR),
+    .HIGHADDR(TDC_HIGHADDR),
+    .ABUSWIDTH(32),
+    .CLKDV(CLKDV),
+    .DATA_IDENTIFIER(4'b0010),
+    .FAST_TDC(1),
+    .FAST_TRIGGER(1),
+    .BROADCAST(0)   // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+) i_tdc (
+    .CLK320(CLK320),    // 320 MHz
+    .CLK160(CLK160),    // 160 MHz
+    .DV_CLK(CLK40),     // 40 MHz
+    .TDC_IN(HITOR),     // HITOR
+    .TDC_OUT(1'b0),
+    .TRIG_IN(LEMO_RX[0]),
+    .TRIG_OUT(1'b0),
+
+    // input/output trigger signals for broadcasting mode
+    .FAST_TRIGGER_IN(16'b0),
+    .FAST_TRIGGER_OUT(16'b0),  // collect 640 MHz sampled trigger signal to pass it to other modules
+
+    .FIFO_READ(TDC_FIFO_READ),
+    .FIFO_EMPTY(TDC_FIFO_EMPTY),
+    .FIFO_DATA(TDC_FIFO_DATA),
+
     .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
     .BUS_DATA(BUS_DATA),
-    .BUS_RST(BUS_RST),
-    .BUS_WR(BUS_WR),
     .BUS_RD(BUS_RD),
-    
-    .CLK40(CLK40),
-    .CLK160(CLK160),
-    .CLK320(CLK320),
-    .DI(HITOR),
-    .EXT_ENABLE(),
-    .EXT_TIMESTAMP(TIMESTAMP),
-    .TIMESTAMP_OUT(),
-    .FIFO_READ(TS_HIT_OR_FIFO_READ),
-    .FIFO_EMPTY(TS_HIT_OR_FIFO_EMPTY),
-    .FIFO_DATA(TS_HIT_OR_FIFO_DATA),
-    .FIFO_READ_TRAILING(TS_HIT_OR_TRAILING_FIFO_READ),
-    .FIFO_EMPTY_TRAILING(TS_HIT_OR_TRAILING_FIFO_EMPTY),
-    .FIFO_DATA_TRAILING(TS_HIT_OR_TRAILING_FIFO_DATA)
+    .BUS_WR(BUS_WR),
+
+    .ARM_TDC(1'b0),
+    .EXT_EN(1'b0),
+
+    .TIMESTAMP(TIMESTAMP[15:0])
 );
 
-timestamp640 #(
-    .BASEADDR(TS_RX0_BASEADDR),
-    .HIGHADDR(TS_RX0_HIGHADDR),
-    .IDENTIFIER(4'b0110)
-)i_timestamp640_rx0(
-    .BUS_CLK(BUS_CLK),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RST(BUS_RST),
-    .BUS_WR(BUS_WR),
-    .BUS_RD(BUS_RD),
+
+// timestamp640 #(
+//     .BASEADDR(TS_HOR_BASEADDR),
+//     .HIGHADDR(TS_HOR_HIGHADDR),
+//     .IDENTIFIER(4'b0110)
+// )i_timestamp640_hit_or(
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RST(BUS_RST),
+//     .BUS_WR(BUS_WR),
+//     .BUS_RD(BUS_RD),
     
-    .CLK40(CLK40),
-    .CLK160(CLK160),
-    .CLK320(CLK320),
-    .DI(LEMO_RX[0]),
-    .EXT_ENABLE(),
-    .EXT_TIMESTAMP(TIMESTAMP),
-    .TIMESTAMP_OUT(),
-    .FIFO_READ(TS_RX0_FIFO_READ),
-    .FIFO_EMPTY(TS_RX0_FIFO_EMPTY),
-    .FIFO_DATA(TS_RX0_FIFO_DATA),
-    .FIFO_READ_TRAILING(),
-    .FIFO_EMPTY_TRAILING(),
-    .FIFO_DATA_TRAILING()
-);
+//     .CLK40(CLK40),
+//     .CLK160(CLK160),
+//     .CLK320(CLK320),
+//     .DI(1'b0),
+//     .EXT_ENABLE(),
+//     .EXT_TIMESTAMP(TIMESTAMP),
+//     .TIMESTAMP_OUT(),
+//     .FIFO_READ(TS_HOR_FIFO_READ),
+//     .FIFO_EMPTY(TS_HOR_FIFO_EMPTY),
+//     .FIFO_DATA(TS_HOR_FIFO_DATA),
+//     .FIFO_READ_TRAILING(TS_HOR_TRAILING_FIFO_READ),
+//     .FIFO_EMPTY_TRAILING(TS_HOR_TRAILING_FIFO_EMPTY),
+//     .FIFO_DATA_TRAILING(TS_HOR_TRAILING_FIFO_DATA)
+// );
+
+// timestamp640 #(
+//     .BASEADDR(TS_RX0_BASEADDR),
+//     .HIGHADDR(TS_RX0_HIGHADDR),
+//     .IDENTIFIER(4'b0110)
+// )i_timestamp640_rx0(
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RST(BUS_RST),
+//     .BUS_WR(BUS_WR),
+//     .BUS_RD(BUS_RD),
+    
+//     .CLK40(CLK40),
+//     .CLK160(CLK160),
+//     .CLK320(CLK320),
+//     .DI(1'b0),
+//     .EXT_ENABLE(),
+//     .EXT_TIMESTAMP(TIMESTAMP),
+//     .TIMESTAMP_OUT(),
+//     .FIFO_READ(TS_RX0_FIFO_READ),
+//     .FIFO_EMPTY(TS_RX0_FIFO_EMPTY),
+//     .FIFO_DATA(TS_RX0_FIFO_DATA),
+//     .FIFO_READ_TRAILING(),
+//     .FIFO_EMPTY_TRAILING(),
+//     .FIFO_DATA_TRAILING()
+// );
+
 // LEMO_RX0 or flatcable 5 is loop back of injection pulse
 timestamp640 #(
     .BASEADDR(TS_INJ_BASEADDR),
@@ -535,35 +597,35 @@ tjmono2_rx #(
         .BUS_WR(BUS_WR)
         );
 
-//************************************************
-// direct readout
-wire DIRECT_DATA,RX_CLK;
-assign DIRECT_DATA = SEL_DIRECT ? CMOS_DATA_OUT : DATA_OUT;
-assign RX_CLK = SEL_SER_CLK ? CLK32 : CLK16;
-tjmono_direct_rx #(
-    .BASEADDR(DIRECT_RX_BASEADDR),
-    .HIGHADDR(DIRECT_RX_HIGHADDR),
-    .ABUSWIDTH(16),
-    .IDENTIFIER(2'b00)
-)tjmono_direct_rx(
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
+// //************************************************
+// // direct readout
+// wire DIRECT_DATA,RX_CLK;
+// assign DIRECT_DATA = SEL_DIRECT ? CMOS_DATA_OUT : DATA_OUT;
+// assign RX_CLK = SEL_SER_CLK ? CLK32 : CLK16;
+// tjmono_direct_rx #(
+//     .BASEADDR(DIRECT_RX_BASEADDR),
+//     .HIGHADDR(DIRECT_RX_HIGHADDR),
+//     .ABUSWIDTH(16),
+//     .IDENTIFIER(2'b00)
+// )tjmono_direct_rx(
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_RST(BUS_RST),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RD(BUS_RD),
+//     .BUS_WR(BUS_WR),
 
-    .TIMESTAMP(TIMESTAMP),
+//     .TIMESTAMP(TIMESTAMP),
 
-    .RX_TOKEN(TOKEN_OUT), 
-    .RX_DATA(DIRECT_DATA), 
-    .RX_CLK(RX_CLK),
-    .RX_READ(READ_EXT), 
-    .RX_FREEZE(FREEZE_EXT),
+//     .RX_TOKEN(TOKEN_OUT), 
+//     .RX_DATA(DIRECT_DATA), 
+//     .RX_CLK(RX_CLK),
+//     .RX_READ(READ_EXT), 
+//     .RX_FREEZE(FREEZE_EXT),
 
-    .FIFO_READ(DIRECT_RX_FIFO_READ),
-    .FIFO_EMPTY(DIRECT_RX_FIFO_EMPTY),
-    .FIFO_DATA(DIRECT_RX_FIFO_DATA)
-); 
+//     .FIFO_READ(DIRECT_RX_FIFO_READ),
+//     .FIFO_EMPTY(DIRECT_RX_FIFO_EMPTY),
+//     .FIFO_DATA(DIRECT_RX_FIFO_DATA)
+// ); 
 
 endmodule
