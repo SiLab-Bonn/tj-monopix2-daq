@@ -109,11 +109,14 @@ module tjmonopix2_mio3(
     input wire LVDS_CHSYNC_LOCKED_OUT, //LVDS DIN1(DIN10)
     //inout wire [1:0] CHIP_ID,         //DOUT1,3(NC in PCB)
 
+    // 2-row PMOD header for general purpose IOs
+    inout wire [7:0] PMOD,
+
     // I2C
     inout wire SDA,
     inout wire SCL,
 
-// declarations below are for MIO3 only    
+    // Ethernet
     input wire RESET_N,    
     output wire [3:0] rgmii_txd,
     output wire rgmii_tx_ctl,
@@ -369,70 +372,73 @@ wire TCP_TX_FULL;
 wire TCP_TX_WR;
 wire [7:0] TCP_TX_DATA;
 
-WRAP_SiTCP_GMII_XC7K_32K sitcp(
-    .CLK(BUS_CLK)                    ,    // in    : System Clock >129MHz
-    .RST(RST)                    ,    // in    : System reset
-    // Configuration parameters
-    .FORCE_DEFAULTn(1'b0)        ,    // in    : Load default parameters
-    .EXT_IP_ADDR(32'hc0a80a17)            ,    // in    : IP address[31:0] //192.168.10.23
-    .EXT_TCP_PORT(16'd24)        ,    // in    : TCP port #[15:0]
-    .EXT_RBCP_PORT(16'd4660)        ,    // in    : RBCP port #[15:0]
-    .PHY_ADDR(5'd3)            ,    // in    : PHY-device MIF address[4:0]
-    // EEPROM
-    .EEPROM_CS(EEPROM_CS)            ,    // out    : Chip select
-    .EEPROM_SK(EEPROM_SK)            ,    // out    : Serial data clock
-    .EEPROM_DI(EEPROM_DI)            ,    // out    : Serial write data
-    .EEPROM_DO(1'b0)            ,    // in    : Serial read data
-    // user data, intialial values are stored in the EEPROM, 0xFFFF_FC3C-3F
-    .USR_REG_X3C()            ,    // out    : Stored at 0xFFFF_FF3C
-    .USR_REG_X3D()            ,    // out    : Stored at 0xFFFF_FF3D
-    .USR_REG_X3E()            ,    // out    : Stored at 0xFFFF_FF3E
-    .USR_REG_X3F()            ,    // out    : Stored at 0xFFFF_FF3F
-    // MII interface
-    .GMII_RSTn(phy_rst_n)            ,    // out    : PHY reset
-    .GMII_1000M(1'b1)            ,    // in    : GMII mode (0:MII, 1:GMII)
-    // TX 
-    .GMII_TX_CLK(CLK125TX)            ,    // in    : Tx clock
-    .GMII_TX_EN(gmii_tx_en)            ,    // out    : Tx enable
-    .GMII_TXD(gmii_txd)            ,    // out    : Tx data[7:0]
-    .GMII_TX_ER(gmii_tx_er)            ,    // out    : TX error
-    // RX
-    .GMII_RX_CLK(CLK125RX)           ,    // in    : Rx clock
-    .GMII_RX_DV(gmii_rx_dv)            ,    // in    : Rx data valid
-    .GMII_RXD(gmii_rxd)            ,    // in    : Rx data[7:0]
-    .GMII_RX_ER(gmii_rx_er)            ,    // in    : Rx error
-    .GMII_CRS(gmii_crs)            ,    // in    : Carrier sense
-    .GMII_COL(gmii_col)            ,    // in    : Collision detected
-    // Management IF
-    .GMII_MDC(mdio_phy_mdc)            ,    // out    : Clock for MDIO
-    .GMII_MDIO_IN(mdio_gem_i)        ,    // in    : Data
-    .GMII_MDIO_OUT(mdio_gem_o)        ,    // out    : Data
-    .GMII_MDIO_OE(mdio_gem_t)        ,    // out    : MDIO output enable
-    // User I/F
-    .SiTCP_RST(SiTCP_RST)            ,    // out    : Reset for SiTCP and related circuits
-    // TCP connection control
-    .TCP_OPEN_REQ(1'b0)        ,    // in    : Reserved input, shoud be 0
-    .TCP_OPEN_ACK()        ,    // out    : Acknowledge for open (=Socket busy)
-    .TCP_ERROR()            ,    // out    : TCP error, its active period is equal to MSL
-    .TCP_CLOSE_REQ(TCP_CLOSE_REQ)        ,    // out    : Connection close request
-    .TCP_CLOSE_ACK(TCP_CLOSE_REQ)        ,    // in    : Acknowledge for closing
-    // FIFO I/F
-    .TCP_RX_WC(1'b1)            ,    // in    : Rx FIFO write count[15:0] (Unused bits should be set 1)
-    .TCP_RX_WR(TCP_RX_WR)            ,    // out    : Write enable
-    .TCP_RX_DATA(TCP_RX_DATA)            ,    // out    : Write data[7:0]
-    .TCP_TX_FULL(TCP_TX_FULL)            ,    // out    : Almost full flag
-    .TCP_TX_WR(TCP_TX_WR)            ,    // in    : Write enable
-    .TCP_TX_DATA(TCP_TX_DATA)            ,    // in    : Write data[7:0]
-    // RBCP
-    .RBCP_ACT(RBCP_ACT)            ,    // out    : RBCP active
-    .RBCP_ADDR(RBCP_ADDR)            ,    // out    : Address[31:0]
-    .RBCP_WD(RBCP_WD)                ,    // out    : Data[7:0]
-    .RBCP_WE(RBCP_WE)                ,    // out    : Write enable
-    .RBCP_RE(RBCP_RE)                ,    // out    : Read enable
-    .RBCP_ACK(RBCP_ACK)            ,    // in    : Access acknowledge
-    .RBCP_RD(RBCP_RD)                    // in    : Read data[7:0]
-);
+wire [3:0] IP_ADDR_SEL;
+assign PMOD[7:4] = 4'hf;
+assign IP_ADDR_SEL = {PMOD[0], PMOD[1], PMOD[2], PMOD[3]};
 
+WRAP_SiTCP_GMII_XC7K_32K sitcp(
+    .CLK(BUS_CLK)                ,    // in     : System Clock >129MHz
+    .RST(RST)                    ,    // in     : System reset
+    // Configuration parameters
+    .FORCE_DEFAULTn(1'b0)        ,    // in     : Load default parameters
+    .EXT_IP_ADDR({8'd192, 8'd168, |{IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23})  ,    //IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
+    .EXT_TCP_PORT(16'd24)        ,    // in     : TCP port #[15:0]
+    .EXT_RBCP_PORT(16'd4660)     ,    // in     : RBCP port #[15:0]
+    .PHY_ADDR(5'd3)              ,    // in     : PHY-device MIF address[4:0]
+    // EEPROM
+    .EEPROM_CS(EEPROM_CS)        ,    // out    : Chip select
+    .EEPROM_SK(EEPROM_SK)        ,    // out    : Serial data clock
+    .EEPROM_DI(EEPROM_DI)        ,    // out    : Serial write data
+    .EEPROM_DO(1'b0)             ,    // in     : Serial read data
+    // user data, intialial values are stored in the EEPROM, 0xFFFF_FC3C-3F
+    .USR_REG_X3C()               ,    // out    : Stored at 0xFFFF_FF3C
+    .USR_REG_X3D()               ,    // out    : Stored at 0xFFFF_FF3D
+    .USR_REG_X3E()               ,    // out    : Stored at 0xFFFF_FF3E
+    .USR_REG_X3F()               ,    // out    : Stored at 0xFFFF_FF3F
+    // MII interface
+    .GMII_RSTn(phy_rst_n)        ,    // out    : PHY reset
+    .GMII_1000M(1'b1)            ,    // in     : GMII mode (0:MII, 1:GMII)
+    // TX 
+    .GMII_TX_CLK(CLK125TX)       ,    // in     : Tx clock
+    .GMII_TX_EN(gmii_tx_en)      ,    // out    : Tx enable
+    .GMII_TXD(gmii_txd)          ,    // out    : Tx data[7:0]
+    .GMII_TX_ER(gmii_tx_er)      ,    // out    : TX error
+    // RX
+    .GMII_RX_CLK(CLK125RX)       ,    // in     : Rx clock
+    .GMII_RX_DV(gmii_rx_dv)      ,    // in     : Rx data valid
+    .GMII_RXD(gmii_rxd)          ,    // in     : Rx data[7:0]
+    .GMII_RX_ER(gmii_rx_er)      ,    // in     : Rx error
+    .GMII_CRS(gmii_crs)          ,    // in     : Carrier sense
+    .GMII_COL(gmii_col)          ,    // in     : Collision detected
+    // Management IF
+    .GMII_MDC(mdio_phy_mdc)      ,    // out    : Clock for MDIO
+    .GMII_MDIO_IN(mdio_gem_i)    ,    // in     : Data
+    .GMII_MDIO_OUT(mdio_gem_o)   ,    // out    : Data
+    .GMII_MDIO_OE(mdio_gem_t)    ,    // out    : MDIO output enable
+    // User I/F
+    .SiTCP_RST(SiTCP_RST)        ,    // out    : Reset for SiTCP and related circuits
+    // TCP connection control
+    .TCP_OPEN_REQ(1'b0)          ,    // in     : Reserved input, shoud be 0
+    .TCP_OPEN_ACK()              ,    // out    : Acknowledge for open (=Socket busy)
+    .TCP_ERROR()                 ,    // out    : TCP error, its active period is equal to MSL
+    .TCP_CLOSE_REQ(TCP_CLOSE_REQ),    // out    : Connection close request
+    .TCP_CLOSE_ACK(TCP_CLOSE_REQ),    // in     : Acknowledge for closing
+    // FIFO I/F
+    .TCP_RX_WC(1'b1)             ,    // in     : Rx FIFO write count[15:0] (Unused bits should be set 1)
+    .TCP_RX_WR(TCP_RX_WR)        ,    // out    : Write enable
+    .TCP_RX_DATA(TCP_RX_DATA)    ,    // out    : Write data[7:0]
+    .TCP_TX_FULL(TCP_TX_FULL)    ,    // out    : Almost full flag
+    .TCP_TX_WR(TCP_TX_WR)        ,    // in     : Write enable
+    .TCP_TX_DATA(TCP_TX_DATA)    ,    // in     : Write data[7:0]
+    // RBCP
+    .RBCP_ACT(RBCP_ACT)          ,    // out    : RBCP active
+    .RBCP_ADDR(RBCP_ADDR)        ,    // out    : Address[31:0]
+    .RBCP_WD(RBCP_WD)            ,    // out    : Data[7:0]
+    .RBCP_WE(RBCP_WE)            ,    // out    : Write enable
+    .RBCP_RE(RBCP_RE)            ,    // out    : Read enable
+    .RBCP_ACK(RBCP_ACK)          ,    // in     : Access acknowledge
+    .RBCP_RD(RBCP_RD)                 // in     : Read data[7:0]
+);
 
 // -------  BUS SIGNALING  ------- //
 

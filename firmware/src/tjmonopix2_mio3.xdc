@@ -41,6 +41,29 @@ set_property PACKAGE_PIN P23 [get_ports {LED[7]}]
 set_property IOSTANDARD LVCMOS25 [get_ports LED*]
 set_property SLEW SLOW [get_ports LED*]
 
+# PMOD
+#  ____________
+# |1 2 3 4  G +|  First PMOD channel (4 signal lines, ground and vcc)
+# |7_8_9_10_G_+|  Second PMOD channel ("")
+#
+# PMOD connector Pin10-->PMOD0; Pin9-->PMOD1; Pin8-->PMOD2; Pin7-->PMOD3;
+set_property PACKAGE_PIN AC23 [get_ports {PMOD[0]}]
+set_property PACKAGE_PIN AC24 [get_ports {PMOD[1]}]
+set_property PACKAGE_PIN W25 [get_ports {PMOD[2]}]
+set_property PACKAGE_PIN W26 [get_ports {PMOD[3]}]
+# PMOD connector Pin4-->PMOD4; Pin3-->PMOD5; Pin2-->PMOD6; Pin1-->PMOD7;
+set_property PACKAGE_PIN AA25 [get_ports {PMOD[4]}]
+set_property PACKAGE_PIN AB25 [get_ports {PMOD[5]}]
+set_property PACKAGE_PIN V24 [get_ports {PMOD[6]}]
+set_property PACKAGE_PIN V26 [get_ports {PMOD[7]}]
+set_property IOSTANDARD LVCMOS25 [get_ports PMOD*]
+# pull down the PMOD pins which are used as inputs
+set_property PULLDOWN true [get_ports {PMOD[0]}]
+set_property PULLDOWN true [get_ports {PMOD[1]}]
+set_property PULLDOWN true [get_ports {PMOD[2]}]
+set_property PULLDOWN true [get_ports {PMOD[3]}]
+
+
 
 # ------ FCLK (100 MHz)
 set_property PACKAGE_PIN AA3 [get_ports FCLK_IN]
