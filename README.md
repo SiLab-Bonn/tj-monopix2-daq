@@ -26,11 +26,11 @@ The default IP address is 192.168.10.**23**, but you can set the subnet in a ran
 
       | PMOD_7+8 | PMOD_5+6 | PMOD_3+4 | PMOD_1+2 | IP_ADDRESS    |
       | -------- | -------- | -------- | -------- | ------------- |
-      | 0        | 0        | 0        | 0        | 192.168.10.12 |
-      | 0        | 0        | 0        | 1        | 192.168.11.12 |
+      | 0        | 0        | 0        | 0        | 192.168.10.23 |
+      | 0        | 0        | 0        | 1        | 192.168.11.23 |
       | ...      | ...      | ...      | ...      | ...           |
-      | 1        | 1        | 1        | 0        | 192.168.24.12 |
-      | 1        | 1        | 1        | 1        | 192.168.25.12 |
+      | 1        | 1        | 1        | 0        | 192.168.24.23 |
+      | 1        | 1        | 1        | 1        | 192.168.25.23 |
 
 4. Double check, that you did not place the jumper in the wrong place!
 5. Turn the readout system on and verify the setting by a ping to the new IP address.
