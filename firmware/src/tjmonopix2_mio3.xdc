@@ -1,27 +1,25 @@
-# constrains based on MIO ucf file
-# ------ Constraints
-create_generated_clock -name i_clock_divisor_i2c/I2C_CLK -source [get_pins {PLLE2_BASE_inst_clk/CLKOUT5}] -divide_by 1500 [get_pins {i_clock_divisor_i2c/CLOCK_reg/Q}]
-set_false_path -from [get_clocks i_clock_divisor_i2c/I2C_CLK] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks i_clock_divisor_i2c/I2C_CLK]
+# ------------------------------------------------------------
+#  Copyright (c) SILAB , Physics Institute of Bonn University
+# ------------------------------------------------------------
+#
+#   Constraints for the MIO3 PCB with the Mercury KX1(160T-1) FPGA board
+#
 
-set_false_path -from [get_clocks CLK8_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK8_PLL]
-set_false_path -from [get_clocks CLK16_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK16_PLL]
-set_false_path -from [get_clocks CLK40_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK40_PLL]
-set_false_path -from [get_clocks CLK160_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK160_PLL]
-set_false_path -from [get_clocks CLK320_PLL] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK320_PLL]
-
+# Clock inputs
+create_clock -period 10.000 -name CLK_SYS -add [get_ports FCLK_IN]
 create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
-set_false_path -from [get_clocks CLK125PLLTX] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK125PLLTX]
-set_false_path -from [get_clocks BUS_CLK_PLL] -to [get_clocks CLK_RGMII_RX]
-set_false_path -from [get_clocks CLK_RGMII_RX] -to [get_clocks BUS_CLK_PLL]
-set_false_path -from [get_clocks CLK_RGMII_RX] -to [get_clocks CLK125PLLTX]
+create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
 
+# Derived clocks
+create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_clk/CLKOUT0}] -divide_by 1600 [get_pins {i_clock_divisor_i2c/CLOCK_reg/Q}]
+
+# Exclude asynchronous clock domains from timing (handled by CDCs)
+set_clock_groups -asynchronous \
+-group {BUS_CLK_PLL I2C_CLK} \
+-group {CLK125PLLTX CLK125PLLTX90} \
+-group {CLK320_PLL CLK160_PLL CLK40_PLL CLK16_PLL CLK8_PLL} \
+-group [get_clocks -include_generated_clocks CLK_MGT_REF] \
+-group {CLK_RGMII_RX}
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4
@@ -64,6 +62,17 @@ set_property PULLDOWN true [get_ports {PMOD[2]}]
 set_property PULLDOWN true [get_ports {PMOD[3]}]
 
 
+# ------ Si570 / SMA input CLK
+set_property PACKAGE_PIN D6 [get_ports MGT_REFCLK0_P]
+set_property PACKAGE_PIN D5 [get_ports MGT_REFCLK0_N]
+set_property PACKAGE_PIN F6 [get_ports MGT_REFCLK1_P]
+set_property PACKAGE_PIN F5 [get_ports MGT_REFCLK1_N]
+# set_property IOSTANDARD LVDS [get_ports MGT_REFCLK*]
+
+# ------ CLK Mux
+set_property PACKAGE_PIN K25 [get_ports MGT_REF_SEL]
+set_property IOSTANDARD LVCMOS25 [get_ports MGT_REF_SEL]
+set_property PULLUP true [get_ports MGT_REF_SEL]
 
 # ------ FCLK (100 MHz)
 set_property PACKAGE_PIN AA3 [get_ports FCLK_IN]
@@ -76,10 +85,10 @@ set_property IOSTANDARD LVCMOS25 [get_ports RESET_N]
 set_property PULLUP true [get_ports RESET_N]
 
 # ------ I2C control signals
-set_property PACKAGE_PIN P24 [get_ports SDA]
-set_property IOSTANDARD LVCMOS25 [get_ports SDA]
-set_property PACKAGE_PIN N24 [get_ports SCL]
-set_property IOSTANDARD LVCMOS25 [get_ports SCL]
+set_property PACKAGE_PIN P24 [get_ports I2C_SDA]
+set_property IOSTANDARD LVCMOS25 [get_ports I2C_SDA]
+set_property PACKAGE_PIN N24 [get_ports I2C_SCL]
+set_property IOSTANDARD LVCMOS25 [get_ports I2C_SCL]
 
 # ------ Trigger IOs - partial (MIO3 has fewer lemo than MIO)
 set_property PACKAGE_PIN AB21 [get_ports {LEMO_TX[0]}]

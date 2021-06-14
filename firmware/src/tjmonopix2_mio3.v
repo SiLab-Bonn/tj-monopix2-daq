@@ -70,7 +70,7 @@
 
 module tjmonopix2_mio3(
     input wire MGT_REFCLK0_P, MGT_REFCLK0_N,    // programmable clock from Si570 oscillator or SMA
-    // input wire MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
+    input wire MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
     input wire FCLK_IN, // 100MHz
     output wire MGT_REF_SEL,                    // switch between Si570 and external reference clock
 
@@ -113,8 +113,8 @@ module tjmonopix2_mio3(
     inout wire [7:0] PMOD,
 
     // I2C
-    inout wire SDA,
-    inout wire SCL,
+    inout wire I2C_SDA,
+    inout wire I2C_SCL,
 
     // Ethernet
     input wire RESET_N,    
@@ -500,8 +500,8 @@ i2c
     .BUS_WR(BUS_WR),
 
     .I2C_CLK(I2C_CLK),
-    .I2C_SDA(SDA),
-    .I2C_SCL(SCL)
+    .I2C_SDA(I2C_SDA),
+    .I2C_SCL(I2C_SCL)
 );
 
 // -------  MODULES for fast data readout(FIFO) - cdc_fifo is for timing reasons
