@@ -5,19 +5,33 @@
 #   Constraints for the MIO3 PCB with the Mercury KX1(160T-1) FPGA board
 #
 
+# Clock domains
+# CLK_SYS: 100 MHz, from xtal oscillator
+# -> PLL2: CLK8_PLL
+#          CLK16_PLL: RX
+#          CLK40_PLL: PULSER, TDC, TLU
+#          CLK160_PLL: TLU, TDC
+#          CLK320_PLL: TLU, TDC
+# -> PLL1: BUS_CLK_PLL: 142.86 MHz, main system clock (7 ns)
+#          CLK125PLLTX, Ethernet
+#          CLK125PLLTX90: Ethernet
+# CLK_MGT_REF: 160 MHz, from Si570 programmable oscilaltor
+# ->       CMDCLK: 160 MHz, command encoder
+# CLK_RGMII_RX: 125 MHz, from Ethernet chip
+
 # Clock inputs
 create_clock -period 10.000 -name CLK_SYS -add [get_ports FCLK_IN]
 create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
 create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
-create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_clk/CLKOUT0}] -divide_by 1600 [get_pins {i_clock_divisor_i2c/CLOCK_reg/Q}]
+create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_comm/CLKOUT0}] -divide_by 1600 [get_pins {i_clock_divisor_i2c/CLOCK_reg/Q}]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
 set_clock_groups -asynchronous \
 -group {BUS_CLK_PLL I2C_CLK} \
 -group {CLK125PLLTX CLK125PLLTX90} \
--group {CLK320_PLL CLK160_PLL CLK40_PLL CLK16_PLL CLK8_PLL} \
+-group {CLK320_PLL CLK160_PLL CLK40_PLL CLK16_PLL} \
 -group [get_clocks -include_generated_clocks CLK_MGT_REF] \
 -group {CLK_RGMII_RX}
 
@@ -27,7 +41,7 @@ set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4
 set_property ASYNC_REG true [get_cells { sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0 sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1 }]
 
-# ------ LED
+# LED
 set_property PACKAGE_PIN M17 [get_ports {LED[0]}]
 set_property PACKAGE_PIN L18 [get_ports {LED[1]}]
 set_property PACKAGE_PIN L17 [get_ports {LED[2]}]
@@ -61,13 +75,11 @@ set_property PULLDOWN true [get_ports {PMOD[1]}]
 set_property PULLDOWN true [get_ports {PMOD[2]}]
 set_property PULLDOWN true [get_ports {PMOD[3]}]
 
-
 # ------ Si570 / SMA input CLK
 set_property PACKAGE_PIN D6 [get_ports MGT_REFCLK0_P]
 set_property PACKAGE_PIN D5 [get_ports MGT_REFCLK0_N]
 set_property PACKAGE_PIN F6 [get_ports MGT_REFCLK1_P]
 set_property PACKAGE_PIN F5 [get_ports MGT_REFCLK1_N]
-# set_property IOSTANDARD LVDS [get_ports MGT_REFCLK*]
 
 # ------ CLK Mux
 set_property PACKAGE_PIN K25 [get_ports MGT_REF_SEL]
@@ -77,7 +89,6 @@ set_property PULLUP true [get_ports MGT_REF_SEL]
 # ------ FCLK (100 MHz)
 set_property PACKAGE_PIN AA3 [get_ports FCLK_IN]
 set_property IOSTANDARD LVCMOS15 [get_ports FCLK_IN]
-create_clock -period 10.000 -name FCLK_IN -add [get_ports FCLK_IN]
 
 # ------ Button & Spare & more - omitted for now
 set_property PACKAGE_PIN C18 [get_ports RESET_N]
