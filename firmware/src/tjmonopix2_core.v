@@ -14,6 +14,7 @@ module tjmonopix2_core (
 
     //clocks
     input wire CLK16,
+    input wire CLK32,
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
@@ -102,28 +103,6 @@ localparam CMD_BASEADDR = 16'h0E00;
 localparam CMD_HIGHADDR = 16'h2E00 - 1;
 
 // -------  USER MODULES  ------- //
-localparam VERSION = 8'h01;
-reg RD_VERSION;
-always@(posedge BUS_CLK)
-    if(BUS_ADD == 16'h0000 && BUS_RD)
-        RD_VERSION <= 1;
-    else
-        RD_VERSION <= 0;
-assign BUS_DATA = (RD_VERSION) ? VERSION : 8'bz;
-reg CLK32;
-reg [4:0] clk32_cnt;
-always@(negedge CLK320) begin
-    if (BUS_RST == 1'b1 | clk32_cnt == 4'd9)
-        clk32_cnt <= 4'd0;
-    else
-       clk32_cnt <= clk32_cnt +1;
-end
-always@(negedge CLK320) begin
-    if (BUS_RST == 1'b1 | clk32_cnt == 4'd8)
-        CLK32 <= 1'b0;
-    else if (clk32_cnt == 4'd3)
-       CLK32 <= 1'b1;
-end
 
 wire [23:0] IO;
 gpio 
