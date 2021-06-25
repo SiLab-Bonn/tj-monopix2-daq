@@ -91,9 +91,9 @@ set_property PACKAGE_PIN AA3 [get_ports FCLK_IN]
 set_property IOSTANDARD LVCMOS15 [get_ports FCLK_IN]
 
 # ------ Button & Spare & more - omitted for now
-set_property PACKAGE_PIN C18 [get_ports RESET_N]
-set_property IOSTANDARD LVCMOS25 [get_ports RESET_N]
-set_property PULLUP true [get_ports RESET_N]
+set_property PACKAGE_PIN C18 [get_ports RESET_BUTTON]
+set_property IOSTANDARD LVCMOS25 [get_ports RESET_BUTTON]
+set_property PULLUP true [get_ports RESET_BUTTON]
 
 # ------ I2C control signals
 set_property PACKAGE_PIN P24 [get_ports I2C_SDA]
@@ -102,14 +102,12 @@ set_property PACKAGE_PIN N24 [get_ports I2C_SCL]
 set_property IOSTANDARD LVCMOS25 [get_ports I2C_SCL]
 
 # ------ Trigger IOs - partial (MIO3 has fewer lemo than MIO)
-set_property PACKAGE_PIN AB21 [get_ports {LEMO_TX[0]}]
-set_property IOSTANDARD LVCMOS25 [get_ports {LEMO_TX[0]}]
-set_property PACKAGE_PIN V23 [get_ports {LEMO_TX[1]}]
-set_property IOSTANDARD LVCMOS25 [get_ports {LEMO_TX[1]}]
-set_property PACKAGE_PIN U22 [get_ports {LEMO_RX[0]}]
-set_property IOSTANDARD LVCMOS25 [get_ports {LEMO_RX[0]}]
-set_property PACKAGE_PIN U26 [get_ports {LEMO_RX[1]}]
-set_property IOSTANDARD LVCMOS25 [get_ports {LEMO_RX[1]}]
+set_property PACKAGE_PIN AB21 [get_ports LEMO_TX0]
+set_property PACKAGE_PIN V23 [get_ports LEMO_TX1]
+set_property IOSTANDARD LVCMOS25 [get_ports LEMO_TX*]
+set_property PACKAGE_PIN U22 [get_ports LEMO_RX0]
+set_property PACKAGE_PIN U26 [get_ports LEMO_RX1]
+set_property IOSTANDARD LVCMOS25 [get_ports LEMO_RX*]
 
 set_property PACKAGE_PIN V21 [get_ports RJ45_TRIGGER]
 set_property IOSTANDARD LVCMOS25 [get_ports RJ45_TRIGGER]
@@ -208,11 +206,11 @@ set_property PACKAGE_PIN T17 [get_ports {rgmii_txd[3]}]
 #set_property IOSTANDARD LVCMOS25 [get_ports "DIN*"]
 
 # PULSE_EXT connected to DOUT19
-set_property PACKAGE_PIN G20 [get_ports PULSE_EXT]
-set_property IOSTANDARD LVCMOS25 [get_ports PULSE_EXT]
+set_property PACKAGE_PIN G20 [get_ports LVDS_PULSE_EXT]
+set_property IOSTANDARD LVCMOS25 [get_ports LVDS_PULSE_EXT]
 #set_property DRIVE 16 [get_ports PULSE_EXT]
 #set_property SLEW FAST [get_ports PULSE_EXT]
-set_property PULLDOWN true [get_ports PULSE_EXT]
+set_property PULLDOWN true [get_ports LVDS_PULSE_EXT]
 
 # CMOS_PULSE_EXT connected to DOUT12
 set_property PACKAGE_PIN N21 [get_ports CMOS_PULSE_EXT]
@@ -272,9 +270,9 @@ set_property IOSTANDARD LVCMOS25 [get_ports CMOS_SER_CLK]
 set_property PULLDOWN true [get_ports CMOS_SER_CLK]
 
 # DATA_OUT connected to DIN11
-set_property PACKAGE_PIN H17 [get_ports DATA_OUT]
-set_property IOSTANDARD LVCMOS25 [get_ports DATA_OUT]
-set_property PULLDOWN true [get_ports DATA_OUT]
+set_property PACKAGE_PIN H17 [get_ports LVDS_DATA_OUT]
+set_property IOSTANDARD LVCMOS25 [get_ports LVDS_DATA_OUT]
+set_property PULLDOWN true [get_ports LVDS_DATA_OUT]
 # set_property DRIVE 16 [get_ports DATA_OUT]
 # set_property SLEW FAST [get_ports DATA_OUT]
 
@@ -301,12 +299,12 @@ set_property PACKAGE_PIN M24 [get_ports CMOS_DATA_OUT]
 set_property IOSTANDARD LVCMOS25 [get_ports CMOS_DATA_OUT]
 
 # HITOR_OUT connected to DIN9
-set_property PACKAGE_PIN H18 [get_ports HITOR_OUT]
-set_property IOSTANDARD LVCMOS25 [get_ports HITOR_OUT]
+set_property PACKAGE_PIN H18 [get_ports LVDS_HITOR]
+set_property IOSTANDARD LVCMOS25 [get_ports LVDS_HITOR]
 
 # CMOS_HITOR_OUT connected to DIN4
-set_property PACKAGE_PIN R25 [get_ports CMOS_HITOR_OUT]
-set_property IOSTANDARD LVCMOS25 [get_ports CMOS_HITOR_OUT]
+set_property PACKAGE_PIN R25 [get_ports CMOS_HITOR]
+set_property IOSTANDARD LVCMOS25 [get_ports CMOS_HITOR]
 
 # LVDS_CHSYNC_CLK_OUT connected to DIN8
 set_property PACKAGE_PIN E16 [get_ports LVDS_CHSYNC_CLK_OUT]
@@ -316,16 +314,8 @@ set_property IOSTANDARD LVCMOS25 [get_ports LVDS_CHSYNC_CLK_OUT]
 set_property PACKAGE_PIN E15 [get_ports LVDS_CHSYNC_LOCKED_OUT]
 set_property IOSTANDARD LVCMOS25 [get_ports LVDS_CHSYNC_LOCKED_OUT]
 
-# flatcable (RX2, TX2)
-set_property PACKAGE_PIN F12 [get_ports LEMO_RX2]
-set_property IOSTANDARD LVCMOS25 [get_ports LEMO_RX2]
-
-set_property PACKAGE_PIN G12 [get_ports LEMO_TX2]
-set_property IOSTANDARD LVCMOS25 [get_ports LEMO_TX2]
-set_property DRIVE 16 [get_ports LEMO_TX2]
-set_property SLEW FAST [get_ports LEMO_TX2]
-
 # SPI configuration flash
 set_property CONFIG_MODE SPIx4 [current_design]
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.CONFIGRATE 33 [current_design]
+

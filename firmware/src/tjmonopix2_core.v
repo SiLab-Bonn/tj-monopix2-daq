@@ -22,7 +22,7 @@ module tjmonopix2_core #(
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
-    
+
     //fifo
     input wire ARB_READY_OUT,
     output wire ARB_WRITE_OUT,
@@ -32,36 +32,39 @@ module tjmonopix2_core #(
     
     // tlu, lemo, led
     output wire [4:0] LED,
-    input wire [2:0] LEMO_RX,
-    output wire [2:0] LEMO_TX,
+    input wire [1:0] LEMO_RX,
+    output wire [1:0] LEMO_TX,
     input wire RJ45_TRIGGER,
     input wire RJ45_RESET,
 
-    // to chip
+    // LVDS IO
+    output wire LVDS_CMD,
+    output wire LVDS_CMD_CLK,
+    output wire LVDS_SER_CLK,
+    input wire LVDS_DATA_OUT,
+    input wire LVDS_HITOR,
+    output wire LVDS_PULSE_EXT,
+    input wire LVDS_CHSYNC_LOCKED_OUT,
+    input wire LVDS_CHSYNC_CLK_OUT,
+
+    // CHIP CONF
     output wire RESETB_EXT,
     output wire INPUT_SEL,
-    
-    output wire LVDS_CMD_CLK,
-    output wire CMOS_CMD_CLK,    
-    output wire LVDS_CMD,
+
+    // CMOS IO
     output wire CMOS_CMD,
-
-    output wire LVDS_SER_CLK,
+    output wire CMOS_CMD_CLK,    
     output wire CMOS_SER_CLK,
-    input wire DATA_OUT,
+    input wire CMOS_DATA_OUT,
+    input wire CMOS_HITOR,
+    output wire CMOS_PULSE_EXT,
 
+    // CMOS RO
     output wire FREEZE_EXT,
     output wire READ_EXT,
     inout wire RO_RST_EXT,
     input wire TOKEN_OUT,
-    input wire CMOS_DATA_OUT,
 
-    output wire PULSE_EXT,
-    output wire CMOS_PULSE_EXT,
-    input wire HITOR_OUT,
-    input wire CMOS_HITOR_OUT,
-    input wire LVDS_CHSYNC_CLK_OUT,
-    input wire LVDS_CHSYNC_LOCKED_OUT,
     inout wire [1:0] CHIP_ID
 );
 
@@ -217,7 +220,7 @@ assign CMD_CLK = CLK160;
 assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK : 1'b0;
 assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK : 1'b0;
 wire HITOR;
-assign HITOR = HITOR_OUT;  // LVDS HITOR
+assign HITOR = LVDS_HITOR;  // LVDS HITOR
 
 // ----- Reset pulser ----- //
 wire RST_PULSE;
@@ -266,7 +269,7 @@ pulse_gen640 #(
     .PULSE_CLK160(CLK160),
     .PULSE_CLK(CLK40),
     .EXT_START(EXT_TRIGGER),
-    .PULSE({LEMO_TX[2], CMOS_PULSE_EXT, PULSE_EXT}),
+    .PULSE({LEMO_TX[1], CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
     .DEBUG()
 );
 
@@ -445,7 +448,7 @@ tlu_controller #(
     .TIMESTAMP(TIMESTAMP)
 );
 // assign LEMO_TX[0] = TLU_CLK;
-assign LEMO_TX[1] = TLU_BUSY;
+// assign LEMO_TX[1] = TLU_BUSY;
 
 // ----- TDC ----- //
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
@@ -564,7 +567,7 @@ timestamp640 #(
     .CLK40(CLK40),
     .CLK160(CLK160),
     .CLK320(CLK320),
-    .DI(LEMO_RX[2]),
+    .DI(LEMO_RX[1]),
     .EXT_ENABLE(),
     .EXT_TIMESTAMP(TIMESTAMP),
     .TIMESTAMP_OUT(),
@@ -582,35 +585,35 @@ wire  RX_CLKX2,RX_CLKW;
 assign  RX_CLKX2 = SEL_SER_CLK ? CLK320 : CLK160;
 assign  RX_CLKW = SEL_SER_CLK ? CLK32 : CLK16;
 tjmono2_rx #(
-        .BASEADDR(RX_BASEADDR),
-        .HIGHADDR(RX_HIGHADDR),
-        .DATA_IDENTIFIER(4'b0100),
-        .ABUSWIDTH(16),
-        .USE_FIFO_CLK(0)
+    .BASEADDR(RX_BASEADDR),
+    .HIGHADDR(RX_HIGHADDR),
+    .DATA_IDENTIFIER(4'b0100),
+    .ABUSWIDTH(16),
+    .USE_FIFO_CLK(0)
 ) tjmono2_rx (
-        .RX_CLKX2(RX_CLKX2),
-        .RX_CLKW(RX_CLKW),
-        .RX_DATA(DATA_OUT),
+    .RX_CLKX2(RX_CLKX2),
+    .RX_CLKW(RX_CLKW),
+    .RX_DATA(LVDS_DATA_OUT),
 
-        .RX_READY(),
-        .RX_8B10B_DECODER_ERR(),
-        .RX_FIFO_OVERFLOW_ERR(),
+    .RX_READY(),
+    .RX_8B10B_DECODER_ERR(),
+    .RX_FIFO_OVERFLOW_ERR(),
 
-        .FIFO_CLK(),
-        .FIFO_READ(RX_FIFO_READ),
-        .FIFO_EMPTY(RX_FIFO_EMPTY),
-        .FIFO_DATA(RX_FIFO_DATA),
+    .FIFO_CLK(),
+    .FIFO_READ(RX_FIFO_READ),
+    .FIFO_EMPTY(RX_FIFO_EMPTY),
+    .FIFO_DATA(RX_FIFO_DATA),
 
-        .RX_FIFO_FULL(),
-        .RX_ENABLED(),
+    .RX_FIFO_FULL(),
+    .RX_ENABLED(),
 
-        .BUS_CLK(BUS_CLK),
-        .BUS_RST(BUS_RST),
-        .BUS_ADD(BUS_ADD),
-        .BUS_DATA(BUS_DATA),
-        .BUS_RD(BUS_RD),
-        .BUS_WR(BUS_WR)
-        );
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR)
+);
 
 // //************************************************
 // // direct readout
