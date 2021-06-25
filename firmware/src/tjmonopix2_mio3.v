@@ -68,11 +68,16 @@
 `include "pulse_gen640/pulse_gen640.v"
 `include "pulse_gen640/pulse_gen640_core.v"
 
-module tjmonopix2_mio3(
+module tjmonopix2_mio3 #(
+    // FIRMWARE VERSION
+    parameter VERSION_MAJOR = 8'd0,
+    parameter VERSION_MINOR = 8'd0,
+    parameter VERSION_PATCH = 8'd0
+)(
+    output wire MGT_REF_SEL,                    // switch between Si570 and external reference clock
     input wire MGT_REFCLK0_P, MGT_REFCLK0_N,    // programmable clock from Si570 oscillator or SMA
     input wire MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
     input wire FCLK_IN, // 100MHz
-    output wire MGT_REF_SEL,                    // switch between Si570 and external reference clock
 
     //LED
     output wire [7:0] LED,
@@ -541,8 +546,12 @@ assign LED[7]=  1'b0;
 assign LED[6]= 1'b1;
 assign LED[5]= 1'b1;
 wire [1:0] CHIP_ID;
-tjmonopix2_core i_tjmonopix2_core(
 
+tjmonopix2_core #(
+        .VERSION_MAJOR(VERSION_MAJOR),
+        .VERSION_MINOR(VERSION_MINOR),
+        .VERSION_PATCH(VERSION_PATCH)
+) i_tjmonopix2_core (
     //local bus
     .BUS_CLK(BUS_CLK),
     .BUS_DATA(BUS_DATA),

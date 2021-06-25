@@ -20,6 +20,10 @@ file mkdir ../bit reports
 
 proc run_bit { part board xdc_file size} {
     global vivado_dir
+    set board_def [string toupper $board]
+    set version_major 0
+    set version_minor 1
+    set version_patch 0
 
     create_project -force -part $part $board designs
 
@@ -32,7 +36,7 @@ proc run_bit { part board xdc_file size} {
     global include_dirs
     generate_target -verbose -force all [get_ips]
 
-    synth_design -top tjmonopix2_mio3 -include_dirs $include_dirs -verilog_define "SYNTHESIS=1"
+    synth_design -top tjmonopix2_mio3 -include_dirs $include_dirs -verilog_define "$board_def=1" -verilog_define "SYNTHESIS=1" -generic VERSION_MAJOR=8'd$version_major -generic VERSION_MINOR=8'd$version_minor -generic VERSION_PATCH=8'd$version_patch
     opt_design
     place_design
     phys_opt_design
@@ -49,7 +53,7 @@ proc run_bit { part board xdc_file size} {
 # Create projects and bitfiles
 #
 
-#       FPGA type           board name	  constraints file                          flash size
-run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/tjmonopix2_mio3.xdc    64
+#       FPGA type           board name	  constraints file               flash size
+run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/mio3.xdc    64
 
 exit

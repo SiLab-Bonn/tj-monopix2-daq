@@ -2,8 +2,12 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module tjmonopix2_core (
-
+module tjmonopix2_core #(
+    // FIRMWARE VERSION
+    parameter VERSION_MAJOR = 8'd0,
+    parameter VERSION_MINOR = 8'd0,
+    parameter VERSION_PATCH = 8'd0
+)(
     //local bus
     input wire BUS_CLK,
     inout wire [7:0] BUS_DATA,
@@ -61,7 +65,28 @@ module tjmonopix2_core (
     inout wire [1:0] CHIP_ID
 );
 
+// BOARD ID
+localparam SIM = 8'd0;
+localparam BDAQ53 = 8'd1;
+localparam MIO3 = 8'd2;
+
+`ifdef BDAQ53
+    localparam BOARD = BDAQ53;
+`elsif MIO3
+    localparam BOARD = MIO3;
+`endif
+
+// BOARD CONFIGURATION
+reg SI570_IS_CONFIGURED = 1'b0;
+
+// VERSION/BOARD READBACK
+localparam VERSION = 1; // Module version
+
+
 // -------  MODULE ADREESSES  ------- //
+localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
+localparam DAQ_SYSTEM_HIGHADDR = 32'h0400-1;
+
 localparam GPIO_BASEADDR = 16'h0010;
 localparam GPIO_HIGHADDR = 16'h0100-1;
 
@@ -101,6 +126,49 @@ localparam TS_RX0_HIGHADDR = 16'h0E00-1;
 
 localparam CMD_BASEADDR = 16'h0E00;
 localparam CMD_HIGHADDR = 16'h2E00 - 1;
+
+// SYSTEM CONFIG
+localparam ABUSWIDTH = 16;
+wire DAQ_SYSTEM_RD, DAQ_SYSTEM_WR;
+wire [ABUSWIDTH-1:0] DAQ_SYSTEM_ADD;
+wire [7:0] DAQ_SYSTEM_DATA_IN;
+reg [7:0] DAQ_SYSTEM_DATA_OUT;
+
+bus_to_ip #( .BASEADDR(DAQ_SYSTEM_BASEADDR), .HIGHADDR(DAQ_SYSTEM_HIGHADDR), .ABUSWIDTH(ABUSWIDTH) ) i_bus_to_ip_daq
+(
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+
+    .IP_RD(DAQ_SYSTEM_RD),
+    .IP_WR(DAQ_SYSTEM_WR),
+    .IP_ADD(DAQ_SYSTEM_ADD),
+    .IP_DATA_IN(DAQ_SYSTEM_DATA_IN),
+    .IP_DATA_OUT(DAQ_SYSTEM_DATA_OUT)
+);
+
+reg [7:0] BUS_DATA_OUT_REG;
+always @ (posedge BUS_CLK) begin
+    if(DAQ_SYSTEM_RD) begin
+        case (DAQ_SYSTEM_ADD)
+            0:       DAQ_SYSTEM_DATA_OUT <= VERSION;
+            1:       DAQ_SYSTEM_DATA_OUT <= VERSION_MINOR;
+            2:       DAQ_SYSTEM_DATA_OUT <= VERSION_MAJOR;
+            3:       DAQ_SYSTEM_DATA_OUT <= BOARD;
+            4:       DAQ_SYSTEM_DATA_OUT <= SI570_IS_CONFIGURED;
+            default: DAQ_SYSTEM_DATA_OUT <= 0;
+        endcase
+    end
+end
+
+always @ (posedge BUS_CLK)
+    if(DAQ_SYSTEM_WR) begin
+        case (DAQ_SYSTEM_ADD)
+            5:       SI570_IS_CONFIGURED <= DAQ_SYSTEM_DATA_IN[0];
+            default: begin end
+        endcase
+    end
 
 // -------  USER MODULES  ------- //
 
