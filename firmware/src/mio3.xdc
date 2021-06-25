@@ -25,21 +25,21 @@ create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
 create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
-create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_comm/CLKOUT0}] -divide_by 1600 [get_pins {i_clock_divisor_i2c/CLOCK_reg/Q}]
+create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKOUT0] -divide_by 1600 [get_pins i_clock_divisor_i2c/CLOCK_reg/Q]
+create_generated_clock -name CLK320_PLL_Gen -source [get_pins {i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/I0}] -divide_by 1 -add -master_clock [get_clocks -of [get_pins i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/I0] -filter {IS_GENERATED}] [get_pins {i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/O}]
+create_generated_clock -name CLK160_PLL_Gen -source [get_pins {i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/I1}] -divide_by 1 -add -master_clock [get_clocks -of [get_pins i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/I1] -filter {IS_GENERATED}] [get_pins {i_tjmonopix2_core/gpio_i/core/IDDR_RX_i_2/O}]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous \
--group {BUS_CLK_PLL I2C_CLK} \
--group {CLK125PLLTX CLK125PLLTX90} \
--group {CLK320_PLL CLK160_PLL CLK40_PLL CLK16_PLL} \
--group [get_clocks -include_generated_clocks CLK_MGT_REF] \
--group {CLK_RGMII_RX}
+set_clock_groups -asynchronous -group {BUS_CLK_PLL I2C_CLK} -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
+set_clock_groups -logically_exclusive -group [get_clocks -include_generated_clocks CLK32_PLL] -group [get_clocks -include_generated_clocks CLK16_PLL]
+set_clock_groups -logically_exclusive -group [get_clocks -include_generated_clocks {CLK320_PLL_Gen}] -group [get_clocks -include_generated_clocks {CLK160_PLL_Gen}]
 
 # SiTCP
-set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4
-set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii_tx_ctl] 4
-set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4
-set_property ASYNC_REG true [get_cells { sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0 sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1 }]
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii_tx_ctl] 4.000
+set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4.000
+set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0]
+set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1]
 
 # LED
 set_property PACKAGE_PIN M17 [get_ports {LED[0]}]
