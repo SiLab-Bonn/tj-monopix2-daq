@@ -43,6 +43,11 @@ hw_drivers:
     base_addr : 0x10010
     size      : 24
 
+  - name      : system
+    type      : tjmonopix2.system.board
+    interface : intf
+    base_addr : 0x10300
+
   - name      : inj
     type      : tjmonopix2.pulse_gen640
     interface : intf
@@ -102,7 +107,7 @@ hw_drivers:
   - name      : cmd
     type      : tjmonopix2.cmd
     interface : intf
-    base_addr : 0x10E00
+    base_addr : 0x1A000
     
   - name        : NTC
     type        : NTCRegister

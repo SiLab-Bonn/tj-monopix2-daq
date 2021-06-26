@@ -127,8 +127,8 @@ localparam PULSE_CMD_START_LOOP_HIGHADDR = 16'h0D00 - 1;
 localparam TS_RX0_BASEADDR = 16'h0D00;
 localparam TS_RX0_HIGHADDR = 16'h0E00-1;
 
-localparam CMD_BASEADDR = 16'h0E00;
-localparam CMD_HIGHADDR = 16'h2E00 - 1;
+localparam CMD_BASEADDR = 16'hA000;
+localparam CMD_HIGHADDR = 16'hC000 - 1;
 
 // SYSTEM CONFIG
 localparam ABUSWIDTH = 16;
