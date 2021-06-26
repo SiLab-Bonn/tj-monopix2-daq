@@ -376,8 +376,10 @@ IOBUF i_iobuf_mdio(
     .T(mdio_gem_t)
 );
 
-wire EEPROM_CS, EEPROM_SK, EEPROM_DI;
-wire TCP_CLOSE_REQ;
+wire EEPROM_CS_int, EEPROM_SK_int, EEPROM_DI_int, EEPROM_DO_int;
+wire TCP_OPEN_ACK, TCP_CLOSE_REQ;
+wire TCP_RX_WR, TCP_TX_WR;
+wire TCP_TX_FULL, TCP_ERROR;
 wire RBCP_ACT, RBCP_WE, RBCP_RE;
 wire [7:0] RBCP_WD, RBCP_RD;
 wire [31:0] RBCP_ADDR;
@@ -386,10 +388,17 @@ wire [7:0] TCP_RX_DATA;
 wire RBCP_ACK;
 wire SiTCP_RST;
 
-wire TCP_TX_FULL;
-wire TCP_TX_WR;
 wire [7:0] TCP_TX_DATA;
 
+// connect the physical EEPROM pins only for the BDAQ53
+`ifdef BDAQ53
+    assign EEPROM_CS = EEPROM_CS_int;
+    assign EEPROM_SK = EEPROM_SK_int;
+    assign EEPROM_DI = EEPROM_DI_int;
+    assign EEPROM_DO_int = EEPROM_DO;
+`endif
+
+// IP address subnet selection
 wire [3:0] IP_ADDR_SEL;
 assign PMOD[7:4] = 4'hf;
 assign IP_ADDR_SEL = {PMOD[0], PMOD[1], PMOD[2], PMOD[3]};
@@ -399,16 +408,16 @@ WRAP_SiTCP_GMII_XC7K_32K sitcp(
     .RST(RST)                    ,    // in     : System reset
     // Configuration parameters
     .FORCE_DEFAULTn(1'b0)        ,    // in     : Load default parameters
-    .EXT_IP_ADDR({8'd192, 8'd168, |{IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23})  ,    //IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
+    .EXT_IP_ADDR({8'd192, 8'd168, |{IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23}),   //IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
     .EXT_TCP_PORT(16'd24)        ,    // in     : TCP port #[15:0]
     .EXT_RBCP_PORT(16'd4660)     ,    // in     : RBCP port #[15:0]
     .PHY_ADDR(5'd3)              ,    // in     : PHY-device MIF address[4:0]
     // EEPROM
-    .EEPROM_CS(EEPROM_CS)        ,    // out    : Chip select
-    .EEPROM_SK(EEPROM_SK)        ,    // out    : Serial data clock
-    .EEPROM_DI(EEPROM_DI)        ,    // out    : Serial write data
-    .EEPROM_DO(1'b0)             ,    // in     : Serial read data
-    // user data, intialial values are stored in the EEPROM, 0xFFFF_FC3C-3F
+    .EEPROM_CS(EEPROM_CS_int)    ,    // out    : Chip select
+    .EEPROM_SK(EEPROM_SK_int)    ,    // out    : Serial data clock
+    .EEPROM_DI(EEPROM_DI_int)    ,    // out    : Serial write data
+    .EEPROM_DO(EEPROM_DO_int)    ,    // in     : Serial read data
+    // User data, initial values are stored in the EEPROM, 0xFFFF_FC3C-3F
     .USR_REG_X3C()               ,    // out    : Stored at 0xFFFF_FF3C
     .USR_REG_X3D()               ,    // out    : Stored at 0xFFFF_FF3D
     .USR_REG_X3E()               ,    // out    : Stored at 0xFFFF_FF3E
@@ -437,8 +446,8 @@ WRAP_SiTCP_GMII_XC7K_32K sitcp(
     .SiTCP_RST(SiTCP_RST)        ,    // out    : Reset for SiTCP and related circuits
     // TCP connection control
     .TCP_OPEN_REQ(1'b0)          ,    // in     : Reserved input, shoud be 0
-    .TCP_OPEN_ACK()              ,    // out    : Acknowledge for open (=Socket busy)
-    .TCP_ERROR()                 ,    // out    : TCP error, its active period is equal to MSL
+    .TCP_OPEN_ACK(TCP_OPEN_ACK)  ,    // out    : Acknowledge for open (=Socket busy)
+    .TCP_ERROR(TCP_ERROR)        ,    // out    : TCP error, its active period is equal to MSL
     .TCP_CLOSE_REQ(TCP_CLOSE_REQ),    // out    : Connection close request
     .TCP_CLOSE_ACK(TCP_CLOSE_REQ),    // in     : Acknowledge for closing
     // FIFO I/F
