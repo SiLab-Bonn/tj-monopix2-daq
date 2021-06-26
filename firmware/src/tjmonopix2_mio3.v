@@ -295,28 +295,19 @@ BUFG BUFG_inst_CLK40 (  .O(CLK40),  .I(CLK40_PLL) );
 BUFG BUFG_inst_CLK160 (  .O(CLK160),  .I(CLK160_PLL) );
 BUFG BUFG_inst_CLK320 (  .O(CLK320),  .I(CLK320_PLL) );
 
-wire clk_cmd_buf;
-// IBUFDS #(
-//     .DIFF_TERM("TRUE"),       // Differential Termination
-//     .IBUF_LOW_PWR("FALSE"),    // Low power="TRUE", Highest performance="FALSE"
-//     .IOSTANDARD("LVDS_25")     // Specify the input I/O standard
-// ) IBUFDS_inst (
-//     .O(clk_cmd_buf),  // Buffer output
-//     .I(MGT_REFCLK0_P),  // Diff_p buffer input (connect directly to top-level port)
-//     .IB(MGT_REFCLK0_N) // Diff_n buffer input (connect directly to top-level port)
-// );
+// MGT CLK (from Si570 or SMA input)
+wire MGT_REFCLK0;
 
-//--- Instance of GT differential buffer ---------//
 IBUFDS_GTE2 IBUFDS_refclk  
 (
-    .O               (clk_cmd_buf),
+    .O               (MGT_REFCLK0),
     .ODIV2           (),
     .CEB             (1'b0),
     .I               (MGT_REFCLK0_P),
     .IB              (MGT_REFCLK0_N)
 );
 
-assign LEMO_TX0 = clk_cmd_buf;
+assign LEMO_TX0 = MGT_REFCLK0;
 
 assign RST = !RESET_BUTTON | !LOCKED;
 wire   gmii_tx_clk;
@@ -586,7 +577,8 @@ tjmonopix2_core #(
     .CLK40(CLK40),
     .CLK160(CLK160),
     .CLK320(CLK320),
-    
+    .CMD_CLK_IN(MGT_REFCLK0),
+
     //fifo
     .ARB_READY_OUT(ARB_READY_OUT),
     .ARB_WRITE_OUT(ARB_WRITE_OUT),

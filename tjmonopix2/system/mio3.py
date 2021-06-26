@@ -73,6 +73,7 @@ class MIO3(Dut):
         #     self.rx_lanes[recv] = t_rx_lanes
 
         # Configure cmd encoder
+        self.set_cmd_clk(frequency=160.0)
         self['cmd'].reset()
         time.sleep(0.1)
 
@@ -81,24 +82,24 @@ class MIO3(Dut):
         #     for _ in range(100):
         #         self.rx_channels['rx0'].get_rx_ready()
 
-    # def set_cmd_clk(self, frequency=160.0, force=False):
-    #     if self.board_version in {'BDAQ53', 'USBPix3'}:
-    #         if self['system']['SI570_IS_CONFIGURED'] == 0 or force is True:
-    #             from basil.HL import si570
-    #             si570_conf = {'name': 'si570', 'type': 'bdaq53.si570', 'interface': 'intf', 'base_addr': 0xba, 'init': {'frequency': frequency}}
-    #             bdaq53a_clk_gen = si570.si570(self['i2c'], si570_conf)
-    #             self['cmd'].set_output_en(False)
-    #             for receiver in self.receivers:
-    #                 self.rx_channels[receiver].reset()
-    #             time.sleep(0.1)
-    #             bdaq53a_clk_gen.init()
-    #             time.sleep(0.1)
-    #             self['cmd'].set_output_en(True)
-    #             self['system']['SI570_IS_CONFIGURED'] = 1
-    #         else:
-    #             self.log.info('Si570 oscillator is already configured')
-    #     elif self.board_version == 'SIMULATION':
-    #         pass
+    def set_cmd_clk(self, frequency=160.0, force=False):
+        if self.board_version in {'BDAQ53', 'MIO3'}:
+            if self['system']['SI570_IS_CONFIGURED'] == 0 or force is True:
+                from basil.HL import si570
+                si570_conf = {'name': 'si570', 'type': 'si570', 'interface': 'intf', 'base_addr': 0xba, 'init': {'frequency': frequency}}
+                clk_gen = si570.si570(self['i2c'], si570_conf)
+                self['cmd'].set_output_en(False)
+                for receiver in self.receivers:
+                    self.rx_channels[receiver].reset()
+                time.sleep(0.1)
+                clk_gen.init()
+                time.sleep(0.1)
+                self['cmd'].set_output_en(True)
+                self['system']['SI570_IS_CONFIGURED'] = 1
+            else:
+                self.log.info('Si570 oscillator is already configured')
+        elif self.board_version == 'SIMULATION':
+            pass
 
     def get_chips_cfgs(self):
         module_cfgs = {k: v for k, v in self.configuration['modules'].items() if 'identifier' in v.keys()}

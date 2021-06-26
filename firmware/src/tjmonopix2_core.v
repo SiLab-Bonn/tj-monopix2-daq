@@ -22,6 +22,7 @@ module tjmonopix2_core #(
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
+    input wire CMD_CLK_IN,
 
     //fifo
     input wire ARB_READY_OUT,
@@ -215,10 +216,8 @@ wire SER_CLK;
 assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
 assign LVDS_SER_CLK = EN_LVDS_IN ? ~SER_CLK : 1'b0;
 assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
-wire CMD_CLK;
-assign CMD_CLK = CLK160;
-assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK : 1'b0;
-assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK : 1'b0;
+assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK_IN : 1'b0;
+assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK_IN : 1'b0;
 wire HITOR;
 assign HITOR = LVDS_HITOR;  // LVDS HITOR
 
@@ -326,7 +325,7 @@ cmd #(
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
-    .CMD_CLK(CMD_CLK),
+    .CMD_CLK(CMD_CLK_IN),
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT),
