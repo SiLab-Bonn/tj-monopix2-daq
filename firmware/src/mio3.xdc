@@ -9,6 +9,7 @@
 # CLK_SYS: 100 MHz, from xtal oscillator
 # -> PLL2: CLK8_PLL
 #          CLK16_PLL: RX
+#          CLK32_PLL: RX
 #          CLK40_PLL: PULSER, TDC, TLU
 #          CLK160_PLL: TLU, TDC
 #          CLK320_PLL: TLU, TDC
@@ -114,9 +115,6 @@ set_property IOSTANDARD LVCMOS25 [get_ports RJ45_TRIGGER]
 set_property PACKAGE_PIN Y25 [get_ports RJ45_RESET]
 set_property IOSTANDARD LVCMOS25 [get_ports RJ45_RESET]
 
-# ------ Async SRAM - omitted for now
-# SRAM faked with SiTCP
-
 # ------ RGMII
 set_property SLEW FAST [get_ports mdio_phy_mdc]
 set_property IOSTANDARD LVCMOS25 [get_ports mdio_phy_mdc]
@@ -205,6 +203,19 @@ set_property PACKAGE_PIN T17 [get_ports {rgmii_txd[3]}]
 #set_property PACKAGE_PIN T24 [get_ports {DIN[0]}]
 #set_property IOSTANDARD LVCMOS25 [get_ports "DIN*"]
 
+# RESETB_EXT connected to DOUT6
+set_property PACKAGE_PIN W23 [get_ports RESETB_EXT]
+set_property IOSTANDARD LVCMOS25 [get_ports RESETB_EXT]
+#set_property DRIVE 16 [get_ports RESETB_EXT]
+#set_property SLEW FAST [get_ports RESETB_EXT]
+set_property PULLDOWN true [get_ports RESETB_EXT]
+
+# INPUT_SEL connected to DOUT14
+set_property PACKAGE_PIN G15 [get_ports INPUT_SEL]
+set_property IOSTANDARD LVCMOS25 [get_ports INPUT_SEL]
+#set_property DRIVE 16 [get_ports INPUT_SEL]
+set_property PULLDOWN true [get_ports INPUT_SEL]
+
 # PULSE_EXT connected to DOUT19
 set_property PACKAGE_PIN G20 [get_ports LVDS_PULSE_EXT]
 set_property IOSTANDARD LVCMOS25 [get_ports LVDS_PULSE_EXT]
@@ -218,19 +229,6 @@ set_property IOSTANDARD LVCMOS25 [get_ports CMOS_PULSE_EXT]
 #set_property DRIVE 16 [get_ports CMOS_PULSE_EXT]
 #set_property SLEW FAST [get_ports CMOS_PULSE_EXT]
 set_property PULLDOWN true [get_ports CMOS_PULSE_EXT]
-
-# RESETB_EXT connected to DOUT6
-set_property PACKAGE_PIN W23 [get_ports RESETB_EXT]
-set_property IOSTANDARD LVCMOS25 [get_ports RESETB_EXT]
-#set_property DRIVE 16 [get_ports RESETB_EXT]
-#set_property SLEW FAST [get_ports RESETB_EXT]
-set_property PULLDOWN true [get_ports RESETB_EXT]
-
-# INPUT_SEL connected to DOUT14
-set_property PACKAGE_PIN G15 [get_ports INPUT_SEL]
-set_property IOSTANDARD LVCMOS25 [get_ports INPUT_SEL]
-#set_property DRIVE 16 [get_ports INPUT_SEL]
-set_property PULLDOWN true [get_ports INPUT_SEL]
 
 # LVDS_CMD_CLK connected to DOUT17
 set_property PACKAGE_PIN J16 [get_ports LVDS_CMD_CLK]
@@ -270,9 +268,9 @@ set_property IOSTANDARD LVCMOS25 [get_ports CMOS_SER_CLK]
 set_property PULLDOWN true [get_ports CMOS_SER_CLK]
 
 # DATA_OUT connected to DIN11
-set_property PACKAGE_PIN H17 [get_ports LVDS_DATA_OUT]
-set_property IOSTANDARD LVCMOS25 [get_ports LVDS_DATA_OUT]
-set_property PULLDOWN true [get_ports LVDS_DATA_OUT]
+set_property PACKAGE_PIN H17 [get_ports LVDS_DATA]
+set_property IOSTANDARD LVCMOS25 [get_ports LVDS_DATA]
+set_property PULLDOWN true [get_ports LVDS_DATA]
 # set_property DRIVE 16 [get_ports DATA_OUT]
 # set_property SLEW FAST [get_ports DATA_OUT]
 

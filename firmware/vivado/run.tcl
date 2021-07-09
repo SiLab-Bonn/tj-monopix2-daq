@@ -27,7 +27,7 @@ proc run_bit { part board xdc_file size} {
 
     create_project -force -part $part $board designs
 
-    read_verilog $vivado_dir/../src/tjmonopix2_$board.v
+    read_verilog $vivado_dir/../src/tjmonopix2.v
     read_verilog $vivado_dir/../src/tjmonopix2_core.v
     read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc
     read_xdc $xdc_file
@@ -54,6 +54,7 @@ proc run_bit { part board xdc_file size} {
 #
 
 #       FPGA type           board name	  constraints file               flash size
-run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/mio3.xdc    64
+#run_bit xc7k160tfbg676-1    mio3          $vivado_dir/../src/mio3.xdc    64
+run_bit xc7k160tffg676-2    bdaq53         $vivado_dir/../src/bdaq.xdc    64
 
 exit

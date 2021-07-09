@@ -20,15 +20,15 @@ import pkg_resources
 VERSION = pkg_resources.get_distribution("tjmonopix2").version
 
 
-class MIO3(Dut):
+class BDAQ53(Dut):
     '''
-    Main class for MIO3 + GPAC readout system
+    Main class for BDAQ53 readout system
     '''
     def __init__(self, conf=None, bench_config=None):
         self.log = logger.setup_main_logger()
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.configuration = {}
-        self.board_version = 'mio3'
+        self.board_version = 'bdaq53'
 
         try:
             if bench_config is None:
@@ -41,16 +41,16 @@ class MIO3(Dut):
         self.receivers = ['rx0']
 
         if not conf:
-            conf = os.path.join(self.proj_dir, 'system' + os.sep + 'mio3.yaml')
+            conf = os.path.join(self.proj_dir, 'system' + os.sep + 'bdaq53.yaml')
         self.log.debug("Loading configuration file from %s" % conf)
 
         # Flag indicating of tlu module is enabled.
         self.tlu_module_enabled = False
 
-        super(MIO3, self).__init__(conf)
+        super(BDAQ53, self).__init__(conf)
 
     def init(self, **kwargs):
-        super(MIO3, self).init()
+        super(BDAQ53, self).init()
 
         self.fw_version, self.board_version = self['system'].get_daq_version()
         self.log.success('Found board %s running firmware version %s' % (self.board_version, self.fw_version))
@@ -111,7 +111,7 @@ class MIO3(Dut):
         return self['tlu']['TRIGGER_COUNTER']
 
     def set_chip_type(self):
-        ''' Defines chip type as ITkPixV1-like '''
+        ''' Defines chip type ITkPixV1-like '''
         self['cmd'].set_chip_type(1)
 
     # def enable_auto_sync(self):

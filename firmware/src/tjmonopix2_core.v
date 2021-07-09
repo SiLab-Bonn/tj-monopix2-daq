@@ -22,7 +22,7 @@ module tjmonopix2_core #(
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
-    input wire CMD_CLK_IN,
+    input wire CLKCMD,
 
     //fifo
     input wire ARB_READY_OUT,
@@ -38,33 +38,37 @@ module tjmonopix2_core #(
     input wire RJ45_TRIGGER,
     input wire RJ45_RESET,
 
+    output wire RESETB_EXT,
+
     // LVDS IO
     output wire LVDS_CMD,
     output wire LVDS_CMD_CLK,
     output wire LVDS_SER_CLK,
-    input wire LVDS_DATA_OUT,
+    input wire LVDS_DATA,
     input wire LVDS_HITOR,
     output wire LVDS_PULSE_EXT,
-    input wire LVDS_CHSYNC_LOCKED_OUT,
-    input wire LVDS_CHSYNC_CLK_OUT,
 
-    // CHIP CONF
-    output wire RESETB_EXT,
-    output wire INPUT_SEL,
+    `ifdef MIO3
+        // CHSYNC output only connected on MIO3 compatible PCBs
+        input wire LVDS_CHSYNC_LOCKED_OUT,
+        input wire LVDS_CHSYNC_CLK_OUT,
+        // CHIP CONF
+        output wire INPUT_SEL,
 
-    // CMOS IO
-    output wire CMOS_CMD,
-    output wire CMOS_CMD_CLK,    
-    output wire CMOS_SER_CLK,
-    input wire CMOS_DATA_OUT,
-    input wire CMOS_HITOR,
-    output wire CMOS_PULSE_EXT,
+        // CMOS IO
+        output wire CMOS_CMD,
+        output wire CMOS_CMD_CLK,    
+        output wire CMOS_SER_CLK,
+        input wire CMOS_DATA,
+        input wire CMOS_HITOR,
+        output wire CMOS_PULSE_EXT,
 
-    // CMOS RO
-    output wire FREEZE_EXT,
-    output wire READ_EXT,
-    inout wire RO_RST_EXT,
-    input wire TOKEN_OUT,
+        // CMOS RO
+        output wire FREEZE_EXT,
+        output wire READ_EXT,
+        inout wire RO_RST_EXT,
+        input wire TOKEN_OUT,
+    `endif
 
     inout wire [1:0] CHIP_ID
 );
@@ -195,31 +199,31 @@ gpio
 );    
 wire EN_LVDS_IN, EN_CMOS_IN, EN_CMOS_OUT, SEL_DIRECT, SEL_SER_CLK;
 wire [2:0] GPIO_MODE;
-//assign RESETB_EXT = ~IO[0];
-assign INPUT_SEL = IO[1];
-assign EN_CMOS_IN = IO[2];
-assign EN_CMOS_OUT = IO[6];
-assign EN_LVDS_IN = IO[7];
 
-assign IO[8] = LVDS_CHSYNC_LOCKED_OUT;
-assign IO[9] = LVDS_CHSYNC_CLK_OUT;
-assign IO[11:10] = {RO_RST_EXT, CHIP_ID};
 assign GPIO_MODE = IO[14:12];
 assign SEL_SER_CLK = IO[15];
-assign SEL_DIRECT = IO[16]; 
-
-assign CHIP_ID[0] = GPIO_MODE[0] ? 1'bz : IO[3];
-assign CHIP_ID[1] = GPIO_MODE[1] ? 1'bz : IO[4];
-assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
 
 wire SER_CLK;
 assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
-assign LVDS_SER_CLK = EN_LVDS_IN ? ~SER_CLK : 1'b0;
-assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
-assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CMD_CLK_IN : 1'b0;
-assign CMOS_CMD_CLK = EN_CMOS_IN ? CMD_CLK_IN : 1'b0;
-wire HITOR;
-assign HITOR = LVDS_HITOR;  // LVDS HITOR
+
+`ifdef MIO3
+    assign INPUT_SEL = IO[1];
+    assign EN_CMOS_IN = IO[2];
+    assign EN_CMOS_OUT = IO[6];
+    assign EN_LVDS_IN = IO[7];
+    assign IO[8] = LVDS_CHSYNC_LOCKED_OUT;
+    assign IO[9] = LVDS_CHSYNC_CLK_OUT;
+    assign IO[11] = RO_RST_EXT;
+    assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
+    assign SEL_DIRECT = IO[16]; 
+    assign LVDS_SER_CLK = EN_LVDS_IN ? ~SER_CLK : 1'b0;
+    assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
+    assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CLKCMD : 1'b0;
+    assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
+`elsif BDAQ53
+    assign LVDS_SER_CLK = SER_CLK;
+    assign LVDS_CMD_CLK = CLKCMD;
+`endif
 
 // ----- Reset pulser ----- //
 wire RST_PULSE;
@@ -247,6 +251,11 @@ pulse_gen
     .PULSE(RST_PULSE)
 );
 assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
+// assign RESETB_EXT = ~IO[0];
+
+`ifdef BDAQ53
+    wire CMOS_PULSE_EXT;
+`endif
 
 // ----- Pulser for injection ----- //
 wire EXT_TRIGGER;
@@ -255,7 +264,7 @@ pulse_gen640 #(
     .HIGHADDR(PULSE_INJ_HIGHADDR),
     .ABUSWIDTH(16),
     .CLKDV(4),
-    .OUTPUT_SIZE(3)
+    .OUTPUT_SIZE(2)
 ) pulse_gen_inj (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
@@ -325,15 +334,19 @@ cmd #(
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
-    .CMD_CLK(CMD_CLK_IN),
+    .CMD_CLK(CLKCMD),
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT),
 
     .BYPASS_MODE(BYPASS_MODE)
 );
-assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
-assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
+`ifdef MIO3
+    assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
+    assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
+`elsif BDAQ53
+    assign LVDS_CMD = CMD;
+`endif
 
 // ----- CMD_START_LOOP -> TDC pulse generator ----- // TODO delete??
 pulse_gen #(
@@ -464,12 +477,12 @@ tdc_s3 #(
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
     .FAST_TRIGGER(1),
-    .BROADCAST(0)   // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+    .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
 ) i_tdc (
-    .CLK320(CLK320),    // 320 MHz
-    .CLK160(CLK160),    // 160 MHz
-    .DV_CLK(CLK40),     // 40 MHz
-    .TDC_IN(HITOR),     // HITOR
+    .CLK320(CLK320),      // 320 MHz
+    .CLK160(CLK160),      // 160 MHz
+    .DV_CLK(CLK40),       // 40 MHz
+    .TDC_IN(LVDS_HITOR),  // HITOR
     .TDC_OUT(1'b0),
     .TRIG_IN(LEMO_RX[0]),
     .TRIG_OUT(1'b0),
@@ -494,7 +507,6 @@ tdc_s3 #(
 
     .TIMESTAMP(TIMESTAMP[15:0])
 );
-
 
 // timestamp640 #(
 //     .BASEADDR(TS_HOR_BASEADDR),
@@ -580,7 +592,7 @@ timestamp640 #(
 
 //************************************************
 // fast readout
-wire  RX_CLKX2,RX_CLKW;
+wire  RX_CLKX2, RX_CLKW;
 assign  RX_CLKX2 = SEL_SER_CLK ? CLK320 : CLK160;
 assign  RX_CLKW = SEL_SER_CLK ? CLK32 : CLK16;
 tjmono2_rx #(
@@ -592,7 +604,7 @@ tjmono2_rx #(
 ) tjmono2_rx (
     .RX_CLKX2(RX_CLKX2),
     .RX_CLKW(RX_CLKW),
-    .RX_DATA(LVDS_DATA_OUT),
+    .RX_DATA(LVDS_DATA),
 
     .RX_READY(),
     .RX_8B10B_DECODER_ERR(),

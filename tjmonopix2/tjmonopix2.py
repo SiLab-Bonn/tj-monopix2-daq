@@ -409,9 +409,9 @@ class MaskObject(dict):
             else:
                 self.pix_to_write = np.logical_or(self.pix_to_write, np.not_equal(mask, self.was[name]))
 
-    def get_portal_address(self, col, row):
-        colgroup = int(col / 4)
-        pos_in_group = 3 - (col % 4)
+    # def get_portal_address(self, col, row):
+    #     colgroup = int(col / 4)
+    #     pos_in_group = 3 - (col % 4)
 
     def get_pixel_data(self, col, row):
         tdac = str(bin(self['tdac'][col, row]))[2:].zfill(3)
@@ -633,15 +633,6 @@ class TJMonoPix2(Dut):
         self.hitor_conf = np.zeros((512, 512), dtype=np.bool)
         self.debug = 0
 
-    def get_daq_version(self):
-        ret = self.daq['intf'].read(0x0000, 2)
-        fw_version = str('%s.%s' % (ret[1], ret[0]))
-
-        ret = self.daq['intf'].read(0x0002, 2)
-        board_version = ret[0] + (ret[1] << 8)
-
-        return fw_version, board_version
-
     def get_sn(self):
         return self.chip_sn
 
@@ -652,25 +643,26 @@ class TJMonoPix2(Dut):
         self.daq['CONF']['SEL_DIRECT'] = 1
         self.daq['CONF'].write()
         self.daq['cmd'].set_chip_type(1)  # ITkpixV1-like
-        self.fw_version, self.board_version = self.get_daq_version()
-        self.log.info('Found board %s running firmware version %s' % (self.board_version, self.fw_version))
 
         # power on
-        self.power_on()
+        if self.daq.board_version == 'mio3':
+            self.power_on()
+            # Start CLK before release reset
+            # Start chip in LVDS command mode
+            self.daq['CONF']['INPUT_SEL'] = 0
+            self.daq['CONF']['EN_LVDS_IN'] = 0
+            self.daq['CONF']['EN_LVDS_IN'] = 1
+            self.daq['CONF'].write()
 
-        # Start CLK before release reset
-        # Start chip in LVDS command mode
-        self.daq['CONF']['INPUT_SEL'] = 0
-        self.daq['CONF']['EN_LVDS_IN'] = 0
-        self.daq['CONF']['EN_LVDS_IN'] = 1
-        self.daq['CONF'].write()
         # release RESET
         self.daq['CONF']['RESET_EXT'] = 0
         self.daq['CONF'].write()
 
         self.write_command(self.write_sync(write=False) * 16)
+        self.configure_rx(delay=40, rd_frz_dly=40)
 
-        self.log.info(str(self.get_power_status()))
+        if self.daq.board_version == 'mio3':
+            self.log.info(str(self.get_power_status()))
 
     def load_config(self, filename):
         with open(filename) as f:
@@ -720,6 +712,14 @@ class TJMonoPix2(Dut):
             status[pwr + ' [mA]'] = 5 * self.daq[pwr].get_current(unit='mA') if pwr in [
                 "VDDP", "VDDD", "VDDA", "VDDA_DAC"] else self.daq[pwr].get_current(unit='mA')
         return status
+
+    def configure_rx(self, delay=40, rd_frz_dly=40):
+        self.registers["READ_START_CONF"].write(1 + delay + rd_frz_dly)
+        self.registers["READ_STOP_CONF"].write(5 + delay + rd_frz_dly)
+        self.registers["FREEZE_START_CONF"].write(1 + delay)
+        self.registers["FREEZE_STOP_CONF"].write(40 + delay + rd_frz_dly)
+        self.registers["LOAD_CONF"].write(39 + delay + rd_frz_dly)
+        self.registers["STOP_CONF"].write(40 + delay + rd_frz_dly)
 
     def interpret_direct_hit(self, raw_data):
         hit_dtype = np.dtype(
