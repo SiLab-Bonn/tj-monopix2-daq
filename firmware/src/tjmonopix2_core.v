@@ -234,6 +234,7 @@ always @(posedge CLK40) begin
     else
         IO_FF <= {IO_FF[2:0],IO[0]};
 end
+
 pulse_gen
 #( 
     .BASEADDR(PULSE_RST_BASEADDR), 
@@ -246,12 +247,11 @@ pulse_gen
     .BUS_DATA(BUS_DATA[7:0]),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
-    .PULSE_CLK(CLK320),
+    .PULSE_CLK(CLK40),
     .EXT_START(~IO[0]),
     .PULSE(RST_PULSE)
 );
 assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
-// assign RESETB_EXT = ~IO[0];
 
 `ifdef BDAQ53
     wire CMOS_PULSE_EXT;
@@ -599,8 +599,8 @@ tjmono2_rx #(
     .ABUSWIDTH(16),
     .USE_FIFO_CLK(0)
 ) tjmono2_rx (
-    .RX_CLKX2(RX_CLKX2),
-    .RX_CLKW(RX_CLKW),
+    .RX_CLKX2(CLK160),
+    .RX_CLKW(CLK16),
     .RX_DATA(LVDS_DATA),
 
     .RX_READY(),
