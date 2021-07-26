@@ -34,7 +34,8 @@ module cmd_core
     output reg                  CMD_SERIAL_OUT,
     output wire                 CMD_OUTPUT_EN,
 
-    output wire                 BYPASS_MODE
+    output wire                 BYPASS_MODE_RESET,
+    output wire                 BYPASS_CDR
 );
 
 localparam VERSION = 2;
@@ -56,13 +57,14 @@ reg serializer_next_byte = 1'b0;
 reg [7:0] CMD_DATA_OUT_SR = 8'h00;
 wire serializer_next_doublebyte;
 wire serializer_next_halfbyte;
+wire AUTO_SYNC;
 
 reg [2:0] EN_delay = 2'b00;
 assign CMD_EN = EN_delay[2];
 
 // flags
 wire SOFT_RST;
-assign SOFT_RST = (BUS_ADD==0 && BUS_WR);
+assign SOFT_RST = (BUS_ADD == 0 && BUS_WR);
 wire RST;
 assign RST = BUS_RST || SOFT_RST;
 wire START;
@@ -74,7 +76,9 @@ reg AZ_START;
 
 // CDC
 wire RST_SYNC;
-cdc_reset_sync rst_reset_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(CMD_CLK), .pulse_out(RST_SYNC));
+wire RST_SOFT_SYNC;
+cdc_reset_sync rst_reset_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(CMD_CLK), .pulse_out(RST_SOFT_SYNC));
+assign RST_SYNC = RST_SOFT_SYNC;
 wire START_SYNC;
 cdc_pulse_sync start_pulse_sync (.clk_in(BUS_CLK), .pulse_in(START), .clk_out(CMD_CLK), .pulse_out(START_SYNC));
 wire EXT_START_SYNC;
@@ -95,14 +99,21 @@ always @(posedge CMD_CLK) begin
         trigger_index <= trigger_index_sr;
 end
 
-always @(posedge CMD_CLK) begin
-    if (CHIP_TYPE == 2'b00) begin //RD53A
-        SYNC_PATTERN <= 16'b0101010101010101;
-        end
-    else if (CHIP_TYPE == 2'b01) begin //ITkPixV1
-        SYNC_PATTERN <= 16'b1010101010101010;
-        end
+always @(*) begin
+    case (CHIP_TYPE)
+      2'h0: SYNC_PATTERN <= 16'b0101010101010101;
+      2'h1: SYNC_PATTERN <= 16'b1010101010101010;
+      default: SYNC_PATTERN <= 16'h0000; 
+    endcase
 end
+
+// always @(*) begin
+//     SYNC_PATTERN <= 16'b1000000101111110; 
+// end
+
+// always @(*) begin
+//     SYNC_PATTERN <= 16'h0000; 
+// end
 
 always @(trigger_index) begin
     case(trigger_index)
@@ -132,7 +143,7 @@ always @(posedge BUS_CLK) begin
     if(RST) begin
         status_regs[0] <= 0;
         status_regs[1] <= 0;
-        status_regs[2] <= 8'b00010000 | (BYPASS_MODE<<5);    // general flags and cmds {CHIP_TYPE[1:0], BYPASS_MODE, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE}. Default: Output enabled
+        status_regs[2] <= 8'b00010000;    // general flags and cmds {CHIP_TYPE[1:0], 1'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE}. Default: Output enabled and Auto Sync
         status_regs[3] <= 0;    // CMD size [7:0]
         status_regs[4] <= 0;    // CMD size [15:8]
         status_regs[5] <= 8'd1; // CONF_REPEAT_COUNT [7:0], repeat once by default
@@ -141,7 +152,7 @@ always @(posedge BUS_CLK) begin
         status_regs[8] <= 0;    // CMD_MEM_SIZE[15:8]
         status_regs[9] <= 0;    // AZ: veto wait cycles [7:0]
         status_regs[10] <= 0;   // AZ: veto wait cycles [15:8]
-        status_regs[11] <= 0;
+        status_regs[11] <= 8'b00011111 | {5'b0, AUTO_SYNC, BYPASS_CDR, BYPASS_MODE_RESET};
         status_regs[12] <= 0;
         status_regs[13] <= 0;
         status_regs[14] <= 0;
@@ -165,7 +176,9 @@ assign EXT_START_EN = status_regs[2][2];
 wire EXT_TRIGGER_EN;
 assign EXT_TRIGGER_EN = status_regs[2][3];
 assign CMD_OUTPUT_EN = status_regs[2][4];
-assign BYPASS_MODE = status_regs[2][5];
+assign BYPASS_MODE_RESET = status_regs[11][0];
+assign BYPASS_CDR = status_regs[11][1];
+assign AUTO_SYNC = status_regs[11][2];
 
 wire EXT_TRIGGER_EN_SYNC;
 three_stage_synchronizer ext_trigger_en_sync (
@@ -188,7 +201,7 @@ always @ (posedge BUS_CLK) begin
         if(BUS_ADD == 0)
             BUS_DATA_OUT_REG <= VERSION;
         else if(BUS_ADD == 2)
-            BUS_DATA_OUT_REG <= {CHIP_TYPE, BYPASS_MODE, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE};
+            BUS_DATA_OUT_REG <= {CHIP_TYPE, 1'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE};
         else if(BUS_ADD == 3)
             BUS_DATA_OUT_REG <= CONF_CMD_SIZE[7:0];
         else if(BUS_ADD == 4)
@@ -205,6 +218,8 @@ always @ (posedge BUS_CLK) begin
             BUS_DATA_OUT_REG <= CONF_AZ_VETO_CYLCES[7:0];
         else if(BUS_ADD == 10)
             BUS_DATA_OUT_REG <= CONF_AZ_VETO_CYLCES[15:8];
+        else if(BUS_ADD == 11)
+            BUS_DATA_OUT_REG <= {5'b0, AUTO_SYNC, BYPASS_CDR, BYPASS_MODE_RESET};
         else if(BUS_ADD < 16)
             BUS_DATA_OUT_REG <= BUS_STATUS_OUT;
     end
@@ -256,7 +271,7 @@ always @(posedge BUS_CLK)
 
 // FSM
 reg START_FSM;
-localparam STATE_INIT = 0, STATE_IDLE = 1, STATE_SYNC = 2, STATE_DATA_WRITE = 3, STATE_TRIGGER = 4;
+localparam STATE_INIT = 0, STATE_SYNC = 1, STATE_DATA_WRITE = 2, STATE_TRIGGER = 3;
 
 reg [3:0] state=STATE_INIT, next_state=STATE_INIT;
 
@@ -301,13 +316,7 @@ always @ (*) begin
         STATE_INIT:     // fixed output pattern to assist the pll locking
             if(START_FSM)
                 next_state = STATE_SYNC;
-/*
-        STATE_IDLE:
-            if(data_pending)
-                next_state = STATE_DATA_WRITE;
-            else
-                next_state = STATE_SYNC;
-*/
+
         STATE_SYNC:
             if(trigger_start && serializer_next_doublebyte) begin
                 next_state = STATE_TRIGGER;
@@ -353,12 +362,12 @@ always @ (posedge CMD_CLK) begin
 
     case(state)
         STATE_SYNC: begin
-            if (sync_cnt==0 | sync_cnt==2)
+            if ((sync_cnt==0 | sync_cnt==2) && AUTO_SYNC)
                 sync_halfpattern <= SYNC_PATTERN_UNSYMETRIC[15:8];
-            else if (sync_cnt==1 | sync_cnt==3)
+            else if ((sync_cnt==1 | sync_cnt==3) && AUTO_SYNC)
                 sync_halfpattern <= SYNC_PATTERN_UNSYMETRIC[7:0];
             else
-                sync_halfpattern <= SYNC_PATTERN[15:8];
+                sync_halfpattern <= SYNC_PATTERN;
         end
 
         STATE_DATA_WRITE: begin
@@ -417,12 +426,8 @@ end
 
 
 //MUX
-always @ (negedge CMD_CLK) begin
-    if (RST_SYNC) begin
-        CMD_DATA_OUT_SR <= 16'h0000;
-        CMD_SERIAL_OUT <= 1'b0;
-    end
-    else if(state==STATE_SYNC) begin
+always @ (posedge CMD_CLK) begin
+    if(state==STATE_SYNC) begin
         CMD_DATA_OUT_SR <= sync_halfpattern;
         CMD_SERIAL_OUT <= OUT_SR;
     end
@@ -430,10 +435,6 @@ always @ (negedge CMD_CLK) begin
         CMD_DATA_OUT_SR <= mem[read_address];
         CMD_SERIAL_OUT <= OUT_SR;
     end
-//    else if(state==STATE_IDLE) begin
-//        CMD_DATA_OUT_SR <= 8'h00;
-//        CMD_SERIAL_OUT <= OUT_SR;
-//        end
     else if(state==STATE_INIT)
         CMD_SERIAL_OUT <= ~CMD_SERIAL_OUT;  // write a 010101... pattern
     else if(state==STATE_TRIGGER) begin

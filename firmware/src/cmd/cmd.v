@@ -35,7 +35,8 @@ module cmd
     output wire                 CMD_SERIAL_OUT,
     output wire                 CMD_OUT,
 
-    output wire                 BYPASS_MODE
+    output wire                 BYPASS_MODE_RESET,
+    output wire                 BYPASS_CDR
 );
 
 wire IP_RD, IP_WR;
@@ -89,7 +90,8 @@ cmd_core
     .CMD_SERIAL_OUT(CMD_SERIAL_OUT),
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
 
-    .BYPASS_MODE(BYPASS_MODE)
+    .BYPASS_MODE_RESET(BYPASS_MODE_RESET),
+    .BYPASS_CDR(BYPASS_CDR)
 );
 
 assign CMD_OUT = CMD_SERIAL_OUT & CMD_OUTPUT_EN;

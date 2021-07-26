@@ -221,8 +221,8 @@ assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
     assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CLKCMD : 1'b0;
     assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
 `elsif BDAQ53
-    assign LVDS_SER_CLK = SER_CLK;
-    assign LVDS_CMD_CLK = CLKCMD;
+    assign LVDS_SER_CLK = CLK160;
+    assign LVDS_CMD_CLK = CLK160;
 `endif
 
 // ----- Reset pulser ----- //
@@ -301,8 +301,7 @@ pulse_gen #(
 
 // ----- Command encoder ----- //
 wire CMD;
-wire CMD_OUT, CMD_WRITING, CMD_OUTPUT_EN; //TODO they were output wire but connected to nowhere
-wire BYPASS_MODE;                         //TODO it was output wire...
+wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING; //TODO they were output wire but connected to nowhere
 wire CMD_LOOP_START_PULSE;                //TODO it was output wire...
 wire CMD_LOOP_START;
 
@@ -334,18 +333,16 @@ cmd #(
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
-    .CMD_CLK(CLKCMD),
+    .CMD_CLK(CLK160),
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
     .CMD_SERIAL_OUT(CMD),
-    .CMD_OUT(CMD_OUT),
-
-    .BYPASS_MODE(BYPASS_MODE)
+    .CMD_OUT(CMD_OUT)
 );
 `ifdef MIO3
     assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
     assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
 `elsif BDAQ53
-    assign LVDS_CMD = CMD;
+    assign LVDS_CMD = CMD_OUT;
 `endif
 
 // ----- CMD_START_LOOP -> TDC pulse generator ----- // TODO delete??
