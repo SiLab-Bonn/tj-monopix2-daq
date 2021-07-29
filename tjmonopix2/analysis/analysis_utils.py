@@ -1,6 +1,25 @@
+#
+# ------------------------------------------------------------
+# Copyright (c) All rights reserved
+# SiLab, Institute of Physics, University of Bonn
+# ------------------------------------------------------------
+#
+
 import ast
+import logging
+import tables as tb
 import numpy as np
-from numba import njit
+
+logger = logging.getLogger('Analysis')
+
+hit_dtype = np.dtype([
+    ("col", "<i2"),
+    ("row", "<i2"),
+    ("le", "<i1"),
+    ("te", "<i1"),
+    ("token_id", "<i8"),
+    ("scan_param_id", "<i4")
+])
 
 
 class ConfigDict(dict):
