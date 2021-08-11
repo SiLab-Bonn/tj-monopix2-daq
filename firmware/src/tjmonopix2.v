@@ -299,7 +299,12 @@ IBUFDS_GTE2 IBUFDS_refclk
     .IB              (MGT_REFCLK0_N)
 );
 
-assign LEMO_TX0 = CLKCMD;
+// assign LEMO_TX0 = CLKCMD;
+
+// -------  LEMO TX ------- //
+wire RJ45_CLK, RJ45_BUSY;
+// assign LEMO_TX0 = RJ45_CLK;
+// assign LEMO_TX1 = RJ45_BUSY;
 
 // -------  Diff buffer for BDAQ  ------- //
 `ifdef BDAQ53
@@ -672,9 +677,12 @@ tjmonopix2_core #(
 
     //LED
     .LED(LED[4:0]),
-    
+
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
-    .LEMO_TX({LEMO_TX1, LEMO_TX0}),
+    .RJ45_CLK(RJ45_CLK),
+    .RJ45_BUSY(RJ45_BUSY),
+    // .LEMO_TX0(LEMO_TX0),
+    // .LEMO_TX1(LEMO_TX1),
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
     .RESETB_EXT(RESETB_EXT), 

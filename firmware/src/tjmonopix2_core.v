@@ -34,7 +34,10 @@ module tjmonopix2_core #(
     // tlu, lemo, led
     output wire [4:0] LED,
     input wire [1:0] LEMO_RX,
-    output wire [1:0] LEMO_TX,
+    output wire RJ45_BUSY,
+    output wire RJ45_CLK,
+    // output wire LEMO_TX0,
+    // output wire LEMO_TX1,
     input wire RJ45_TRIGGER,
     input wire RJ45_RESET,
 
@@ -277,7 +280,7 @@ pulse_gen640 #(
     .PULSE_CLK160(CLK160),
     .PULSE_CLK(CLK40),
     .EXT_START(EXT_TRIGGER),
-    .PULSE({LEMO_TX[1], CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
+    .PULSE({CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
     .DEBUG()
 );
 
@@ -419,7 +422,6 @@ rrp_arbiter
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
 assign TRIGGER_ACKNOWLEDGE_FLAG = TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
-wire TLU_BUSY, TLU_CLK, TLU_TRIGGER, TLU_RESET;
 tlu_controller #(
     .BASEADDR(TLU_BASEADDR),
     .HIGHADDR(TLU_HIGHADDR),
@@ -451,17 +453,17 @@ tlu_controller #(
 
     .TLU_TRIGGER(RJ45_TRIGGER),
     .TLU_RESET(RJ45_RESET),
-    .TLU_BUSY(TLU_BUSY),
-    .TLU_CLOCK(TLU_CLK),
+    .TLU_BUSY(RJ45_BUSY),
+    .TLU_CLOCK(RJ45_CLK),
     .EXT_TIMESTAMP(),
     .TIMESTAMP(TIMESTAMP)
 );
-// assign LEMO_TX[0] = TLU_CLK;
-// assign LEMO_TX[1] = TLU_BUSY;
+// Needed for TLU module, do not change! TX is connected to TLU RJ45
+// assign LEMO_TX0 = TLU_CLK;
+// assign LEMO_TX1 = TLU_BUSY;
 
 // ----- TDC ----- //
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
-wire TDC_FIFO_READ;
 wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
 // wire LEMO_RX0_FROM_TDC;
 // wire HITOR_FROM_TDC;

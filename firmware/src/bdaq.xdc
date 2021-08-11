@@ -27,7 +27,7 @@ create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
 create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKOUT0] -divide_by 1600 [get_pins i_clock_divisor_i2c/CLOCK_reg/Q]
-create_generated_clock -name rgmii_txc -source [get_pins {rgmii/ODDR_inst/C}] -divide_by 1 [get_ports {rgmii_txc}]
+create_generated_clock -name rgmii_txc -source [get_pins rgmii/ODDR_inst/C] -divide_by 1 [get_ports rgmii_txc]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
 set_clock_groups -asynchronous -group {BUS_CLK_PLL I2C_CLK} -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
