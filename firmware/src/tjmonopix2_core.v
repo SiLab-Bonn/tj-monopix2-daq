@@ -225,7 +225,7 @@ assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
     assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
 `elsif BDAQ53
     assign LVDS_SER_CLK = CLK160;
-    assign LVDS_CMD_CLK = CLK160;
+    assign LVDS_CMD_CLK = CLKCMD;
 `endif
 
 // ----- Reset pulser ----- //
@@ -336,7 +336,7 @@ cmd #(
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
-    .CMD_CLK(CLK160),
+    .CMD_CLK(CLKCMD),
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT)

@@ -303,8 +303,8 @@ IBUFDS_GTE2 IBUFDS_refclk
 
 // -------  LEMO TX ------- //
 wire RJ45_CLK, RJ45_BUSY;
-// assign LEMO_TX0 = RJ45_CLK;
-// assign LEMO_TX1 = RJ45_BUSY;
+assign LEMO_TX0 = RJ45_CLK;
+assign LEMO_TX1 = RJ45_BUSY;
 
 // -------  Diff buffer for BDAQ  ------- //
 `ifdef BDAQ53
