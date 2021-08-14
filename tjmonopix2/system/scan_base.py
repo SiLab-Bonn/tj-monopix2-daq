@@ -1127,29 +1127,20 @@ class ScanBase(object):
                 self._close_logfile(handler)
 
     # Readout methods
-
     @contextmanager
-    def readout(self, scan_param_id=0, timeout=10.0, *args, **kwargs):
+    def readout(self, scan_param_id=0, timeout=10.0, **kwargs):
 
         self.scan_param_id = scan_param_id
 
         callback = kwargs.pop('callback', self.handle_data)
+        errback = kwargs.pop('errback', self.handle_err)
         fill_buffer = kwargs.pop('fill_buffer', False)
         clear_buffer = kwargs.pop('clear_buffer', False)
 
         if kwargs:
             self.store_scan_par_values(scan_param_id, **kwargs)
 
-        # receivers_readout = []
-        # if not self.is_parallel_scan:
-        #     self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
-        #     receivers_readout.append(self.chip.receiver)
-        # else:
-        #     for _ in self.iterate_chips():
-        #         self.fifo_readout.attach_channel(ReadoutChannel(receiver=self.chip.receiver, callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer))
-        #         receivers_readout.append(self.chip.receiver)
-
-        self.start_readout(*args, **kwargs)
+        self.start_readout(callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer, errback=errback, **kwargs)
         try:
             yield
         finally:
@@ -1158,7 +1149,7 @@ class ScanBase(object):
                     self.daq.rx_channels[self.chip.receiver].get_rx_ready()
             self.stop_readout(timeout=timeout)
 
-    def start_readout(self, *args, **kwargs):
+    def start_readout(self, **kwargs):
         # Pop parameters for fifo_readout.start
         callback = kwargs.pop('callback', self.handle_data)
         clear_buffer = kwargs.pop('clear_buffer', False)
@@ -1173,50 +1164,7 @@ class ScanBase(object):
     def stop_readout(self, timeout=10.0):
         self.fifo_readout.stop(timeout=timeout)
 
-    # def add_trigger_table_data(self, cmd_repetitions, scan_param_id):
-    #     '''
-    #         Mapping data to scan_param_id.
-    #     '''
-    #     self.trigger_table.row['cmd_number_start'] = self.ext_trig_num
-    #     self.trigger_table.row['cmd_number_stop'] = self.ext_trig_num + cmd_repetitions
-    #     self.trigger_table.row['cmd_length'] = cmd_repetitions
-    #     self.trigger_table.row['scan_param_id'] = scan_param_id
-
-    #     self.ext_trig_num += cmd_repetitions
-
-    #     self.trigger_table.row.append()
-    #     self.trigger_table.flush()
-
-    # def add_ptot_table_data(self, cmd_repetitions, scan_param_id, active_pixels):
-    #     '''
-    #         Map Ptot masking and scan parameter id to data.
-    #     '''
-    #     hitor_col = np.full(shape=(4,), fill_value=0xffff)
-    #     hitor_row = np.full(shape=(4,), fill_value=0xffff)
-
-    #     # Row and position inside core column is the same for the same hitor line within on mask step. Thus, store only last one.
-    #     for col, row in zip(active_pixels[0], active_pixels[1]):
-    #         # Its sufficient to store column position inside core column.
-    #         # Exact column will be extracted using ptot word from which hitor lane and core column can be extracted
-    #         col = np.mod(np.int(col), 8)  # Map column into core column.
-    #         row = np.int(row)
-    #         lane = self.chip.masks._get_hitor_lane(row, col)
-    #         hitor_col[lane] = col
-    #         hitor_row[lane] = row
-
-    #     self.ptot_table.row['cmd_number_start'] = self.ext_trig_num
-    #     self.ptot_table.row['cmd_number_stop'] = self.ext_trig_num + cmd_repetitions
-    #     self.ptot_table.row['cmd_length'] = cmd_repetitions
-    #     self.ptot_table.row['scan_param_id'] = scan_param_id
-    #     for lane in range(4):
-    #         self.ptot_table.row['hit_or_%i_col' % (lane + 1)] = hitor_col[lane]
-    #         self.ptot_table.row['hit_or_%i_row' % (lane + 1)] = hitor_row[lane]
-    #     self.ext_trig_num += cmd_repetitions
-
-    #     self.ptot_table.row.append()
-    #     self.ptot_table.flush()
-
-    def handle_data(self, data_tuple, receiver=None):
+    def handle_data(self, data_tuple):
         '''
             Handling of the data.
         '''
