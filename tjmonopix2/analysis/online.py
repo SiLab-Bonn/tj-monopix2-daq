@@ -165,12 +165,8 @@ class OnlineHistogrammingBase():
             try:
                 data = raw_data_queue.get(timeout=self._queue_timeout)
                 idle.clear()
-                if len(data) == 2:  # Raw data and meta data
-                    raw_data = data[0]
-                else:  # Only raw data
-                    raw_data = data
                 with lock:
-                    return_values = self.analysis_function(raw_data, hist, **self.analysis_function_kwargs)
+                    return_values = self.analysis_function(data, hist, **self.analysis_function_kwargs)
                     self.analysis_function_kwargs.update(zip(self.analysis_function_kwargs, return_values))
             except queue.Empty:
                 idle.set()
@@ -201,7 +197,7 @@ class OccupancyHistogramming(OnlineHistogrammingBase):
         No event building.
     '''
 
-    def __init__(self, chip_type='rd53a', rx_id=0):
+    def __init__(self):
         super().__init__(shape=(512, 512))
         self.analysis_function_kwargs = {'hit_data': np.zeros(1, dtype=au.hit_dtype), 'is_sof': -1, 'is_eof': -1, 'tj_data_flag': 0}
 
