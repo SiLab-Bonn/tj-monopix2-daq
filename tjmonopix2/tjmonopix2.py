@@ -616,21 +616,23 @@ class TJMonoPix2(Dut):
         else:
             raise TypeError('Supplied config has unknown format!')
 
-        # super(TJMonoPix2, self).__init__(config)
         self.chip_id = chip_id
         self.chip_sn = chip_sn
         self.receiver = receiver
+
+        self.registers = RegisterObject(self, 'registers.yaml')
 
         masks = {'enable': {'default': False},
                  'injection': {'default': False},
                  'tdac': {'default': 0}
                  }
         self.masks = MaskObject(self, masks, (512, 512))
-        self.registers = RegisterObject(self, 'registers.yaml')
 
-        self.pixel_conf = 7 * np.ones((512, 512), dtype=np.uint8)
-        self.injection_conf = np.zeros((512, 512), dtype=np.bool)
-        self.hitor_conf = np.zeros((512, 512), dtype=np.bool)
+        # Load disabled pixels from chip config
+        if 'disable' in self.configuration.keys():
+            for pix in self.configuration['disable']:
+                self.masks.disable_mask[pix[0], pix[1]] = False
+
         self.debug = 0
 
     def get_sn(self):
@@ -660,6 +662,7 @@ class TJMonoPix2(Dut):
 
         self.write_command(self.write_sync(write=False) * 16)
         self.configure_rx(delay=40, rd_frz_dly=40)
+        self.reset()
 
         if self.daq.board_version == 'mio3':
             self.log.info(str(self.get_power_status()))
@@ -720,6 +723,16 @@ class TJMonoPix2(Dut):
         self.registers["FREEZE_STOP_CONF"].write(40 + delay + rd_frz_dly)
         self.registers["LOAD_CONF"].write(39 + delay + rd_frz_dly)
         self.registers["STOP_CONF"].write(40 + delay + rd_frz_dly)
+
+    def reset(self):
+        #  Set all registers
+        self.registers.reset_all()
+        for reg, val in self.configuration['registers'].items():
+            self.registers[reg].set(val)
+        self.registers.write_all()
+
+        self.masks.reset_all()  # Set all masks to default and
+        self.masks.update(force=True)   # write all masks to chip
 
     def interpret_direct_hit(self, raw_data):
         hit_dtype = np.dtype(

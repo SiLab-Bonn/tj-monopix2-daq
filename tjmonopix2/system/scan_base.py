@@ -620,16 +620,16 @@ class ScanBase(object):
                     # Set TDAC mask, only available if previous file exists
                     # Do not set other masks, but use std. config for them
                     # Not really easy to understand logic: https://gitlab.cern.ch/silab/bdaq53/-/issues/401
-                    # if self.chip_conf['masks']:
-                    #     self.chip.masks['tdac'] = deepcopy(self.chip_conf['masks']['tdac'])
-                    # if not np.any(self.chip_conf['use_pixel']):  # first scan has no use_pixel mask defined
-                    #     self.chip_conf['use_pixel'] = np.ones_like(self.chip.masks['enable'])
+                    if self.chip_conf['masks']:
+                        self.chip.masks['tdac'] = deepcopy(self.chip_conf['masks']['tdac'])
+                    if not np.any(self.chip_conf['use_pixel']):  # first scan has no use_pixel mask defined
+                        self.chip_conf['use_pixel'] = np.ones_like(self.chip.masks['enable'])
                     # # Unset disabled pixels in use_pixel mask, issue #456
-                    # if self.chip_conf.get('disable_pixel'):
-                    #     for p in self.chip_conf.get('disable_pixel'):
-                    #         p_idx = ast.literal_eval(p)
-                    #         self.chip_conf['use_pixel'][p_idx] = 0
-                    # self.chip.masks.disable_mask = deepcopy(self.chip_conf['use_pixel'])
+                    if self.chip_conf.get('disable_pixel'):
+                        for p in self.chip_conf.get('disable_pixel'):
+                            p_idx = ast.literal_eval(p)
+                            self.chip_conf['use_pixel'][p_idx] = 0
+                    self.chip.masks.disable_mask = deepcopy(self.chip_conf['use_pixel'])
 
                     # # Check if chip is configured properly
                     # if self.daq.board_version != 'SIMULATION':
@@ -748,7 +748,7 @@ class ScanBase(object):
                 # chip_conf['calibration'] = fill_dict_from_conf_table(configuration.chip.calibration)
                 # chip_conf['trim'] = fill_dict_from_conf_table(configuration.chip.trim)
                 chip_conf['registers'] = fill_dict_from_conf_table(configuration.chip.registers)
-                # chip_conf['use_pixel'] = configuration.chip.use_pixel[:]
+                chip_conf['use_pixel'] = configuration.chip.use_pixel[:]
                 chip_conf['masks'] = {}
                 for node in configuration.chip.masks:
                     chip_conf['masks'][node.name] = node[:]
@@ -757,7 +757,7 @@ class ScanBase(object):
                 chip_conf = yaml.full_load(conf_yaml)
                 # No pixel config in yaml
                 chip_conf['masks'] = {}
-                # chip_conf['use_pixel'] = {}
+                chip_conf['use_pixel'] = {}
         return chip_conf
 
     def _create_chip_container(self, scan_config, scan_config_per_chip):
@@ -889,7 +889,7 @@ class ScanBase(object):
         for name, reg in self.chip.registers.items():
             row = register_table.row
             row['register'] = name
-            row['value'] = hex(reg.get())
+            row['value'] = reg.get()
             row.append()
         register_table.flush()
         # # Chip calibration table
@@ -912,8 +912,8 @@ class ScanBase(object):
         for name, value in self.chip.masks.items():
             h5_file.create_carray(mask_node, name=name, title=name.capitalize(), obj=value, filters=FILTER_RAW_DATA)
 
-        # # Virtual enable mask
-        # h5_file.create_carray(chip_node, name='use_pixel', title='Select pixels to be used in scans', obj=self.chip.masks.disable_mask, filters=FILTER_RAW_DATA)
+        # Virtual enable mask
+        h5_file.create_carray(chip_node, name='use_pixel', title='Select pixels to be used in scans', obj=self.chip.masks.disable_mask, filters=FILTER_RAW_DATA)
 
         bench_node = h5_file.create_group(node, 'bench', 'Test bench settings')
 
