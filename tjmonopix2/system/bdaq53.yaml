@@ -17,7 +17,7 @@ hw_drivers:
   - name      : i2c
     type      : i2c
     interface : intf
-    base_addr : 0x2000
+    base_addr : 0x3000
 
   - name      : FIFO
     type      : sitcp_fifo
@@ -38,7 +38,12 @@ hw_drivers:
   - name      : system
     type      : tjmonopix2.system.board
     interface : intf
-    base_addr : 0x10300
+
+  - name      : gpio_daq_control
+    type      : gpio
+    interface : intf
+    base_addr : 0x2F00
+    size      : 16
 
   - name      : inj
     type      : tjmonopix2.pulse_gen640
@@ -102,6 +107,33 @@ hw_drivers:
     base_addr : 0x1A000
 
 registers:
+  - name        : DAQ_CONTROL
+    type        : StdRegister
+    hw_driver   : gpio_daq_control
+    size        : 16
+    fields:
+      - name    : MGT_REF_SEL
+        size    : 1
+        offset  : 15
+      - name    : LEMO_MUX_TX1
+        size    : 2
+        offset  : 14
+      - name    : LEMO_MUX_TX0
+        size    : 2
+        offset  : 12
+      - name    : LEMO_MUX_RX1
+        size    : 2
+        offset  : 10
+      - name    : LEMO_MUX_RX0
+        size    : 2
+        offset  : 8
+      - name    : NTC_MUX
+        size    : 3
+        offset  : 6
+      - name    : SENSE
+        size    : 4
+        offset  : 3
+
   - name        : CONF
     type        : StdRegister
     hw_driver   : gpio

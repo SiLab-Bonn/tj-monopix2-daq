@@ -107,6 +107,36 @@ class BDAQ53(Dut):
                     chip_cfgs.append(v)
         return chip_cfgs
 
+    def set_LEMO_MUX(self, connector='LEMO_MUX_TX0', value=0):
+        '''
+        Sets the multiplexer in order to select which signal is routed to LEMO ports. So far only used
+        for LEMO_TX ports.
+
+        Parameters
+        ----------
+        connector : string
+            Name of the LEMO connector. Possible names: LEMO_MUX_TX1, LEMO_MUX_TX0
+        value : int
+            Value specifying the multiplexer state. Default is 0.
+            LEMO_TX_0: not used (3), not used (2), CMD_LOOP_START_PULSE (1), RJ45_CLK (0)
+            LEMO_TX_1: not used (3), not used (2), not used (1), RJ45_BUSY (0)
+        '''
+
+        # TODO:  LEMO_MUX_RX1 and LEMO_MUX_RX0 not yet used
+        # According to FW. None means not used.
+        lemo_tx0_signals = ['RJ45_CLK', 'CMD_LOOP_START_PULSE', None, None]
+        lemo_tx1_signals = ['RJ45_BUSY', None, None, None]
+        if connector in ('LEMO_MUX_TX1', 'LEMO_MUX_TX0') and value in range(4):
+            self['DAQ_CONTROL'][connector] = value
+            self['DAQ_CONTROL'].write()
+            if 'TX0' in connector:
+                signal = lemo_tx0_signals[value]
+            if 'TX1' in connector:
+                signal = lemo_tx1_signals[value]
+            self.log.info('%s set to %s (%s)' % (connector, value, signal))
+        else:
+            self.log.error('%s or %s are invalid' % (connector, value))
+
     def get_trigger_counter(self):
         return self['tlu']['TRIGGER_COUNTER']
 

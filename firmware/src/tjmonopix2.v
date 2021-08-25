@@ -299,12 +299,12 @@ IBUFDS_GTE2 IBUFDS_refclk
     .IB              (MGT_REFCLK0_N)
 );
 
-// assign LEMO_TX0 = CLKCMD;
-
 // -------  LEMO TX ------- //
 wire RJ45_CLK, RJ45_BUSY;
-assign LEMO_TX0 = RJ45_CLK;
-assign LEMO_TX1 = RJ45_BUSY;
+wire CMD_LOOP_START_PULSE;
+wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
+assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
+assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
 
 // -------  Diff buffer for BDAQ  ------- //
 `ifdef BDAQ53
@@ -574,8 +574,8 @@ rbcp_to_bus irbcp_to_bus(
 ); 
 
 // -------  MODULE ADREESSES  ------- //
-localparam I2C_BASEADDR = 32'h2000;
-localparam I2C_HIGHADDR = 32'h3000-1;
+localparam I2C_BASEADDR = 16'h3000;
+localparam I2C_HIGHADDR = 16'h4000-1;
 
 // ------- MODULES for GPAC - I2C module  ------- //
 (* KEEP = "{TRUE}" *)
@@ -668,6 +668,9 @@ tjmonopix2_core #(
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
 
+    //cmd
+    .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
+
     //fifo
     .ARB_READY_OUT(ARB_READY_OUT),
     .ARB_WRITE_OUT(ARB_WRITE_OUT),
@@ -677,14 +680,13 @@ tjmonopix2_core #(
 
     //LED
     .LED(LED[4:0]),
-
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
+    .LEMO_MUX({LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0}),
     .RJ45_CLK(RJ45_CLK),
     .RJ45_BUSY(RJ45_BUSY),
-    // .LEMO_TX0(LEMO_TX0),
-    // .LEMO_TX1(LEMO_TX1),
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
+
     .RESETB_EXT(RESETB_EXT), 
 
     .LVDS_CMD(LVDS_CMD), 

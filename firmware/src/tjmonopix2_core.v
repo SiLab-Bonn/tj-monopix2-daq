@@ -23,6 +23,16 @@ module tjmonopix2_core #(
     input wire CLK160,
     input wire CLK320,
     input wire CLKCMD,
+    output wire MGT_REF_SEL,
+
+    //cmd
+    output wire CMD_LOOP_START_PULSE,
+
+    // Displayport control signals
+    input wire [3:0] GPIO_SENSE,
+
+    // NTC
+    output wire [2:0] NTC_MUX,
 
     //fifo
     input wire ARB_READY_OUT,
@@ -30,14 +40,13 @@ module tjmonopix2_core #(
     output wire [31:0] ARB_DATA_OUT,
     input wire FIFO_FULL,
     input wire FIFO_NEAR_FULL,
-    
+
     // tlu, lemo, led
     output wire [4:0] LED,
     input wire [1:0] LEMO_RX,
+    output wire [7:0] LEMO_MUX,
     output wire RJ45_BUSY,
     output wire RJ45_CLK,
-    // output wire LEMO_TX0,
-    // output wire LEMO_TX1,
     input wire RJ45_TRIGGER,
     input wire RJ45_RESET,
 
@@ -93,10 +102,9 @@ reg SI570_IS_CONFIGURED = 1'b0;
 // VERSION/BOARD READBACK
 localparam VERSION = 1; // Module version
 
-
 // -------  MODULE ADREESSES  ------- //
-localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
-localparam DAQ_SYSTEM_HIGHADDR = 32'h0400-1;
+localparam DAQ_SYSTEM_BASEADDR = 16'h0300;
+localparam DAQ_SYSTEM_HIGHADDR = 16'h0400-1;
 
 localparam GPIO_BASEADDR = 16'h0010;
 localparam GPIO_HIGHADDR = 16'h0100-1;
@@ -110,8 +118,11 @@ localparam RX_HIGHADDR = 16'h0300-1;
 localparam PULSE_RST_BASEADDR = 16'h0400;
 localparam PULSE_RST_HIGHADDR = 16'h0500-1;
 
-localparam DIRECT_RX_BASEADDR = 16'h0500;
-localparam DIRECT_RX_HIGHADDR = 16'h0600-1;
+localparam GPIO_DAQ_CONTROL_BASEADDR = 16'h2F00;
+localparam GPIO_DAQ_CONTROL_HIGHADDR = 16'h3000-1;
+
+// localparam DIRECT_RX_BASEADDR = 16'h0500;
+// localparam DIRECT_RX_HIGHADDR = 16'h0600-1;
 
 localparam TLU_BASEADDR = 16'h0600;
 localparam TLU_HIGHADDR = 16'h0700-1;
@@ -228,6 +239,29 @@ assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
     assign LVDS_CMD_CLK = CLKCMD;
 `endif
 
+// GPIO module to access general base-board features
+wire [15:0] IO_CONTROL;
+assign MGT_REF_SEL = ~IO_CONTROL[15];   // invert, because the default value '0' should correspond to the internal clock
+assign LEMO_MUX = IO_CONTROL[14:7];
+assign NTC_MUX = IO_CONTROL[6:4];
+assign IO_CONTROL[3:0] = GPIO_SENSE;
+
+gpio #(
+    .BASEADDR(GPIO_DAQ_CONTROL_BASEADDR),
+    .HIGHADDR(GPIO_DAQ_CONTROL_HIGHADDR),
+    .ABUSWIDTH(16),
+    .IO_WIDTH(16),
+    .IO_DIRECTION(16'hfff0)
+) i_gpio_control (
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+    .IO(IO_CONTROL)
+);
+
 // ----- Reset pulser ----- //
 wire RST_PULSE;
 reg [2:0] IO_FF;
@@ -305,7 +339,6 @@ pulse_gen #(
 // ----- Command encoder ----- //
 wire CMD;
 wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING; //TODO they were output wire but connected to nowhere
-wire CMD_LOOP_START_PULSE;                //TODO it was output wire...
 wire CMD_LOOP_START;
 
 wire EXT_START_PIN;
@@ -348,7 +381,6 @@ cmd #(
     assign LVDS_CMD = CMD_OUT;
 `endif
 
-// ----- CMD_START_LOOP -> TDC pulse generator ----- // TODO delete??
 pulse_gen #(
     .BASEADDR(PULSE_CMD_START_LOOP_BASEADDR),
     .HIGHADDR(PULSE_CMD_START_LOOP_HIGHADDR)
@@ -458,9 +490,6 @@ tlu_controller #(
     .EXT_TIMESTAMP(),
     .TIMESTAMP(TIMESTAMP)
 );
-// Needed for TLU module, do not change! TX is connected to TLU RJ45
-// assign LEMO_TX0 = TLU_CLK;
-// assign LEMO_TX1 = TLU_BUSY;
 
 // ----- TDC ----- //
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
