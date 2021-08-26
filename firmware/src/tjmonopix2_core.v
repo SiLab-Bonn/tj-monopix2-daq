@@ -1,6 +1,44 @@
-
 `timescale 1ns / 1ps
 `default_nettype none
+
+// Basil modules
+`include "spi/spi_core.v"
+`include "spi/spi.v"
+`include "spi/blk_mem_gen_8_to_1_2k.v"
+
+`include "gpio/gpio.v"
+`include "gpio/gpio_core.v"
+
+`include "tlu/tlu_controller.v"
+`include "tlu/tlu_controller_core.v"
+`include "tlu/tlu_controller_fsm.v"
+
+`include "tdc_s3/tdc_s3.v"
+`include "tdc_s3/tdc_s3_core.v"
+
+`include "timestamp/timestamp.v"
+`include "timestamp/timestamp_core.v"
+
+`include "pulse_gen/pulse_gen.v"
+`include "pulse_gen/pulse_gen_core.v"
+`include "pulse_gen_rising.v"
+
+// Custom modules
+`include "cmd/cmd.v"
+`include "cmd/cmd_core.v"
+`include "timestamp640/timestamp640.v"
+`include "timestamp640/timestamp640_core.v"
+`include "pulse_gen640/pulse_gen640.v"
+`include "pulse_gen640/pulse_gen640_core.v"
+
+`include "tjmono2_rx/tjmono2_rx.v"
+`include "tjmono2_rx/tjmono2_rx_core.v"
+`include "tjmono2_rx/receiver_logic.v"
+`include "tjmono2_rx/rec_sync.v"
+`include "tjmono2_rx/decode_8b10b.v"
+
+// `include "tjmono_direct_rx/tjmono_direct_rx.v"
+// `include "tjmono_direct_rx/tjmono_direct_rx_core.v"
 
 module tjmonopix2_core #(
     // FIRMWARE VERSION
@@ -193,7 +231,6 @@ always @ (posedge BUS_CLK)
     end
 
 // -------  USER MODULES  ------- //
-
 wire [23:0] IO;
 gpio 
 #( 
@@ -318,24 +355,6 @@ pulse_gen640 #(
     .DEBUG()
 );
 
-// ----- Pulser for trigger command ----- //
-wire EXT_START_VETO;
-pulse_gen #(
-    .BASEADDR(PULSE_TRIG_BASEADDR),
-    .HIGHADDR(PULSE_TRIG_HIGHADDR)
-) i_pulse_gen_trig (
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
-
-    .PULSE_CLK(CLK160),
-    .EXT_START(RJ45_TRIGGER & ~EXT_START_VETO),   // don't send triggers during the az phase (for sync fe)
-    .PULSE(EXT_TRIGGER)
-);
-
 // ----- Command encoder ----- //
 wire CMD;
 wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING; //TODO they were output wire but connected to nowhere
@@ -344,7 +363,6 @@ wire CMD_LOOP_START;
 wire EXT_START_PIN;
 wire CMD_EXT_START_ENABLED;
 wire AZ_VETO_FLAG, AZ_VETO_TLU_PULSE;
-assign EXT_START_VETO = AZ_VETO_FLAG;   // don't send triggers during the az phase (for sync fe)
 assign AZ_VETO_TLU_PULSE = 1'b0;
 cmd #(
     .BASEADDR(CMD_BASEADDR),
@@ -399,48 +417,44 @@ pulse_gen #(
 
 wire RX_FIFO_READ, RX_FIFO_EMPTY;
 wire [31:0] RX_FIFO_DATA;
-wire DIRECT_RX_FIFO_READ, DIRECT_RX_FIFO_EMPTY;
-wire [31:0] DIRECT_RX_FIFO_DATA;
-wire TS_HOR_FIFO_READ,TS_HOR_FIFO_EMPTY;
-wire [31:0] TS_HOR_FIFO_DATA;
-wire TS_HOR_TRAILING_FIFO_READ,TS_HOR_TRAILING_FIFO_EMPTY;
-wire [31:0] TS_HOR_TRAILING_FIFO_DATA;
+// wire DIRECT_RX_FIFO_READ, DIRECT_RX_FIFO_EMPTY;
+// wire [31:0] DIRECT_RX_FIFO_DATA;
+// wire TS_HOR_FIFO_READ,TS_HOR_FIFO_EMPTY;
+// wire [31:0] TS_HOR_FIFO_DATA;
+// wire TS_HOR_TRAILING_FIFO_READ,TS_HOR_TRAILING_FIFO_EMPTY;
+// wire [31:0] TS_HOR_TRAILING_FIFO_DATA;
 
 wire  TLU_FIFO_READ, TLU_FIFO_EMPTY;
 wire [31:0] TLU_FIFO_DATA;
-wire TS_RX0_FIFO_READ,TS_RX0_FIFO_EMPTY;
-wire [31:0] TS_RX0_FIFO_DATA;
-wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
-wire [31:0] TS_INJ_FIFO_DATA;
+// wire TS_RX0_FIFO_READ,TS_RX0_FIFO_EMPTY;
+// wire [31:0] TS_RX0_FIFO_DATA;
+// wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
+// wire [31:0] TS_INJ_FIFO_DATA;
 
 // TDC
-wire TDC_FIFO_EMPTY;
+wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
 wire [31:0] TDC_FIFO_DATA;
-wire TDC_FIFO_READ;
 
 wire TLU_FIFO_PREEMPT_REQ;
 
 rrp_arbiter 
 #( 
-    .WIDTH(4)
+    .WIDTH(3)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
 
     .WRITE_REQ({
-        ~TS_INJ_FIFO_EMPTY, 
         ~RX_FIFO_EMPTY,
         ~TLU_FIFO_EMPTY,
         ~TDC_FIFO_EMPTY
     }),
-    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
-        TS_INJ_FIFO_DATA,
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
         TDC_FIFO_DATA}),
     .READ_GRANT({
-        TS_INJ_FIFO_READ, 
         RX_FIFO_READ,
         TLU_FIFO_READ,
         TDC_FIFO_READ
@@ -590,33 +604,33 @@ tdc_s3 #(
 //     .FIFO_DATA_TRAILING()
 // );
 
-// LEMO_RX0 or flatcable 5 is loop back of injection pulse
-timestamp640 #(
-    .BASEADDR(TS_INJ_BASEADDR),
-    .HIGHADDR(TS_INJ_HIGHADDR),
-    .IDENTIFIER(4'b0110)
-)i_timestamp640_inj(
-    .BUS_CLK(BUS_CLK),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RST(BUS_RST),
-    .BUS_WR(BUS_WR),
-    .BUS_RD(BUS_RD),
+// // LEMO_RX0 or flatcable 5 is loop back of injection pulse
+// timestamp640 #(
+//     .BASEADDR(TS_INJ_BASEADDR),
+//     .HIGHADDR(TS_INJ_HIGHADDR),
+//     .IDENTIFIER(4'b0110)
+// )i_timestamp640_inj(
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RST(BUS_RST),
+//     .BUS_WR(BUS_WR),
+//     .BUS_RD(BUS_RD),
     
-    .CLK40(CLK40),
-    .CLK160(CLK160),
-    .CLK320(CLK320),
-    .DI(LEMO_RX[1]),
-    .EXT_ENABLE(),
-    .EXT_TIMESTAMP(TIMESTAMP),
-    .TIMESTAMP_OUT(),
-    .FIFO_READ(TS_INJ_FIFO_READ),
-    .FIFO_EMPTY(TS_INJ_FIFO_EMPTY),
-    .FIFO_DATA(TS_INJ_FIFO_DATA),
-    .FIFO_READ_TRAILING(),
-    .FIFO_EMPTY_TRAILING(),
-    .FIFO_DATA_TRAILING()
-);
+//     .CLK40(CLK40),
+//     .CLK160(CLK160),
+//     .CLK320(CLK320),
+//     .DI(LEMO_RX[1]),
+//     .EXT_ENABLE(),
+//     .EXT_TIMESTAMP(TIMESTAMP),
+//     .TIMESTAMP_OUT(),
+//     .FIFO_READ(TS_INJ_FIFO_READ),
+//     .FIFO_EMPTY(TS_INJ_FIFO_EMPTY),
+//     .FIFO_DATA(TS_INJ_FIFO_DATA),
+//     .FIFO_READ_TRAILING(),
+//     .FIFO_EMPTY_TRAILING(),
+//     .FIFO_DATA_TRAILING()
+// );
 
 //************************************************
 // fast readout

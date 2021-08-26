@@ -24,51 +24,15 @@
 `include "utils/rgmii_io.v"
 `include "utils/rbcp_to_bus.v"
 
-////SiTCP
+// SiTCP
 `include "WRAP_SiTCP_GMII_XC7K_32K.V"
 `include "SiTCP_XC7K_32K_BBT_V110.V"
 `include "TIMER.v"
 
-////User core and its modules
+// User core and its modules
 `include "tjmonopix2_core.v"
 
-`include "spi/spi_core.v"
-`include "spi/spi.v"
-`include "spi/blk_mem_gen_8_to_1_2k.v"
-
-`include "gpio/gpio.v"
-`include "gpio/gpio_core.v"
-
-`include "tlu/tlu_controller.v"
-`include "tlu/tlu_controller_core.v"
-`include "tlu/tlu_controller_fsm.v"
-
-`include "tdc_s3/tdc_s3.v"
-`include "tdc_s3/tdc_s3_core.v"
-
-`include "timestamp/timestamp.v"
-`include "timestamp/timestamp_core.v"
-
-`include "pulse_gen/pulse_gen.v"
-`include "pulse_gen/pulse_gen_core.v"
-
-`include "tjmono2_rx/tjmono2_rx.v"
-`include "tjmono2_rx/tjmono2_rx_core.v"
-`include "tjmono2_rx/receiver_logic.v"
-`include "tjmono2_rx/rec_sync.v"
-`include "tjmono2_rx/decode_8b10b.v"
-// `include "tjmono2_rx/sync_master.v"
-// `include "tjmono_direct_rx/tjmono_direct_rx.v"
-// `include "tjmono_direct_rx/tjmono_direct_rx_core.v"
-`include "cmd/cmd.v"
-`include "cmd/cmd_core.v"
-`include "pulse_gen_rising.v"
-`include "timestamp640/timestamp640.v"
-`include "timestamp640/timestamp640_core.v"
-`include "pulse_gen640/pulse_gen640.v"
-`include "pulse_gen640/pulse_gen640_core.v"
-
-module tjmonopix2_mio3 #(
+module tjmonopix2 #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
     parameter VERSION_MINOR = 8'd0,
@@ -149,7 +113,6 @@ module tjmonopix2_mio3 #(
     output wire phy_rst_n
 );
 
-
  // ------- RESET/CLOCK  ------- //
  (* KEEP = "{TRUE}" *) wire BUS_CLK;
 
@@ -165,28 +128,27 @@ PLLE2_BASE #(
     .CLKIN1_PERIOD(10.000),      // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
     .DIVCLK_DIVIDE(1),        // Master division value, (1-56)
     .REF_JITTER1(0.0),        // Reference input jitter in UI, (0.000-0.999).
-    .STARTUP_WAIT("FALSE"),     // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
+    .STARTUP_WAIT("FALSE"),   // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
     
-    .CLKOUT0_DIVIDE(7),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT0_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT1_DIVIDE(4),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT1_DIVIDE(4),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT1_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT1_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT2_DIVIDE(8),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT2_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT2_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT2_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT3_DIVIDE(8),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT3_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT3_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
-    .CLKOUT3_PHASE(90.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+    .CLKOUT3_PHASE(90.0),     // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT4_DIVIDE(8),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT4_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
-    .CLKOUT4_PHASE(-5.625)      // Phase offset for CLKOUT0 (-360.000-360.000).
-    //-65 -> 0?; - 45 -> 39;  -25 -> 100; -5 -> 0;
+    .CLKOUT4_PHASE(-5.625)    // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_comm (
     .CLKOUT0(BUS_CLK_PLL),
     .CLKOUT1(CLK250PLL),
@@ -196,7 +158,7 @@ PLLE2_BASE #(
     
     .CLKFBOUT(PLL_FEEDBACK),
     
-    .LOCKED(LOCKED),     // 1-bit output: LOCK
+    .LOCKED(LOCKED),          // 1-bit output: LOCK
     
     // Input 100 MHz clock
     .CLKIN1(FCLK_IN),
@@ -228,35 +190,34 @@ PLLE2_BASE #(
     .BANDWIDTH("OPTIMIZED"),  // OPTIMIZED, HIGH, LOW
     .CLKFBOUT_MULT(16),       // Multiply value for all CLKOUT, (2-64)
     .CLKFBOUT_PHASE(0.0),     // Phase offset in degrees of CLKFB, (-360.000-360.000).
-    .CLKIN1_PERIOD(10.000),      // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
+    .CLKIN1_PERIOD(10.000),   // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
     .DIVCLK_DIVIDE(1),        // Master division value, (1-56)
     .REF_JITTER1(0.0),        // Reference input jitter in UI, (0.000-0.999).
-    .STARTUP_WAIT("FALSE"),     // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
+    .STARTUP_WAIT("FALSE"),   // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
 
     .CLKOUT0_DIVIDE(100),     // Divide amount for CLKOUT0 (1-128)
     .CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT1_DIVIDE(50),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT1_DIVIDE(50),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT1_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT1_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT2_DIVIDE(40),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT2_DIVIDE(40),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT2_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT2_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT3_DIVIDE(10),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT3_DIVIDE(10),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT3_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT3_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT4_DIVIDE(5),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT4_DIVIDE(5),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
     
-    .CLKOUT5_DIVIDE(7),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT5_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
-    .CLKOUT5_PHASE(0.0)      // Phase offset for CLKOUT0 (-360.000-360.000).
-
+    .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
     .CLKOUT0(CLK16_PLL),
     .CLKOUT1(CLK32_PLL),
@@ -267,7 +228,7 @@ PLLE2_BASE #(
 
     .CLKFBOUT(PLL_FEEDBACK2),
     
-    .LOCKED(LOCKED2),     // 1-bit output: LOCK
+    .LOCKED(LOCKED2),         // 1-bit output: LOCK
     
     // Input 100 MHz clock
     .CLKIN1(FCLK_IN),
