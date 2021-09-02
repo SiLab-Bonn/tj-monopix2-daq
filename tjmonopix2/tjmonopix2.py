@@ -432,6 +432,14 @@ class MaskObject(dict):
         return np.packbits(inj, bitorder='little').view(np.uint16)[0]
 
     def update(self, force=False):
+        ''' Write the actual pixel register configuration
+
+            Only write changes or the complete matrix
+        '''
+
+        if force and self.chip.daq.board_version == 'SIMULATION':
+            return []
+
         self._find_changes()
         if force:
             inj_write_mask = np.ones(self.dimensions, bool)
@@ -547,7 +555,7 @@ class DoubleShiftPattern(ShiftPatternBase):
         return np.roll(self.base_mask, step, 0)
 
 
-class TJMonoPix2(Dut):
+class TJMonoPix2(object):
 
     """ Map hardware IDs for board identification """
     hw_map = {
@@ -660,9 +668,9 @@ class TJMonoPix2(Dut):
         self.daq['CONF']['RESET_EXT'] = 0
         self.daq['CONF'].write()
 
-        self.write_command(self.write_sync(write=False) * 16)
-        self.configure_rx(delay=40, rd_frz_dly=40)
+        self.write_command(self.write_sync(write=False) * 32)
         self.reset()
+        self.configure_rx(delay=40, rd_frz_dly=40)
 
         if self.daq.board_version == 'mio3':
             self.log.info(str(self.get_power_status()))
@@ -725,6 +733,9 @@ class TJMonoPix2(Dut):
         self.registers["STOP_CONF"].write(40 + delay + rd_frz_dly)
 
     def reset(self):
+        if self.daq.board_version == 'SIMULATION':
+            return
+
         #  Set all registers
         self.registers.reset_all()
         for reg, val in self.configuration['registers'].items():

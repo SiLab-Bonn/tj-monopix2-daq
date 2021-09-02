@@ -61,7 +61,7 @@ class BDAQ53(Dut):
         # Initialize readout (only one chip supported)
         self.rx_channels = {}
         self.rx_channels['rx0'] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                            'base_addr': 0x10200})
+                                                            'base_addr': 0x0200})
         self.rx_channels['rx0'].init()
 
         # self.rx_lanes = {}

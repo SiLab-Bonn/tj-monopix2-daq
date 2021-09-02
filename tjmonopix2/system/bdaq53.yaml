@@ -14,16 +14,16 @@ transfer_layer:
         tcp_connection : True
 
 hw_drivers:
-  - name      : i2c
-    type      : i2c
-    interface : intf
-    base_addr : 0x3000
-
   - name      : FIFO
     type      : sitcp_fifo
     interface : intf
     base_addr : 0x200000000
     base_data_addr : 0x100000000
+
+  - name      : i2c
+    type      : i2c
+    interface : intf
+    base_addr : 0x3000
 
   - name      : gpio
     type      : gpio
@@ -99,9 +99,9 @@ hw_drivers:
   #   base_addr : 0x10D00
 
   - name      : cmd
-    type      : tjmonopix2.cmd
+    type      : tjmonopix2.system.cmd
     interface : intf
-    base_addr : 0xA000
+    base_addr : 0x1000
 
 registers:
   - name        : DAQ_CONTROL

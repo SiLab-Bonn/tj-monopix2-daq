@@ -2,12 +2,17 @@
 `default_nettype none
 
 // Basil modules
+`include "i2c/i2c.v"
+`include "i2c/i2c_core.v"
+
 `include "spi/spi_core.v"
 `include "spi/spi.v"
 `include "spi/blk_mem_gen_8_to_1_2k.v"
 
 `include "gpio/gpio.v"
 `include "gpio/gpio_core.v"
+
+`include "rrp_arbiter/rrp_arbiter.v"
 
 `include "tlu/tlu_controller.v"
 `include "tlu/tlu_controller_core.v"
@@ -22,6 +27,9 @@
 `include "pulse_gen/pulse_gen.v"
 `include "pulse_gen/pulse_gen_core.v"
 `include "pulse_gen_rising.v"
+
+`include "utils/3_stage_synchronizer.v"
+`include "utils/clock_divider.v"
 
 // Custom modules
 `include "cmd/cmd.v"
@@ -46,15 +54,15 @@ module tjmonopix2_core #(
     parameter VERSION_MINOR = 8'd0,
     parameter VERSION_PATCH = 8'd0
 )(
-    //local bus
+    // local bus
     input wire BUS_CLK,
     inout wire [7:0] BUS_DATA,
-    input wire [15:0] BUS_ADD,
+    input wire [31:0] BUS_ADD,
     input wire BUS_RD,
     input wire BUS_WR,
     input wire BUS_RST,
 
-    //clocks
+    // clocks
     input wire CLK16,
     input wire CLK32,
     input wire CLK40,
@@ -62,6 +70,10 @@ module tjmonopix2_core #(
     input wire CLK320,
     input wire CLKCMD,
     output wire MGT_REF_SEL,
+
+    // i2c
+    inout wire I2C_SCL,
+    inout wire I2C_SDA,
 
     //cmd
     output wire CMD_LOOP_START_PULSE,
@@ -72,7 +84,7 @@ module tjmonopix2_core #(
     // NTC
     output wire [2:0] NTC_MUX,
 
-    //fifo
+    // Fifo
     input wire ARB_READY_OUT,
     output wire ARB_WRITE_OUT,
     output wire [31:0] ARB_DATA_OUT,
@@ -128,7 +140,9 @@ localparam SIM = 8'd0;
 localparam BDAQ53 = 8'd1;
 localparam MIO3 = 8'd2;
 
-`ifdef BDAQ53
+`ifdef SIM
+    localparam BOARD = SIM;
+`elsif BDAQ53
     localparam BOARD = BDAQ53;
 `elsif MIO3
     localparam BOARD = MIO3;
@@ -141,54 +155,60 @@ reg SI570_IS_CONFIGURED = 1'b0;
 localparam VERSION = 1; // Module version
 
 // -------  MODULE ADREESSES  ------- //
-localparam DAQ_SYSTEM_BASEADDR = 16'h0300;
-localparam DAQ_SYSTEM_HIGHADDR = 16'h0400-1;
+localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
+localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
 
-localparam GPIO_BASEADDR = 16'h0010;
-localparam GPIO_HIGHADDR = 16'h0100-1;
+localparam GPIO_BASEADDR = 32'h0010;
+localparam GPIO_HIGHADDR = 32'h0100 - 1;
 
-localparam PULSE_INJ_BASEADDR = 16'h0100;
-localparam PULSE_INJ_HIGHADDR = 16'h0200-1;
+localparam PULSE_INJ_BASEADDR = 32'h0100;
+localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
 
-localparam RX_BASEADDR = 16'h0200;
-localparam RX_HIGHADDR = 16'h0300-1; 
+localparam RX_BASEADDR = 32'h0200;
+localparam RX_HIGHADDR = 32'h0300 - 1; 
 
-localparam PULSE_RST_BASEADDR = 16'h0400;
-localparam PULSE_RST_HIGHADDR = 16'h0500-1;
+localparam PULSE_RST_BASEADDR = 32'h0400;
+localparam PULSE_RST_HIGHADDR = 32'h0500 - 1;
 
-localparam GPIO_DAQ_CONTROL_BASEADDR = 16'h2F00;
-localparam GPIO_DAQ_CONTROL_HIGHADDR = 16'h3000-1;
+localparam GPIO_DAQ_CONTROL_BASEADDR = 32'h2F00;
+localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h3000 - 1;
 
-// localparam DIRECT_RX_BASEADDR = 16'h0500;
-// localparam DIRECT_RX_HIGHADDR = 16'h0600-1;
+localparam TLU_BASEADDR = 32'h0600;
+localparam TLU_HIGHADDR = 32'h0700 - 1;
 
-localparam TLU_BASEADDR = 16'h0600;
-localparam TLU_HIGHADDR = 16'h0700-1;
+localparam TDC_BASEADDR = 32'h2E00;
+localparam TDC_HIGHADDR = 32'h2F00 - 1;
 
-localparam TDC_BASEADDR = 16'h2E00;
-localparam TDC_HIGHADDR = 16'h2F00-1;
+localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
+localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
 
-localparam TS_INJ_BASEADDR = 16'h0700;
-localparam TS_INJ_HIGHADDR = 16'h0800-1;
-//localparam TS_CMOS_HIT_OR_BASEADDR = 16'h0800;
-//localparam TS_CMOS_HIT_OR_HIGHADDR = 16'h0900-1;
-localparam TS_HOR_BASEADDR = 16'h0900;
-localparam TS_HOR_HIGHADDR = 16'h0A00-1;
+localparam I2C_BASEADDR = 32'h3000;
+localparam I2C_HIGHADDR = 32'h4000 - 1;
 
-localparam PULSE_TRIG_BASEADDR = 16'h0B00;
-localparam PULSE_TRIG_HIGHADDR = 16'h0C00 - 1;
+localparam CMD_BASEADDR = 32'h1000;
+localparam CMD_HIGHADDR = 32'h3000 - 1;
 
-localparam PULSE_CMD_START_LOOP_BASEADDR = 16'h0C00;
-localparam PULSE_CMD_START_LOOP_HIGHADDR = 16'h0D00 - 1;
+// localparam TS_RX0_BASEADDR = 32'h0D00;
+// localparam TS_RX0_HIGHADDR = 32'h0E00-1;
 
-localparam TS_RX0_BASEADDR = 16'h0D00;
-localparam TS_RX0_HIGHADDR = 16'h0E00-1;
+// localparam DIRECT_RX_BASEADDR = 32'h0500;
+// localparam DIRECT_RX_HIGHADDR = 32'h0600-1;
 
-localparam CMD_BASEADDR = 16'hA000;
-localparam CMD_HIGHADDR = 16'hC000 - 1;
+// localparam TS_INJ_BASEADDR = 32'h0700;
+// localparam TS_INJ_HIGHADDR = 32'h0800-1;
+
+// localparam TS_CMOS_HIT_OR_BASEADDR = 32'h0800;
+// localparam TS_CMOS_HIT_OR_HIGHADDR = 32'h0900-1;
+
+// localparam TS_HOR_BASEADDR = 32'h0900;
+// localparam TS_HOR_HIGHADDR = 32'h0A00 - 1;
+
+// localparam PULSE_TRIG_BASEADDR = 32'h0B00;
+// localparam PULSE_TRIG_HIGHADDR = 32'h0C00 - 1;
+
+localparam ABUSWIDTH = 32;
 
 // SYSTEM CONFIG
-localparam ABUSWIDTH = 16;
 wire DAQ_SYSTEM_RD, DAQ_SYSTEM_WR;
 wire [ABUSWIDTH-1:0] DAQ_SYSTEM_ADD;
 wire [7:0] DAQ_SYSTEM_DATA_IN;
@@ -208,7 +228,7 @@ bus_to_ip #( .BASEADDR(DAQ_SYSTEM_BASEADDR), .HIGHADDR(DAQ_SYSTEM_HIGHADDR), .AB
     .IP_DATA_OUT(DAQ_SYSTEM_DATA_OUT)
 );
 
-reg [7:0] BUS_DATA_OUT_REG;
+reg [31:0] BUS_DATA_OUT_REG;
 always @ (posedge BUS_CLK) begin
     if(DAQ_SYSTEM_RD) begin
         case (DAQ_SYSTEM_ADD)
@@ -236,6 +256,7 @@ gpio
 #( 
     .BASEADDR(GPIO_BASEADDR), 
     .HIGHADDR(GPIO_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH),
     .IO_WIDTH(24),
     .IO_DIRECTION(24'hfff0ff)
 ) gpio_i
@@ -243,7 +264,7 @@ gpio
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA[7:0]),
+    .BUS_DATA(BUS_DATA),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .IO(IO)
@@ -286,7 +307,7 @@ assign IO_CONTROL[3:0] = GPIO_SENSE;
 gpio #(
     .BASEADDR(GPIO_DAQ_CONTROL_BASEADDR),
     .HIGHADDR(GPIO_DAQ_CONTROL_HIGHADDR),
-    .ABUSWIDTH(16),
+    .ABUSWIDTH(ABUSWIDTH),
     .IO_WIDTH(16),
     .IO_DIRECTION(16'hfff0)
 ) i_gpio_control (
@@ -312,13 +333,14 @@ end
 pulse_gen
 #( 
     .BASEADDR(PULSE_RST_BASEADDR), 
-    .HIGHADDR(PULSE_RST_HIGHADDR)
+    .HIGHADDR(PULSE_RST_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH)
 ) pulse_gen_rst
 (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA[7:0]),
+    .BUS_DATA(BUS_DATA),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .PULSE_CLK(CLK40),
@@ -331,29 +353,63 @@ assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
     wire CMOS_PULSE_EXT;
 `endif
 
-// ----- Pulser for injection ----- //
-wire EXT_TRIGGER;
-pulse_gen640 #( 
-    .BASEADDR(PULSE_INJ_BASEADDR), 
-    .HIGHADDR(PULSE_INJ_HIGHADDR),
-    .ABUSWIDTH(16),
-    .CLKDV(4),
-    .OUTPUT_SIZE(2)
-) pulse_gen_inj (
+// ------- MODULES for GPAC - I2C module  ------- //
+wire I2C_CLK;
+
+clock_divider #(
+.DIVISOR(1600)
+) i_clock_divisor_i2c (
+    .CLK(BUS_CLK),
+    .RESET(1'b0),
+    .CE(),
+    .CLOCK(I2C_CLK)
+);
+
+i2c
+#(
+    .BASEADDR(I2C_BASEADDR),
+    .HIGHADDR(I2C_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH),
+    .MEM_BYTES(32)
+)  i_i2c
+(
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA[7:0]),
+    .BUS_DATA(BUS_DATA),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK320(CLK320),
-    .PULSE_CLK160(CLK160),
-    .PULSE_CLK(CLK40),
-    .EXT_START(EXT_TRIGGER),
-    .PULSE({CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
-    .DEBUG()
+    .I2C_CLK(I2C_CLK),
+    .I2C_SDA(I2C_SDA),
+    .I2C_SCL(I2C_SCL)
 );
+
+// ----- Pulser for injection ----- //
+wire EXT_TRIGGER;
+`ifndef SIM
+    pulse_gen640 #( 
+        .BASEADDR(PULSE_INJ_BASEADDR), 
+        .HIGHADDR(PULSE_INJ_HIGHADDR),
+        .ABUSWIDTH(ABUSWIDTH),
+        .CLKDV(4),
+        .OUTPUT_SIZE(2)
+    ) pulse_gen_inj (
+        .BUS_CLK(BUS_CLK),
+        .BUS_RST(BUS_RST),
+        .BUS_ADD(BUS_ADD),
+        .BUS_DATA(BUS_DATA),
+        .BUS_RD(BUS_RD),
+        .BUS_WR(BUS_WR),
+
+        .PULSE_CLK320(CLK320),
+        .PULSE_CLK160(CLK160),
+        .PULSE_CLK(CLK40),
+        .EXT_START(EXT_TRIGGER),
+        .PULSE({CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
+        .DEBUG()
+    );
+`endif
 
 // ----- Command encoder ----- //
 wire CMD;
@@ -367,7 +423,7 @@ assign AZ_VETO_TLU_PULSE = 1'b0;
 cmd #(
     .BASEADDR(CMD_BASEADDR),
     .HIGHADDR(CMD_HIGHADDR),
-    .ABUSWIDTH(16)
+    .ABUSWIDTH(ABUSWIDTH)
 ) i_cmd (
     .CHIP_TYPE(),
     .BUS_CLK(BUS_CLK),
@@ -401,7 +457,8 @@ cmd #(
 
 pulse_gen #(
     .BASEADDR(PULSE_CMD_START_LOOP_BASEADDR),
-    .HIGHADDR(PULSE_CMD_START_LOOP_HIGHADDR)
+    .HIGHADDR(PULSE_CMD_START_LOOP_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH)
 ) i_pulse_gen_cmd_start_loop (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
@@ -472,7 +529,7 @@ tlu_controller #(
     .BASEADDR(TLU_BASEADDR),
     .HIGHADDR(TLU_HIGHADDR),
     .DIVISOR(8),
-    .ABUSWIDTH(32),
+    .ABUSWIDTH(ABUSWIDTH),
     .WIDTH(8),
     .TLU_TRIGGER_MAX_CLOCK_CYCLES(32)
 ) i_tlu_controller (
@@ -514,7 +571,7 @@ wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
 tdc_s3 #(
     .BASEADDR(TDC_BASEADDR),
     .HIGHADDR(TDC_HIGHADDR),
-    .ABUSWIDTH(32),
+    .ABUSWIDTH(ABUSWIDTH),
     .CLKDV(CLKDV),
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
@@ -525,13 +582,13 @@ tdc_s3 #(
     .CLK160(CLK160),      // 160 MHz
     .DV_CLK(CLK40),       // 40 MHz
     .TDC_IN(LVDS_HITOR),  // HITOR
-    .TDC_OUT(1'b0),
+    .TDC_OUT(),
     .TRIG_IN(LEMO_RX[0]),
-    .TRIG_OUT(1'b0),
+    .TRIG_OUT(),
 
     // input/output trigger signals for broadcasting mode
     .FAST_TRIGGER_IN(16'b0),
-    .FAST_TRIGGER_OUT(16'b0),  // collect 640 MHz sampled trigger signal to pass it to other modules
+    .FAST_TRIGGER_OUT(),  // collect 640 MHz sampled trigger signal to pass it to other modules
 
     .FIFO_READ(TDC_FIFO_READ),
     .FIFO_EMPTY(TDC_FIFO_EMPTY),
@@ -641,7 +698,7 @@ tjmono2_rx #(
     .BASEADDR(RX_BASEADDR),
     .HIGHADDR(RX_HIGHADDR),
     .DATA_IDENTIFIER(4'b0100),
-    .ABUSWIDTH(16),
+    .ABUSWIDTH(ABUSWIDTH),
     .USE_FIFO_CLK(0)
 ) tjmono2_rx (
     .RX_CLKX2(CLK160),

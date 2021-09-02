@@ -9,17 +9,12 @@
 
 `include "utils/CG_MOD_pos.v"
 
-`include "utils/3_stage_synchronizer.v"
-`include "rrp_arbiter/rrp_arbiter.v"
 `include "utils/ddr_des.v"
 `include "utils/flag_domain_crossing.v"
 
 `include "utils/cdc_reset_sync.v"
 
 `include "utils/fifo_32_to_8.v"
-`include "utils/clock_divider.v"
-`include "i2c/i2c.v"
-`include "i2c/i2c_core.v"
 
 `include "utils/rgmii_io.v"
 `include "utils/rbcp_to_bus.v"
@@ -628,6 +623,9 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
+
+    .I2C_SDA(I2C_SDA),
+    .I2C_SCL(I2C_SCL),
 
     //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
