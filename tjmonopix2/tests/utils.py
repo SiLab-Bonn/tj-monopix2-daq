@@ -8,6 +8,7 @@
 import os
 import yaml
 import basil
+import cocotb
 import socketserver
 
 import tjmonopix2
@@ -18,6 +19,9 @@ from basil.utils.sim.utils import cocotb_compile_and_run
 def setup_cocotb(extra_defines=[]):
     if 'SIM' not in os.environ.keys():
         os.environ['SIM'] = 'verilator'
+
+    if os.environ['SIM'] == 'verilator':
+        patch_cocotb_makefile()
 
     # if hit_file is not None and len(hit_file) > 0:
     #     os.environ['SIMULATION_MODULES'] = yaml.dump({'tjmonopix2_daq.sim.HitDataFile': {
@@ -49,6 +53,7 @@ def setup_cocotb(extra_defines=[]):
         include_dirs=(
             top_dir,
             top_dir + "/firmware/src",
+            top_dir + "/tjmonopix2/tests/hdl",
             basil_dir + "/firmware/modules",
             basil_dir + "/firmware/modules/utils",
         ),
@@ -56,12 +61,12 @@ def setup_cocotb(extra_defines=[]):
             "-GVERSION_MAJOR=0",
             "-GVERSION_MINOR=1",
             "-GVERSION_PATCH=0",
+            "-LDFLAGS /home/silab/git/tj-monopix2-daq/tjmonopix2/tests/hdl/libmonopix2.a",
             "--hierarchical",
-            # "-Wno-INSECURE",
             "-Wno-COMBDLY",
             "-Wno-PINMISSING",
             "-Wno-fatal",
-            "-j", "4"],
+            "-j 4"],
         extra_defines=extra_defines,
         extra="EXTRA_ARGS = --trace-fst --trace-structs"
     )
@@ -81,3 +86,11 @@ def setup_cocotb(extra_defines=[]):
     os.environ['SiSim'] = '1'
 
     return cnfg
+
+def patch_cocotb_makefile():
+    makefile_path = os.path.join(os.path.dirname(cocotb.__file__), 'share/makefiles/simulators')
+    with open(os.path.join(makefile_path, 'Makefile.verilator'), 'r+') as makefile:
+        content = makefile.read()
+        makefile.seek(0)
+        makefile.truncate()
+        makefile.write(content.replace('--public-flat-rw ', ''))
