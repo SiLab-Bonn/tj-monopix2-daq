@@ -136,6 +136,10 @@ firmware/SiTCP/*
 
 # Firmware
 firmware/vivado/*
-!firmware/vivado/*.xpr
 !firmware/vivado/run.tcl
+firmware/bit/*
 
+# Output files
+*.log
+*.h5
+*.pdf

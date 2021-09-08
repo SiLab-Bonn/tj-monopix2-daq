@@ -170,8 +170,8 @@ localparam RX_HIGHADDR = 32'h0300 - 1;
 localparam PULSE_RST_BASEADDR = 32'h0400;
 localparam PULSE_RST_HIGHADDR = 32'h0500 - 1;
 
-localparam GPIO_DAQ_CONTROL_BASEADDR = 32'h2F00;
-localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h3000 - 1;
+localparam GPIO_DAQ_CONTROL_BASEADDR = 32'h0500;
+localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h0600 - 1;
 
 localparam TLU_BASEADDR = 32'h0600;
 localparam TLU_HIGHADDR = 32'h0700 - 1;

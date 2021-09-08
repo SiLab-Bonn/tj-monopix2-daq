@@ -529,43 +529,6 @@ rbcp_to_bus irbcp_to_bus(
     .BUS_DATA(BUS_DATA)
 ); 
 
-// -------  MODULE ADREESSES  ------- //
-localparam I2C_BASEADDR = 16'h3000;
-localparam I2C_HIGHADDR = 16'h4000-1;
-
-// ------- MODULES for GPAC - I2C module  ------- //
-(* KEEP = "{TRUE}" *)
-wire I2C_CLK;
-
-clock_divider #(
-.DIVISOR(1600)
-) i_clock_divisor_i2c (
-    .CLK(BUS_CLK),
-    .RESET(1'b0),
-    .CE(),
-    .CLOCK(I2C_CLK)
-);
-
-i2c
-#(
-    .BASEADDR(I2C_BASEADDR),
-    .HIGHADDR(I2C_HIGHADDR),
-    .ABUSWIDTH(32),
-    .MEM_BYTES(32)
-)  i_i2c
-(
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
-
-    .I2C_CLK(I2C_CLK),
-    .I2C_SDA(I2C_SDA),
-    .I2C_SCL(I2C_SCL)
-);
-
 // -------  MODULES for fast data readout(FIFO) - cdc_fifo is for timing reasons
 wire ARB_READY_OUT,ARB_WRITE_OUT;
 wire [31:0] ARB_DATA_OUT;

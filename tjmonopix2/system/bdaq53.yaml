@@ -39,7 +39,7 @@ hw_drivers:
   - name      : gpio_daq_control
     type      : gpio
     interface : intf
-    base_addr : 0x2F00
+    base_addr : 0x0500
     size      : 16
 
   - name      : inj
