@@ -13,11 +13,15 @@
 `include "utils/bus_to_ip.v"
 `include "utils/generic_fifo.v"
 
-// Use basil IDDR instead of Xilinx
+// Use basil simulation modules instead of Xilinx IP
 `include "utils/IDDR_sim.v"
+`include "utils/RAMB16_S1_S9_sim.v"
 
 `include "bram_fifo/bram_fifo.v"
 `include "bram_fifo/bram_fifo_core.v"
+
+// Chip RTL
+`include "monopix2.sv"
 
  module tb #(
     // FIRMWARE VERSION
@@ -88,7 +92,7 @@ tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
     .VERSION_PATCH(VERSION_PATCH)
-) i_tjmonopix2_core (
+) fpga (
     //local bus
     .BUS_CLK(BUS_CLK),
     .BUS_DATA(BUS_DATA[7:0]),
@@ -161,6 +165,20 @@ bram_fifo
     .FIFO_FULL(FIFO_FULL),
     .FIFO_NEAR_FULL(FIFO_NEAR_FULL),
     .FIFO_READ_ERROR()
+);
+
+monopix2 dut (
+    .RESETB_EXT(RESETB_EXT),
+
+    .LVDS_CMD(LVDS_CMD), 
+    .LVDS_CMD_CLK(LVDS_CMD_CLK), 
+    .LVDS_SER_CLK(LVDS_SER_CLK), 
+    .LVDS_DATA_OUT(LVDS_DATA), 
+    .LVDS_HITOR_OUT(LVDS_HITOR),
+    .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
+
+    .LVDS_CHSYNC_LOCKED_OUT(),
+    .LVDS_CHSYNC_CLK_OUT()
 );
 
 endmodule
