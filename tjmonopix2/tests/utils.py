@@ -61,7 +61,7 @@ def setup_cocotb(extra_defines=[]):
             "-GVERSION_MAJOR=0",
             "-GVERSION_MINOR=1",
             "-GVERSION_PATCH=0",
-            "-LDFLAGS /home/silab/git/tj-monopix2-daq/tjmonopix2/tests/hdl/libmonopix2.a",
+            "-LDFLAGS {:s}/tjmonopix2/tests/hdl/libmonopix2.a".format(top_dir),
             "--hierarchical",
             "-Wno-COMBDLY",
             "-Wno-PINMISSING",
