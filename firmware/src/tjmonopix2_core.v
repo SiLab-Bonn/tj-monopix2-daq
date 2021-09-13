@@ -176,8 +176,8 @@ localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h0600 - 1;
 localparam TLU_BASEADDR = 32'h0600;
 localparam TLU_HIGHADDR = 32'h0700 - 1;
 
-localparam TDC_BASEADDR = 32'h2E00;
-localparam TDC_HIGHADDR = 32'h2F00 - 1;
+localparam TDC_BASEADDR = 32'h0700;
+localparam TDC_HIGHADDR = 32'h0800 - 1;
 
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;

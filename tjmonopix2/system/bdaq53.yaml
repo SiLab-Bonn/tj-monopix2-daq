@@ -65,7 +65,7 @@ hw_drivers:
   - name      : tdc
     type      : tdc_s3
     interface : intf
-    base_addr : 0x2E00
+    base_addr : 0x0700
   
   # - name      : timestamp_rx0  #4
   #   type      : tjmonopix2.timestamp640
