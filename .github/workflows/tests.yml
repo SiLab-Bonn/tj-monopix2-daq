@@ -31,7 +31,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda info -a
-        conda install coloredlogs numba numpy matplotlib pyyaml pytables tqdm scipy
+        conda install coloredlogs numba numpy matplotlib pyyaml pytables pytest tqdm scipy
     - name: Install Python dependencies
       shell: bash -l {0}
       run: |
