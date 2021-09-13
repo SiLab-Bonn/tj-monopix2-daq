@@ -46,8 +46,11 @@ jobs:
         ./configure
         make -j $(nproc)
         sudo make install
-    - name: Test
+    - name: Install package
       shell: bash -l {0}
       run: |
         pip install -e .
+    - name: Test
+      shell: bash -l {0}
+      run: |
         pytest tjmonopix2/tests/test_*.py
