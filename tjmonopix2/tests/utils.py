@@ -33,7 +33,7 @@ def setup_cocotb(extra_defines=[]):
 
     simulation_modules = {}
     #simulation_modules["hit_drivers.HitDefault"] = {}
-    simulation_modules["Drive320Clock"] = {}
+    simulation_modules['tjmonopix2.tests.Drive320Clock'] = {}
     os.environ["SIMULATION_MODULES"] = yaml.dump(simulation_modules)
     os.environ["SIMULATION_END_ON_DISCONNECT"] = "1"
     os.environ["COCOTB_REDUCED_LOG_FMT"] = "1"
