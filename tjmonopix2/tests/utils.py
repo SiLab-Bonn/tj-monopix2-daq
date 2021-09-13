@@ -94,3 +94,6 @@ def patch_cocotb_makefile():
         makefile.seek(0)
         makefile.truncate()
         makefile.write(content.replace('--public-flat-rw ', ''))
+
+def wait_for_sim(dut, repetitions=8):
+    dut.write_command(dut.write_sync(write=False), repetitions=repetitions)

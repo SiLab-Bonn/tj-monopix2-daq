@@ -26,11 +26,31 @@ class TestFirmware(unittest.TestCase):
     def tearDown(self) -> None:
         self.daq.close()
 
-    def test_something(self) -> None:
+    def test_register_rw(self) -> None:
         self.dut.registers["VL"].write(38)
         reg = self.dut.registers["VL"].read()
         self.dut.write_command(self.dut.write_sync(write=False), repetitions=8)
         self.assertEqual(reg, 38)
+
+    def test_rx(self) -> None:
+        self.dut.registers["SEL_PULSE_EXT_CONF"].write(0)  # Use internal injection
+
+        # Activate pixel (1, 1)
+        self.dut.masks['enable'][1, 128] = True
+        self.dut.masks['tdac'][1, 128] = 0b100
+        self.dut.masks['injection'][1, 128] = True
+        self.dut.masks.update()
+
+        self.daq.reset_fifo()
+        self.dut.inject(PulseStartCnfg=0, PulseStopCnfg=8, repetitions=5)
+        utils.wait_for_sim(self.dut, repetitions=16)
+        data = self.daq["FIFO"].get_data()
+        hit, _ = self.dut.interpret_data(data)
+        tot = (hit['te'] - hit['le']) & 0x7F
+        self.assertListEqual(hit['col'].tolist(), [1] * 5)
+        self.assertListEqual(hit['row'].tolist(), [128] * 5)
+        self.assertListEqual(tot.tolist(), [1] * 5)
+
 
 if __name__ == '__main__':
     unittest.main()
