@@ -196,35 +196,7 @@ class BDAQ53(Dut):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
 
     def reset_fifo(self):
-        self['FIFO']['RESET']
-
-    # def set_tlu(self, tlu_delay=8):
-    #     self["tlu"]["RESET"] = 1
-    #     self["tlu"]["TRIGGER_MODE"] = 3
-    #     self["tlu"]["EN_TLU_VETO"] = 0
-    #     self["tlu"]["MAX_TRIGGERS"] = 0
-    #     self["tlu"]["TRIGGER_COUNTER"] = 0
-    #     self["tlu"]["TRIGGER_LOW_TIMEOUT"] = 0
-    #     self["tlu"]["TRIGGER_VETO_SELECT"] = 0
-    #     self["tlu"]["TRIGGER_THRESHOLD"] = 0
-    #     self["tlu"]["DATA_FORMAT"] = 2
-    #     self["tlu"]["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 20
-    #     self["tlu"]["TRIGGER_DATA_DELAY"] = tlu_delay
-    #     self["tlu"]["TRIGGER_SELECT"] = 0
-    #     self["timestamp_tlu"]["RESET"] = 1
-    #     self["timestamp_tlu"]["EXT_TIMESTAMP"] = 1
-    #     self["timestamp_tlu"]["ENABLE_TOT"] = 0
-    #     logging.info("set_tlu: tlu_delay=%d" % tlu_delay)
-
-    #     self["timestamp_tlu"]["ENABLE_EXTERN"] = 1
-    #     self["tlu"]["TRIGGER_ENABLE"] = 1
-
-    # def stop_tlu(self):
-    #     self["tlu"]["TRIGGER_ENABLE"] = 0
-    #     self["timestamp_tlu"]["ENABLE_EXTERN"] = 0
-    #     lost_cnt = self["timestamp_tlu"]["LOST_COUNT"]
-    #     if lost_cnt != 0:
-    #         logging.warn("stop_tlu: error cnt=%d" % lost_cnt)
+        self['FIFO']['RESET'] = 0
 
     # def set_timestamp(self, src="rx0"):
     #     self["timestamp_{}".format(src)].reset()
