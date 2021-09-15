@@ -31,7 +31,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda info -a
-        conda install coloredlogs numba numpy matplotlib pyyaml tables tqdm scipy
+        conda install coloredlogs numba numpy matplotlib pyyaml pytables pytest tqdm scipy
     - name: Install Python dependencies
       shell: bash -l {0}
       run: |
@@ -46,8 +46,11 @@ jobs:
         ./configure
         make -j $(nproc)
         sudo make install
-    - name: Test
+    - name: Install package
       shell: bash -l {0}
       run: |
         pip install -e .
+    - name: Test
+      shell: bash -l {0}
+      run: |
         pytest tjmonopix2/tests/test_*.py
