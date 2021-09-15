@@ -1,15 +1,11 @@
 import numpy as np
 import numba
-from tqdm import tqdm
-
 
 class_spec = [
     ('sof', numba.boolean),
     ('eof', numba.boolean),
     ('token_id', numba.uint32),
     ('tj_data_flag', numba.uint8),
-    ('meta_idx', numba.uint32),
-    ('raw_idx', numba.uint32),
     ('error_cnt', numba.int32),
     ('col', numba.int16),
     ('row', numba.int16),
@@ -27,6 +23,8 @@ class_spec = [
     ('inj_timestamp', numba.int64),
     ('tlu_timestamp', numba.int64),
 
+    ('hist_occ', numba.uint32[:,:,:]),
+    ('hist_tot', numba.uint16[:,:,:,:]),
 ]
 
 
@@ -52,31 +50,19 @@ def get_tlu_timestamp(word):
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self):
+    def __init__(self, n_scan_params=1):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
         self.token_id = 0
-        self.raw_idx = 0
-        self.meta_idx = 0
+        self.tj_data_flag = 0
 
-    def get_error_count(self):
-        return self.error_cnt
+        self.hist_occ = np.zeros((512, 512, n_scan_params), dtype=numba.uint32)
+        self.hist_tot = np.zeros((512, 512, n_scan_params, 128), dtype=numba.uint16)
 
-    def gray2bin(self, gray):
-        b6 = gray & 0x40
-        b5 = (gray & 0x20) ^ (b6 >> 1)
-        b4 = (gray & 0x10) ^ (b5 >> 1)
-        b3 = (gray & 0x08) ^ (b4 >> 1)
-        b2 = (gray & 0x04) ^ (b3 >> 1)
-        b1 = (gray & 0x02) ^ (b2 >> 1)
-        b0 = (gray & 0x01) ^ (b1 >> 1)
-        return b6 + b5 + b4 + b3 + b2 + b1 + b0
-
-    def interpret(self, raw_data, meta_data, hit_data):
+    def interpret(self, raw_data, hit_data, scan_param_id=0):
         hit_index = 0
-        raw_i = 0
-        
+
         for raw_data_word in raw_data:
             #############################
             # Part 1: interpret TJ word #
@@ -93,6 +79,7 @@ class RawDataInterpreter(object):
                             self.error_cnt += 1  # SOF before EOF
                         self.sof = True
                         self.col = self.row = self.le = self.te = -1
+                        self.tj_data_flag = 0  # Reset data flag
                     elif d == 0x17c:  # EOF hit data
                         if not self.sof:
                             self.error_cnt += 1  # EOF before SOF
@@ -109,11 +96,11 @@ class RawDataInterpreter(object):
                             self.col = (d & 0xFF) << 1
                         elif self.tj_data_flag == 1:
                             self.tj_data_flag = 2
-                            self.le = self.gray2bin((d & 0xfe) >> 1)
+                            self.le = self._gray2bin((d & 0xfe) >> 1)
                             self.te = (d & 0x01) << 6
                         elif self.tj_data_flag == 2:
                             self.tj_data_flag = 3
-                            self.te = self.gray2bin(self.te | ((d & 0xfc) >> 2))
+                            self.te = self._gray2bin(self.te | ((d & 0xfc) >> 2))
                             self.row = (d & 0x01) << 8
                             self.col = self.col + ((d & 0x02) >> 1)
                         elif self.tj_data_flag == 3:
@@ -125,7 +112,10 @@ class RawDataInterpreter(object):
                             hit_data[hit_index]["le"] = self.le
                             hit_data[hit_index]["te"] = self.te
                             hit_data[hit_index]["token_id"] = self.token_id
-                            hit_data[hit_index]["scan_param_id"] = self.raw_idx
+                            hit_data[hit_index]["scan_param_id"] = scan_param_id
+
+                            self._fill_hist(self.col, self.row, (self.te - self.le) & 0x7F, scan_param_id)
+
                             hit_index += 1
                         else:
                             self.error_cnt += 1
@@ -143,20 +133,31 @@ class RawDataInterpreter(object):
                 hit_data[hit_index]["te"] = 0
                 hit_data[hit_index]["token_id"] = tlu_word
                 # hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
-                hit_data[hit_index]["scan_param_id"] = self.raw_idx
+                hit_data[hit_index]["scan_param_id"] = scan_param_id
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
 
-            self.raw_idx += 1
         hit_data = hit_data[:hit_index]
 
-        # Find correct scan_param_id in meta data and attach to hit
-        for scan_idx, param_id in enumerate(hit_data["scan_param_id"]):
-            while self.meta_idx < len(meta_data):
-                if param_id >= meta_data[self.meta_idx]['index_start'] and param_id < meta_data[self.meta_idx]['index_stop']:
-                    hit_data[scan_idx]['scan_param_id'] = meta_data[self.meta_idx]['scan_param_id']
-                    break
-                elif param_id >= meta_data[self.meta_idx]['index_stop']:
-                    self.meta_idx += 1
         return hit_data
+
+    def get_histograms(self):
+        return self.hist_occ, self.hist_tot
+
+    def get_error_count(self):
+        return self.error_cnt
+
+    def _gray2bin(self, gray):
+        b6 = gray & 0x40
+        b5 = (gray & 0x20) ^ (b6 >> 1)
+        b4 = (gray & 0x10) ^ (b5 >> 1)
+        b3 = (gray & 0x08) ^ (b4 >> 1)
+        b2 = (gray & 0x04) ^ (b3 >> 1)
+        b1 = (gray & 0x02) ^ (b2 >> 1)
+        b0 = (gray & 0x01) ^ (b1 >> 1)
+        return b6 + b5 + b4 + b3 + b2 + b1 + b0
+
+    def _fill_hist(self, col, row, tot, scan_param_id):
+        self.hist_occ[col, row, scan_param_id] += 1
+        self.hist_tot[col, row, scan_param_id, tot] += 1
