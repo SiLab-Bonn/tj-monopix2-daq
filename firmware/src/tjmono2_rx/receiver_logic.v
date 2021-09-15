@@ -27,7 +27,8 @@ module receiver_logic
     input wire              no_8b10b_mode,
     input wire [3:0]        load_rawcnt,
     input wire [7:0]        empty_record,
-    input wire              FIFO_CLK
+    input wire              FIFO_CLK,
+    input wire [26:0]       TIMESTAMP
 );
 
 wire RESET_WCLK;

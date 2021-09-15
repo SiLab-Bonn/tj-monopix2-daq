@@ -717,6 +717,8 @@ tjmono2_rx #(
     .RX_FIFO_FULL(),
     .RX_ENABLED(),
 
+    .TIMESTAMP(TIMESTAMP),
+
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
