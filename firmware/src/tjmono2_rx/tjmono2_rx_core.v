@@ -35,7 +35,9 @@ module tjmono2_rx_core
     output reg [7:0] BUS_DATA_OUT,
     input wire BUS_RST,
     input wire BUS_WR,
-    input wire BUS_RD
+    input wire BUS_RD,
+
+    input wire [26:0] TIMESTAMP
 );
 
 localparam VERSION = 1;
@@ -219,7 +221,8 @@ receiver_logic receiver_logic
     .no_8b10b_mode(CONF_NO_8B10B_MODE),
     .load_rawcnt(CONF_LOAD_RAWCNT),
     .empty_record(CONF_EMPTY_RECORD),
-    .FIFO_CLK(FIFO_CLK)
+    .FIFO_CLK(FIFO_CLK),
+    .TIMESTAMP(TIMESTAMP)
 );
 
 endmodule

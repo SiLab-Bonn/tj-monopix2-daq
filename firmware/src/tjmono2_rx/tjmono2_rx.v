@@ -35,7 +35,9 @@ module tjmono2_rx #(
     input wire  [ABUSWIDTH-1:0]  BUS_ADD,
     inout wire  [7:0]   BUS_DATA,
     input wire          BUS_RD,
-    input wire          BUS_WR
+    input wire          BUS_WR,
+
+    input wire [26:0]   TIMESTAMP
 );
 
 
@@ -95,7 +97,8 @@ tjmono2_rx_core
     .FIFO_DATA(FIFO_DATA),
     
     .RX_FIFO_FULL(RX_FIFO_FULL),
-    .RX_ENABLED(RX_ENABLED)
+    .RX_ENABLED(RX_ENABLED),
+    .TIMESTAMP(TIMESTAMP)
 );
 
 endmodule
