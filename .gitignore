@@ -147,6 +147,9 @@ firmware/bit/*
 
 # Tests
 sim_build
+dump.fst
+Makefile
+results.xml
 
 # Vivado
 *.jou
