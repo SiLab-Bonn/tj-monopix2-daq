@@ -143,3 +143,8 @@ firmware/bit/*
 *.log
 *.h5
 *.pdf
+
+sim_build
+dump.fst
+Makefile
+results.xml

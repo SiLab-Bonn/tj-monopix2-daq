@@ -15,7 +15,7 @@ module receiver_logic
     input wire              BUS_CLK,
     input wire              RX_DATA,
     input wire              read,
-    output wire  [26:0]     data,
+    output wire  [27:0]     data,
     output wire             empty,
     output wire             full,
     output wire             rec_sync_ready,
@@ -212,9 +212,9 @@ always@(posedge WCLK) begin
             lost_err_cnt <= lost_err_cnt;
 end
 
-wire [26:0] cdc_data_out;
-wire [26:0] wdata;
-assign wdata =  {data_dec_in[0],data_dec_in[1],data_dec_in[2]};
+wire [27:0] cdc_data_out;
+wire [27:0] wdata;
+assign wdata =  sof ? {1'b1, TIMESTAMP} : {1'b0, data_dec_in[0],data_dec_in[1],data_dec_in[2]};
 
 // generate delayed and long reset
 reg [5:0] rst_cnt;
@@ -230,32 +230,33 @@ always @(posedge WCLK) begin
     cdc_sync_ff <= rst_long;
 end
 
-//assign FIFO_CLK = BUS_CLK;
+wire RESET_FIFO;
+cdc_reset_sync rst_fifo_pulse_sync (.clk_in(WCLK), .pulse_in(RESET_WCLK), .clk_out(FIFO_CLK), .pulse_out(RESET_FIFO));
 
 cdc_syncfifo #(
-    .DSIZE(27),
+    .DSIZE(28),
     .ASIZE(3)
 ) cdc_syncfifo_i (
     .rdata(cdc_data_out),
     .wfull(cdc_fifo_full),
     .rempty(cdc_fifo_empty),
     .wdata(wdata),
-    .winc(write_dec_in & !cdc_fifo_full),
+    .winc((sof | write_dec_in) & !cdc_fifo_full),
     .wclk(WCLK),
-    .wrst(cdc_sync_ff),
+    .wrst(RESET_WCLK),
     .rinc(!full),
     .rclk(FIFO_CLK),
-    .rrst(rst_long)
+    .rrst(RESET_FIFO)
 );
 
 wire [12:0] fifo_size_int;
 
 gerneric_fifo #(
-    .DATA_SIZE(27),
+    .DATA_SIZE(28),
     .DEPTH(1024*8)
 ) fifo_i (
     .clk(FIFO_CLK),
-    .reset(rst_long),
+    .reset(RESET_FIFO),
     .write(!cdc_fifo_empty),
     .read(read),
     .data_in(cdc_data_out),
@@ -268,20 +269,5 @@ gerneric_fifo #(
 always @(posedge FIFO_CLK) begin
     fifo_size <= {3'b0, fifo_size_int};
 end
-
-`ifdef SYNTHESIS_NOT
-wire [35:0] control_bus;
-chipscope_icon ichipscope_icon
-(
-    .CONTROL0(control_bus)
-);
-
-chipscope_ila ichipscope_ila
-(
-    .CONTROL(control_bus),
-    .CLK(WCLK),
-    .TRIG0({code_err, disp_err, dec_k,dec_data, data_8b10b})
-);
-`endif
 
 endmodule

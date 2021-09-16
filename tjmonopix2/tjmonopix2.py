@@ -820,6 +820,7 @@ class TJMonoPix2(object):
             [("col", "<u2"), ("row", "<u2"), ("le", "<u1"), ("te", "<u1"), ("token_id", "<i8")])
         reg_dtype = np.dtype([("address", "<u1"), ("value", "<u2")])
         r = raw_data[(raw_data & 0xF8000000) == 0x40000000]
+        headers = raw_data[(raw_data & 0xF8000000) == 0x48000000]
         r0 = (r & 0x7FC0000) >> 18
         r1 = (r & 0x003FE00) >> 9
         r2 = (r & 0x00001FF)
