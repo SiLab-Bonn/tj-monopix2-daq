@@ -12,6 +12,7 @@ import cocotb
 import socketserver
 
 import tjmonopix2
+from tjmonopix2 import utils
 
 from basil.utils.sim.utils import cocotb_compile_and_run
 
@@ -46,21 +47,22 @@ def setup_cocotb(extra_defines=[]):
 
     os.environ["SIMULATION_PORT"] = str(free_port)
 
+    version = utils.get_software_version().split('.')
+
     cocotb_compile_and_run(
         sim_files=[tjmonopix2_path + "/tests/hdl/tb.v"],
         top_level='tb',
         sim_bus='basil.utils.sim.BasilSbusDriver',
         include_dirs=(
-            top_dir,
             top_dir + "/firmware/src",
             top_dir + "/tjmonopix2/tests/hdl",
             basil_dir + "/firmware/modules",
             basil_dir + "/firmware/modules/utils",
         ),
         compile_args=[
-            "-GVERSION_MAJOR=0",
-            "-GVERSION_MINOR=1",
-            "-GVERSION_PATCH=0",
+            "-GVERSION_MAJOR={:s}".format(version[0]),
+            "-GVERSION_MINOR={:s}".format(version[1]),
+            "-GVERSION_PATCH={:s}".format(version[2]),
             "-LDFLAGS {:s}/tjmonopix2/tests/hdl/libmonopix2.a".format(top_dir),
             "--hierarchical",
             "-Wno-COMBDLY",

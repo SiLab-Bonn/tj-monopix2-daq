@@ -35,7 +35,7 @@ class TestFirmware(unittest.TestCase):
     def test_rx(self) -> None:
         self.dut.registers["SEL_PULSE_EXT_CONF"].write(0)  # Use internal injection
 
-        # Activate pixel (1, 1)
+        # Activate pixel (1, 128)
         self.dut.masks['enable'][1, 128] = True
         self.dut.masks['tdac'][1, 128] = 0b100
         self.dut.masks['injection'][1, 128] = True
