@@ -46,14 +46,12 @@ module tjmonopix2 #(
     input wire RJ45_RESET,
     input wire RJ45_TRIGGER,
 
-    output wire RESETB_EXT,
-
     `ifdef BDAQ53
-        // output wire [3:0] DP_GPIO_P, DP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
-        // input wire DP_GPIO_AUX_P, DP_GPIO_AUX_N, // DATA
+        output wire [3:0] DP_GPIO_P, DP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        input wire DP_GPIO_AUX_P, DP_GPIO_AUX_N, // DATA
 
-        output wire [3:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
-        input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
+        // output wire [3:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        // input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
 
         input wire HITOR_P, HITOR_N,             // HITOR
 
@@ -61,6 +59,7 @@ module tjmonopix2 #(
         output wire EEPROM_CS, EEPROM_SK, EEPROM_DI,
         input wire EEPROM_DO,
     `elsif MIO3
+        output wire RESETB_EXT,
         // LVDS signals single ended to TX/RX on GPAC
         output wire LVDS_CMD,     //LVDS DOUT3(DOUT16)
         output wire LVDS_CMD_CLK, //LVDS DOUT2(DOUT1)
@@ -274,16 +273,19 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
     //     .C(CLKCMD), .CE(1'b1), .R(1'b0), .S(1'b0),
     //     .Q(CMD_OUT_int)
     // );
+    wire LVDS_CMD_int;
+    assign LVDS_CMD_int = ~LVDS_CMD;
+
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
     ) i_OBUFDS_cmd (
         .O(CMD_P),              // Diff_p output (connect directly to top-level port)
         .OB(CMD_N),             // Diff_n output (connect directly to top-level port)
-        .I(LVDS_CMD)            // Buffer input
+        .I(LVDS_CMD_int)            // Buffer input
     );
-    assign mDP_GPIO_N[1] = CMD_N;
-    assign mDP_GPIO_P[1] = CMD_P;
+    assign DP_GPIO_N[3] = CMD_N;
+    assign DP_GPIO_P[3] = CMD_P;
 
     // CMD CLK
     // ODDR oddr_cmd_clk(
@@ -291,33 +293,37 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
     //     .C(CLKCMD), .CE(1'b1), .R(1'b0), .S(1'b0),
     //     .Q(CMD_CLK_int)
     // );
+    wire LVDS_CMD_CLK_int;
+    assign LVDS_CMD_CLK_int = ~LVDS_CMD_CLK;
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
     ) i_OBUFDS_cmd_clk (
         .O(CMD_CLK_P),          // Diff_p output (connect directly to top-level port)
         .OB(CMD_CLK_N),         // Diff_n output (connect directly to top-level port)
-        .I(LVDS_CMD_CLK)        // Buffer input
+        .I(LVDS_CMD_CLK_int)        // Buffer input
     );
-    assign mDP_GPIO_N[2] = CMD_CLK_N;
-    assign mDP_GPIO_P[2] = CMD_CLK_P;
+    assign DP_GPIO_N[2] = CMD_CLK_N;
+    assign DP_GPIO_P[2] = CMD_CLK_P;
 
     // SER CLK
     // ODDR oddr_ser_clk(
     //     .D1(LVDS_SER_CLK), .D2(LVDS_SER_CLK),
     //     .C(CLKCMD), .CE(1'b1), .R(1'b0), .S(1'b0),
     //     .Q(SER_CLK_int)
-    // ); 
+    // );
+    wire LVDS_SER_CLK_int;
+    assign LVDS_SER_CLK_int = ~LVDS_SER_CLK; 
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
     ) i_OBUFDS_ser_clk (
         .O(SER_CLK_P),          // Diff_p output (connect directly to top-level port)
         .OB(SER_CLK_N),         // Diff_n output (connect directly to top-level port)
-        .I(LVDS_SER_CLK)        // Buffer input
+        .I(LVDS_SER_CLK_int)        // Buffer input
     );
-    assign mDP_GPIO_N[3] = SER_CLK_N;
-    assign mDP_GPIO_P[3] = SER_CLK_P;
+    assign DP_GPIO_N[1] = SER_CLK_N;
+    assign DP_GPIO_P[1] = SER_CLK_P;
 
     // PULSE
     OBUFDS #(
@@ -328,23 +334,21 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
         .OB(PULSE_EXT_N),       // Diff_n output (connect directly to top-level port)
         .I(LVDS_PULSE_EXT)      // Buffer input
     );
-    assign mDP_GPIO_N[0] = PULSE_EXT_N;
-    assign mDP_GPIO_P[0] = PULSE_EXT_P;
+    assign DP_GPIO_N[0] = PULSE_EXT_N;
+    assign DP_GPIO_P[0] = PULSE_EXT_P;
 
     wire LVDS_DATA, LVDS_DATA_int, LVDS_HITOR;
-    wire DATA_P, DATA_N;
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
         .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
         .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
     ) i_IBUFDS_data (
-        .O(LVDS_DATA_int),      // Buffer output
-        .I(DATA_P),             // Diff_p buffer input (connect directly to top-level port)   // was DATA_P
-        .IB(DATA_N)             // Diff_n buffer input (connect directly to top-level port)    // was DATA_N
+        .O(LVDS_DATA),          // Buffer output
+        .I(DP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
+        .IB(DP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
     );
-    assign mDP_GPIO_AUX_N = DATA_N;
-    assign mDP_GPIO_AUX_P = DATA_P;
-    assign LVDS_DATA = ~LVDS_DATA_int; // needed for mDP port
+
+    // assign LVDS_DATA = ~LVDS_DATA_int;
 
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
@@ -609,8 +613,6 @@ tjmonopix2_core #(
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
 
-    .RESETB_EXT(RESETB_EXT), 
-
     .LVDS_CMD(LVDS_CMD), 
     .LVDS_CMD_CLK(LVDS_CMD_CLK), 
     .LVDS_SER_CLK(LVDS_SER_CLK), 
@@ -619,6 +621,8 @@ tjmonopix2_core #(
     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
 
     `ifdef MIO3
+        .RESETB_EXT(RESETB_EXT), 
+
         .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCKED_OUT),
         .LVDS_CHSYNC_CLK_OUT(LVDS_CHSYNC_CLK_OUT),
         .INPUT_SEL(INPUT_SEL), 
