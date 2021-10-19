@@ -143,3 +143,13 @@ firmware/bit/*
 *.log
 *.h5
 *.pdf
+*.lprof
+
+# Tests
+sim_build
+
+# Vivado
+*.jou
+*.lpr
+*.str
+webtalk
