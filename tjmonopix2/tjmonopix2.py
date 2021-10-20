@@ -359,7 +359,6 @@ class MaskObject(dict):
             fe_mask[cols[0]:cols[-1] + 1, :] = True
 
             if not np.any(np.logical_and(fe_mask, original_masks['enable'])):   # Only loop over frontends that have enabled columns
-                print("Skip")
                 continue
 
             # data = [self.chip.enable_core_col_clock(range(int(cols[0] / 8), int((cols[-1] - 1) / 8 + 1)), write=True)]   # Enable only one frontend at a time
@@ -408,10 +407,6 @@ class MaskObject(dict):
                 self.inj_to_write = np.logical_or(self.inj_to_write, np.not_equal(mask, self.was[name]))
             else:
                 self.pix_to_write = np.logical_or(self.pix_to_write, np.not_equal(mask, self.was[name]))
-
-    # def get_portal_address(self, col, row):
-    #     colgroup = int(col / 4)
-    #     pos_in_group = 3 - (col % 4)
 
     def get_pixel_data(self, col, row):
         tdac = str(bin(self['tdac'][col, row]))[2:].zfill(3)
@@ -675,23 +670,6 @@ class TJMonoPix2(object):
         if self.daq.board_version == 'mio3':
             self.log.info(str(self.get_power_status()))
 
-    def load_config(self, filename):
-        with open(filename) as f:
-            conf = yaml.load(f)
-        # self.default_conf()
-        self.write_conf()
-        time.sleep(0.1)  # mabe not needed?
-
-        # maybe update power here also?
-
-        self.set_all_mask(mask=conf['CONF_SR'])
-        self.write_conf()
-        time.sleep(0.1)  # mabe not needed?
-
-        # update gloable setting
-        # TODO !!
-        self.write_conf()
-
     def power_on(self, VDDA=1.8, VDDP=1.8, VDDA_DAC=1.8, VDDD=1.8, VPC=1.6):
         # Set power
         # Sense resistor is 0.1Ohm, so 300mA=60mA*5
@@ -725,11 +703,11 @@ class TJMonoPix2(object):
         return status
 
     def configure_rx(self, delay=40, rd_frz_dly=40):
+        self.registers["FREEZE_START_CONF"].write(1 + delay)
         self.registers["READ_START_CONF"].write(1 + delay + rd_frz_dly)
         self.registers["READ_STOP_CONF"].write(5 + delay + rd_frz_dly)
-        self.registers["FREEZE_START_CONF"].write(1 + delay)
-        self.registers["FREEZE_STOP_CONF"].write(40 + delay + rd_frz_dly)
         self.registers["LOAD_CONF"].write(39 + delay + rd_frz_dly)
+        self.registers["FREEZE_STOP_CONF"].write(40 + delay + rd_frz_dly)
         self.registers["STOP_CONF"].write(40 + delay + rd_frz_dly)
 
     def reset(self):
@@ -974,15 +952,6 @@ class TJMonoPix2(object):
             temp[i] = self.daq["NTC"].get_temperature("C")
         return np.average(temp[temp != float("nan")])
 
-    def save_config(self, filename=None):
-        if filename is None:
-            filename = os.path.join(DATDIR, time.strftime("config_%Y%m%d-%H%M%S.yaml"))
-        conf = self.get_configuration()
-        with open(filename, "w") as f:
-            yaml.dump(conf, f)
-        self.log.info("save_config filename: %s" % filename)
-        return filename
-
     def get_pixel_status(self, maskV=None, maskH=None, maskD=None):
         raise NotImplementedError("Not implemented")     
 
@@ -1086,6 +1055,8 @@ class TJMonoPix2(object):
             return
 
         assert (0 < repetitions < 65536), "Repetition value must be 0<n<2^16"
+        if repetitions > 1:
+            self.log.debug("Repeating command %i times." % (repetitions))
 
         if wait_for_ready:
             while (not self.daq['cmd'].is_done()):
@@ -1093,7 +1064,6 @@ class TJMonoPix2(object):
 
         self.daq['cmd'].set_data(data)
         self.daq['cmd'].set_size(len(data))
-        self.log.debug("Repeating command %i times." % (repetitions))
         self.daq['cmd'].set_repetitions(repetitions)
         self.daq['cmd'].start()
 
