@@ -343,12 +343,12 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
         .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
         .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
     ) i_IBUFDS_data (
-        .O(LVDS_DATA),          // Buffer output
+        .O(LVDS_DATA_int),          // Buffer output
         .I(DP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
         .IB(DP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
     );
 
-    // assign LVDS_DATA = ~LVDS_DATA_int;
+    assign LVDS_DATA = ~LVDS_DATA_int;
 
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
