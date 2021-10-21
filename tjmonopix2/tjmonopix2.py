@@ -19,7 +19,6 @@ try:
 except ImportError:  # fallback to python parser
     from yaml import SafeLoader  # noqa
 
-from basil.dut import Dut
 from tjmonopix2.system import logger
 
 FLAVOR_COLS = {'MONOPIX2': range(0, 224),
@@ -173,7 +172,7 @@ class Register(dict):
         bit_mask = eval('0b' + '1' * self['size']) << self['offset']
         val = (val & bit_mask) >> self['offset']
         if val != self['value'] and self['mode'] == 1 and self['name'] != 'PIX_PORTAL':
-            self.log.warning(('Register {0} did not have the expected value: Expected 0b{2:0' + str(self['size']) + 
+            self.log.warning(('Register {0} did not have the expected value: Expected 0b{2:0' + str(self['size']) +
                               'b}, got 0b{1:0' + str(self['size']) + 'b}').format(self['name'], val, self['value']))
         return val
 
@@ -232,10 +231,9 @@ class RegisterObject(OrderedDict):
         '''
         indata = self.chip.write_sync(write=False)
         for reg in self.values():
-            
             if (reg['mode'] != 1 or (not force and not reg.changed)) and 'PIXEL_PORTAL' not in reg['name']:
                 continue
-            
+
             indata += self[reg['name']].get_write_command()
             indata += self.chip.write_sync(write=False) * 16
 
@@ -419,11 +417,11 @@ class MaskObject(dict):
                    )
 
     def get_inj_column_group_data(self, colgroup):
-        inj = np.logical_or.reduce(self['injection'], axis=1)[colgroup * 16 : (colgroup + 1) * 16]
+        inj = np.logical_or.reduce(self['injection'], axis=1)[colgroup * 16: (colgroup + 1) * 16]
         return np.packbits(inj, bitorder='little').view(np.uint16)[0]
 
     def get_inj_row_group_data(self, rowgroup):
-        inj = np.logical_or.reduce(self['injection'], axis=0)[rowgroup * 16 : (rowgroup + 1) * 16]
+        inj = np.logical_or.reduce(self['injection'], axis=0)[rowgroup * 16: (rowgroup + 1) * 16]
         return np.packbits(inj, bitorder='little').view(np.uint16)[0]
 
     def update(self, force=False):
@@ -516,7 +514,7 @@ class ShiftPatternBase(object):
         self.current_step = -1
 
     def _get_mask_steps(self):
-        return self.dimensions[1]
+        return self.dimensions[0] * self.mask_step
 
     def make_first_mask(self):
         raise NotImplementedError('You have to define the initial mask')
@@ -525,7 +523,7 @@ class ShiftPatternBase(object):
         raise NotImplementedError('You have to define the mask at a given step')
 
     def __next__(self):
-        if self.current_step >= (self.dimensions[1]) - 1:
+        if self.current_step >= (self.dimensions[0] * self.mask_step) - 1:
             raise StopIteration
         else:
             self.current_step += 1
@@ -534,9 +532,7 @@ class ShiftPatternBase(object):
 
 class DoubleShiftPattern(ShiftPatternBase):
     '''
-        Enables two pixels with horizontal distance 4
-        mask_step defines by how much the pixel in the (n+1)th column is below the pixel in the nth column.
-        This mask is shifted down dimension[1] times with rollover
+        Enables pixels along one column with specified distance (mask_step)
     '''
 
     def make_first_mask(self):
@@ -547,7 +543,7 @@ class DoubleShiftPattern(ShiftPatternBase):
         return mask
 
     def make_mask_for_step(self, step):
-        return np.roll(self.base_mask, step, 0)
+        return np.roll(np.roll(self.base_mask, step // self.dimensions[0], 1), step % self.dimensions[0], 0)
 
 
 class TJMonoPix2(object):
@@ -627,8 +623,8 @@ class TJMonoPix2(object):
 
         masks = {'enable': {'default': False},
                  'injection': {'default': False},
-                 'tdac': {'default': 0}
-                 }
+                 'tdac': {'default': 0b000}
+                }
         self.masks = MaskObject(self, masks, (512, 512))
 
         # Load disabled pixels from chip config
@@ -643,25 +639,22 @@ class TJMonoPix2(object):
 
     def init(self):
         # super(TJMonoPix2, self).init()
-        self.daq['CONF']['RESET_EXT'] = 1
-        self.daq['CONF']['GPIO_MODE'] = 0x0
-        self.daq['CONF']['SEL_DIRECT'] = 1
-        self.daq['CONF'].write()
         self.daq['cmd'].set_chip_type(1)  # ITkpixV1-like
 
         # power on
         if self.daq.board_version == 'mio3':
+            self.daq['CONF']['RESET_EXT'] = 1
+            self.daq['CONF']['GPIO_MODE'] = 0x0
+            self.daq['CONF']['SEL_DIRECT'] = 1
+            self.daq['CONF'].write()
             self.power_on()
-            # Start CLK before release reset
             # Start chip in LVDS command mode
             self.daq['CONF']['INPUT_SEL'] = 0
-            self.daq['CONF']['EN_LVDS_IN'] = 0
             self.daq['CONF']['EN_LVDS_IN'] = 1
             self.daq['CONF'].write()
-
-        # release RESET
-        self.daq['CONF']['RESET_EXT'] = 0
-        self.daq['CONF'].write()
+            # Release RESET
+            self.daq['CONF']['RESET_EXT'] = 0
+            self.daq['CONF'].write()
 
         self.write_command(self.write_sync(write=False) * 32)
         self.reset()
@@ -781,10 +774,10 @@ class TJMonoPix2(object):
                 i = i + 1
             elif i + 3 < len(rx_data):
                 #print("=====sim=====",ii, i, hex(rx_data[i]), hex(rx_data[i+1]), hex(rx_data[i+2]), hex(rx_data[i+3]))
-                hit[ii]['col'] = (rx_data[i]<<1)+((rx_data[i+2]&0x2)>>1)
-                hit[ii]['row'] = ((rx_data[i+2]&0x1)<<9 )+rx_data[i+3]
-                hit[ii]['le'] = gray2bin((rx_data[i+1]>>1))
-                hit[ii]['te'] = gray2bin(((rx_data[i+1]&0x1)<<6)+((rx_data[i+2]&0xFC)>>2))
+                hit[ii]['col'] = (rx_data[i] << 1) + ((rx_data[i + 2] & 0x2) >> 1)
+                hit[ii]['row'] = ((rx_data[i + 2] & 0x1) << 9) + rx_data[i + 3]
+                hit[ii]['le'] = gray2bin((rx_data[i + 1] >> 1))
+                hit[ii]['te'] = gray2bin(((rx_data[i + 1] & 0x1) << 6)+((rx_data[i + 2] & 0xFC) >> 2))
                 hit[ii]['token_id'] = 0
                 ii = ii +1
                 i = i +4
@@ -811,15 +804,15 @@ class TJMonoPix2(object):
         flg = 0
         while idx < len(rx_data):
             if rx_data[idx] == 0x1fc:
-                if len(rx_data) > idx + 5 and rx_data[idx + 4] == 0x15c: #reg data
-                    reg[r_i]['address'] = (rx_data[idx+1] & 0x0FF)
-                    reg[r_i]['value'] = ((rx_data[idx+2] & 0x0FF) << 8) + (rx_data[idx+3] & 0x0FF)
+                if len(rx_data) > idx + 5 and rx_data[idx + 4] == 0x15c: # reg data
+                    reg[r_i]['address'] = (rx_data[idx + 1] & 0x0FF)
+                    reg[r_i]['value'] = ((rx_data[idx + 2] & 0x0FF) << 8) + (rx_data[idx + 3] & 0x0FF)
                     # print ("reg",reg[r_i]['addr'],hex(reg[r_i]['val']))
                     r_i = r_i + 1
                     idx = idx + 5
                 else:
-                   print("interpret_data: broken reg data", idx)
-                   idx = idx +1
+                    print("interpret_data: broken reg data", idx)
+                    idx = idx +1
             elif rx_data[idx] == 0x1bc:  # sof
                 idx=idx+1
                 if flg!=0:
@@ -846,13 +839,10 @@ class TJMonoPix2(object):
                 hit[h_i]['col'] = ((rx_data[idx] & 0xFF) << 1) + ((rx_data[idx+2] & 0x2) >> 1)
                 idx = idx+4
                 h_i = h_i+1
-        # print("=====sim=a====reg",r_i)
         hit = hit[:h_i]
         reg = reg[:r_i]
-        #print("=====sim=====gray", hit['le'], hit['te'])
         hit['le'] = gray2bin(np.copy(hit['le']))
         hit['te'] = gray2bin(np.copy(hit['te']))
-        #print("=====sim=====lete", hit['le'], hit['te'])
         return hit, reg
 
     def prepare_injection_mask(self, start_col=0, stop_col=112, step_col=56, start_row=0, stop_row=224, step_row=4):
@@ -1159,8 +1149,6 @@ class TJMonoPix2(object):
         else:
             raise RuntimeError('Timeout while waiting for register response.')
 
-
-
     def write_cal(self, PulseStartCnfg=1, PulseStopCnfg=10, write=True):
         '''
             Command to send a digital or analog injection to the chip.
@@ -1178,8 +1166,8 @@ class TJMonoPix2(object):
         indata = [self.CMD_CAL]
         indata += [self.cmd_data_map[self.chip_id]]
         indata += [self.cmd_data_map[(PulseStartCnfg & 0b11_1110) >> 1]]
-        indata += [self.cmd_data_map[( (PulseStartCnfg << 4) & 0b10000 ) + ( ( PulseStopCnfg >> 10 ) & 0b1111 )]]
-        indata += [self.cmd_data_map[( ( PulseStopCnfg >> 5 ) & 0b11111 )]]
+        indata += [self.cmd_data_map[((PulseStartCnfg << 4) & 0b10000) + ((PulseStopCnfg >> 10) & 0b1111)]]
+        indata += [self.cmd_data_map[(( PulseStopCnfg >> 5) & 0b11111)]]
         indata += [self.cmd_data_map[ PulseStopCnfg & 0b11111 ]]
 
         if write:
