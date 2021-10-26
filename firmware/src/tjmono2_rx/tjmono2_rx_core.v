@@ -35,7 +35,9 @@ module tjmono2_rx_core
     output reg [7:0] BUS_DATA_OUT,
     input wire BUS_RST,
     input wire BUS_WR,
-    input wire BUS_RD
+    input wire BUS_RD,
+
+    input wire [26:0] TIMESTAMP
 );
 
 localparam VERSION = 1;
@@ -122,8 +124,8 @@ assign RX_READY = (ready_rec == 1'b1) ? 1'b1 : 1'b0;
 assign RX_8B10B_DECODER_ERR = (decoder_err_cnt != 8'b0);
 assign RX_FIFO_OVERFLOW_ERR = (lost_err_cnt != 8'b0);
 
-wire [26:0] FE_DATA;
-assign FIFO_DATA = {DATA_IDENTIFIER, 1'b0, FE_DATA};
+wire [27:0] FE_DATA;
+assign FIFO_DATA = {DATA_IDENTIFIER, FE_DATA};
 
 
 always @ (posedge BUS_CLK)
@@ -219,7 +221,8 @@ receiver_logic receiver_logic
     .no_8b10b_mode(CONF_NO_8B10B_MODE),
     .load_rawcnt(CONF_LOAD_RAWCNT),
     .empty_record(CONF_EMPTY_RECORD),
-    .FIFO_CLK(FIFO_CLK)
+    .FIFO_CLK(FIFO_CLK),
+    .TIMESTAMP(TIMESTAMP)
 );
 
 endmodule

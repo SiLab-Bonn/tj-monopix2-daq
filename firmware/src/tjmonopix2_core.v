@@ -45,6 +45,8 @@
 `include "tjmono2_rx/rec_sync.v"
 `include "tjmono2_rx/decode_8b10b.v"
 
+`include "gray_dec.v"
+
 // `include "tjmono_direct_rx/tjmono_direct_rx.v"
 // `include "tjmono_direct_rx/tjmono_direct_rx_core.v"
 
@@ -689,6 +691,24 @@ tdc_s3 #(
 //     .FIFO_DATA_TRAILING()
 // );
 
+// sync TIMESTAMP from CLK40 to CLK16
+wire [26:0] timestep_gray;
+bin2gray bin2gray (.bin(TIMESTAMP), .gray(timestep_gray));
+reg [26:0] timestep_gray_sync;
+
+always@(posedge CLK40)
+    timestep_gray_sync <= timestep_gray;
+
+reg [26:0] timestep_gray_16_0, timestep_gray_16;
+
+always@(posedge CLK16) begin
+    timestep_gray_16_0 <= timestep_gray_sync;
+    timestep_gray_16 <= timestep_gray_16_0;
+end
+
+wire [26:0] TIMESTAMP16;
+gray2bin gray2bin ( .gray(timestep_gray_16), .bin(TIMESTAMP16));
+
 //************************************************
 // fast readout
 wire  RX_CLKX2, RX_CLKW;
@@ -716,6 +736,8 @@ tjmono2_rx #(
 
     .RX_FIFO_FULL(),
     .RX_ENABLED(),
+
+    .TIMESTAMP(TIMESTAMP16),
 
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
