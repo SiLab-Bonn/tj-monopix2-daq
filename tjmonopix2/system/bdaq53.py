@@ -195,6 +195,13 @@ class BDAQ53(Dut):
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
 
+    def configure_tlu_veto_pulse(self, veto_length):
+        # configures pulse for veto of new triggers
+        self['tlu_veto'].set_en(True)
+        self['tlu_veto'].set_width(1)
+        self['tlu_veto'].set_delay(veto_length)
+        self['tlu_veto'].set_repeat(1)
+
     def reset_fifo(self):
         self['FIFO']['RESET'] = 0
 

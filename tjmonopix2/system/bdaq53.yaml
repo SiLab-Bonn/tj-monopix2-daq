@@ -61,11 +61,16 @@ hw_drivers:
     type      : tlu
     interface : intf
     base_addr : 0x0600
-    
+
   - name      : tdc
     type      : tdc_s3
     interface : intf
     base_addr : 0x0700
+
+  - name      : tlu_veto
+    type      : pulse_gen
+    interface : intf
+    base_addr : 0x0800
   
   # - name      : timestamp_rx0  #4
   #   type      : tjmonopix2.timestamp640

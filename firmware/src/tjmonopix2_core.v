@@ -181,6 +181,9 @@ localparam TLU_HIGHADDR = 32'h0700 - 1;
 localparam TDC_BASEADDR = 32'h0700;
 localparam TDC_HIGHADDR = 32'h0800 - 1;
 
+localparam PULSER_VETO_BASEADDR = 32'h0800;
+localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
+
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
 
@@ -525,7 +528,6 @@ rrp_arbiter
 
 // ----- TLU ----- //
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
-assign TRIGGER_ACKNOWLEDGE_FLAG = TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
 tlu_controller #(
     .BASEADDR(TLU_BASEADDR),
@@ -552,7 +554,7 @@ tlu_controller #(
     .TRIGGER({8'b0}),
     .TRIGGER_VETO({7'b0, FIFO_FULL}),
     .TIMESTAMP_RESET(1'b0),
-    .EXT_TRIGGER_ENABLE(1'b0),     //.EXT_TRIGGER_ENABLE(TLU_EXT_TRIGGER_ENABLE)
+    .EXT_TRIGGER_ENABLE(1'b1),
     .TRIGGER_ACKNOWLEDGE(TRIGGER_ACKNOWLEDGE_FLAG),
     .TRIGGER_ACCEPTED_FLAG(TRIGGER_ACCEPTED_FLAG),
 
@@ -562,6 +564,31 @@ tlu_controller #(
     .TLU_CLOCK(RJ45_CLK),
     .EXT_TIMESTAMP(),
     .TIMESTAMP(TIMESTAMP)
+);
+
+// ----- Pulser for TLU veto----- //
+wire EXT_START_PULSE_VETO;
+assign EXT_START_PULSE_VETO = TRIGGER_ACCEPTED_FLAG;
+wire VETO_TLU_PULSE;
+
+// set acknowledge when veto returns to low
+pulse_gen_rising i_pulse_gen_rising_tlu_veto(.clk_in(CLK40), .in(~VETO_TLU_PULSE), .out(TRIGGER_ACKNOWLEDGE_FLAG));
+
+pulse_gen #(
+    .BASEADDR(PULSER_VETO_BASEADDR),
+    .HIGHADDR(PULSER_VETO_HIGHADDR),
+    .ABUSWIDTH(32)
+) i_pulse_gen_veto (
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+
+    .PULSE_CLK(CLK40),
+    .EXT_START(EXT_START_PULSE_VETO),
+    .PULSE(VETO_TLU_PULSE)
 );
 
 // ----- TDC ----- //

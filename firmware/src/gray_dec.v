@@ -1,7 +1,6 @@
-
 module bin2gray #(parameter N = 27)( 
-    input [N-1:0] bin, 
-    output [N-1:0] gray
+    input wire [N-1:0] bin, 
+    output wire [N-1:0] gray
 );
 
     assign gray[N-1] = bin[N-1];
@@ -13,8 +12,8 @@ module bin2gray #(parameter N = 27)(
 endmodule
 
 module gray2bin #(parameter N = 27)( 
-    input [N-1:0] gray,
-    output [N-1:0] bin
+    input wire [N-1:0] gray,
+    output wire [N-1:0] bin
 );
 
     assign bin[N-1] = gray[N-1];
