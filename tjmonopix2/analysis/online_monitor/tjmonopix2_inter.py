@@ -152,6 +152,7 @@ class TJMonopix2(Transceiver):
     def reset_hists(self):
         ''' Reset the histograms '''
         self.total_hits = 0
+        self.total_trigger_words = 0
         # Readout number
         self.readout = 0
 
