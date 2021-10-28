@@ -49,6 +49,7 @@ class TJMonopix2(Receiver):
         cw.setLayout(layout)
         self.rate_label = QtGui.QLabel("Readout Rate\n0 Hz")
         self.hit_rate_label = QtGui.QLabel("Hit Rate\n0 Hz")
+        self.trigger_rate_label = QtGui.QLabel("Trigger Rate\n0 Hz")
         self.timestamp_label = QtGui.QLabel("Data Timestamp\n")
         self.plot_delay_label = QtGui.QLabel("Plot Delay\n")
         self.scan_parameter_label = QtGui.QLabel("Parameter ID\n")
@@ -61,6 +62,7 @@ class TJMonopix2(Receiver):
         layout.addWidget(self.plot_delay_label, 0, 1, 0, 1)
         layout.addWidget(self.rate_label, 0, 2, 0, 1)
         layout.addWidget(self.hit_rate_label, 0, 3, 0, 1)
+        layout.addWidget(self.trigger_rate_label, 0, 4, 0, 1)
         layout.addWidget(self.scan_parameter_label, 0, 5, 0, 1)
         layout.addWidget(self.spin_box, 0, 6, 0, 1)
         layout.addWidget(self.noisy_checkbox, 0, 7, 0, 1)
@@ -105,12 +107,15 @@ class TJMonopix2(Receiver):
     def deserialize_data(self, data):
         return utils.simple_dec(data)[1]
 
-    def _update_rate(self, fps, hps, recent_total_hits):
+    def _update_rate(self, fps, hps, tps, recent_total_hits, recent_trigger_words):
         self.rate_label.setText("Readout Rate\n%d Hz" % fps)
         if self.spin_box.value() == 0:  # show number of hits, all hits are integrated
             self.hit_rate_label.setText("Total Hits\n%d" % int(recent_total_hits))
+            self.trigger_rate_label.setText("Total triggers\n%d" % int(recent_trigger_words))
         else:
             self.hit_rate_label.setText("Hit Rate\n%d Hz" % int(hps))
+            self.trigger_rate_label.setText("Trigger Rate\n%d Hz" % int(tps))
+
 
     def handle_data(self, data):
         # Histogram data
@@ -127,7 +132,9 @@ class TJMonopix2(Receiver):
         # Meta data
         self._update_rate(data['meta_data']['fps'],
                           data['meta_data']['hps'],
-                          data['meta_data']['total_hits'])
+                          data['meta_data']['tps'],
+                          data['meta_data']['total_hits'],
+                          data['meta_data']['total_triggers'])
         self.timestamp_label.setText("Data Timestamp\n%s" % time.asctime(time.localtime(data['meta_data']['timestamp_stop'])))
         self.scan_parameter_label.setText("Parameter ID\n%d" % data['meta_data']['scan_par_id'])
         now = ptime.time()

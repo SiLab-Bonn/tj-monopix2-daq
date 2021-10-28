@@ -52,8 +52,11 @@ class TJMonopix2(Transceiver):
         # Variables for meta data time calculations
         self.ts_last_readout = 0.  # Time stamp last readout
         self.hits_last_readout = 0.  # Number of hits
+        self.triggers_last_readout = 0.  # Number of trigger words
         self.fps = 0.  # Readouts per second
         self.hps = 0.  # Hits per second
+        self.tps = 0.  # Triggers per second
+        self.total_trigger_words = 0
         # self.trigger_id = -1  # Last chunk trigger id
         # self.ext_trg_num = -1  # external trigger number
         self.last_rawdata = None  # Leftover from last chunk
@@ -78,13 +81,19 @@ class TJMonopix2(Transceiver):
             recent_hps = self.hits_last_readout * recent_fps
             self.hps = self.hps * 0.95 + recent_hps * 0.05
 
+            # Calculate trigger rate with smoothing
+            recent_tps = self.triggers_last_readout * recent_fps
+            self.tps = self.tps * 0.95  + recent_tps * 0.05
+
         self.ts_last_readout = ts_now
 
         # Add info to meta data
         meta_data.update(
             {'fps': self.fps,
              'hps': self.hps,
-             'total_hits': self.total_hits})
+             'tps': self.tps,
+             'total_hits': self.total_hits,
+             'total_triggers': self.total_trigger_words})
         return meta_data
     
     def interpret_data(self, data):
@@ -95,8 +104,12 @@ class TJMonopix2(Transceiver):
         hit_buffer = np.zeros(4 * len(raw_data), dtype=au.hit_dtype)
         hits = self.interpreter.interpret(raw_data, hit_buffer)
 
+        n_triggers = len(hits[hits['col'] == 1024])
+
         self.hits_last_readout = len(hits)
         self.total_hits += len(hits)
+        self.triggers_last_readout = n_triggers
+        self.total_trigger_words += n_triggers
         self.readout += 1
 
         hist_occupancy(self.hist_occ, self.hist_tot, hits)
