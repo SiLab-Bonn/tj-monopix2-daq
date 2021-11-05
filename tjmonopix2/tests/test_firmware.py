@@ -9,7 +9,7 @@ import unittest
 import utils
 
 from tjmonopix2.system.bdaq53 import BDAQ53
-from tjmonopix2.tjmonopix2 import TJMonoPix2
+from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 
 class TestFirmware(unittest.TestCase):
