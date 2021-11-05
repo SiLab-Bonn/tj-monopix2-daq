@@ -29,9 +29,7 @@ from online_monitor.utils import utils as ou
 from tjmonopix2 import utils
 # from bdaq53 import manage_databases
 from tjmonopix2.analysis import analysis_utils as au
-# from bdaq53.analysis import module_plotting
-
-from tjmonopix2.tjmonopix2 import TJMonoPix2
+from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 from tjmonopix2.system import logger, fifo_readout
 from tjmonopix2.system.mio3 import MIO3

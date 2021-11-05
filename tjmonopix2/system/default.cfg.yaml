@@ -1,0 +1,3 @@
+# DAC settings (not optimized, ~2500 e threshold)
+registers:
+  IBIAS: 100
