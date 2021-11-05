@@ -11,12 +11,12 @@ class_spec = [
     ('row', numba.int16),
     ('le', numba.int8),
     ('te', numba.int8),
+    ('tj_timestamp', numba.int64),
 
     ('hitor_timestamp_flag', numba.uint8),
     ('ext_timestamp_flag', numba.uint8),
     ('inj_timestamp_flag', numba.uint8),
     ('tlu_timestamp_flag', numba.uint8),
-    ('tj_timestamp', numba.int64),
     ('hitor_timestamp', numba.int64),
     ('hitor_charge', numba.int16),
     ('ext_timestamp', numba.int64),
@@ -34,6 +34,11 @@ def is_tjmono(word):
 
 
 @numba.njit
+def is_tjmono_timestamp(word):
+    return (word & 0xF8000000) == 0x48000000
+
+
+@numba.njit
 def is_tlu(word):
     return word & 0x80000000 == 0x80000000
 
@@ -45,7 +50,7 @@ def get_tlu_number(word):
 
 @numba.njit
 def get_tlu_timestamp(word):
-    return (word >> 12) & 0x7FFF0
+    return (word >> 16) & 0x7FFF
 
 
 @numba.experimental.jitclass(class_spec)
@@ -67,7 +72,9 @@ class RawDataInterpreter(object):
             #############################
             # Part 1: interpret TJ word #
             #############################
-            if is_tjmono(raw_data_word):
+            if is_tjmono_timestamp(raw_data_word):
+                self.tj_timestamp = raw_data_word & 0x7FFFFFF
+            elif is_tjmono(raw_data_word):
                 dat = np.zeros(3, dtype=np.uint16)
                 dat[0] = (raw_data_word & 0x7FC0000) >> 18
                 dat[1] = (raw_data_word & 0x003FE00) >> 9
@@ -112,6 +119,7 @@ class RawDataInterpreter(object):
                             hit_data[hit_index]["le"] = self.le
                             hit_data[hit_index]["te"] = self.te
                             hit_data[hit_index]["token_id"] = self.token_id
+                            hit_data[hit_index]["timestamp"] = self.tj_timestamp
                             hit_data[hit_index]["scan_param_id"] = scan_param_id
 
                             self._fill_hist(self.col, self.row, (self.te - self.le) & 0x7F, scan_param_id)
@@ -132,7 +140,7 @@ class RawDataInterpreter(object):
                 hit_data[hit_index]["le"] = 0
                 hit_data[hit_index]["te"] = 0
                 hit_data[hit_index]["token_id"] = tlu_word
-                # hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
+                hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
 
                 # Prepare for next data block. Increase hit index
