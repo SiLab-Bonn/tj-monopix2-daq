@@ -27,13 +27,12 @@ import tables as tb
 from online_monitor.utils import utils as ou
 
 from tjmonopix2 import utils
-# from bdaq53 import manage_databases
 from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 from tjmonopix2.system import logger, fifo_readout
 from tjmonopix2.system.mio3 import MIO3
-# from tjmonopix2_daq.system.bdaq import BDAQ
+from tjmonopix2.system.bdaq53 import BDAQ53
 
 # from tjmonopix2_daq.system.periphery import BDAQ53Periphery
 from tjmonopix2.system.fifo_readout import FifoReadout
@@ -557,7 +556,12 @@ class ScanBase(object):
         with self._logging_through_handlers():
             self.log.info('Initializing %s...', self.__class__.__name__)
             if not self.daq:  # create daq object only once
-                self.daq = MIO3(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                if self.configuration['bench']['general']['readout_system'].lower == 'bdaq53':
+                    self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                elif self.configuration['bench']['general']['readout_system'].lower == 'mio3':
+                    self.daq = MIO3(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                else:
+                    raise ValueError("Unsupported readout platform!")
 
         # Instantiate TJ-Monopix2 chip
         for _ in self.iterate_chips():
@@ -1144,7 +1148,7 @@ class ScanBase(object):
         finally:
             if self.daq.board_version == 'SIMULATION':
                 for _ in range(100):
-                    self.daq.rx_channels[self.chip.receiver].get_rx_ready()
+                    self.daq.rx_channels[self.chip.receiver].is_done()
             self.stop_readout(timeout=timeout)
 
     def start_readout(self, **kwargs):

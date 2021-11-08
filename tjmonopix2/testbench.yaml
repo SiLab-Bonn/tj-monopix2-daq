@@ -1,11 +1,6 @@
 general: # General configuration
-  output_directory: # Top-level output data directory, default is the current folder where the bdaq script is started
-
-periphery: # Configuration of the BDAQ53 Periphery module
-  enable_periphery: False
-  monitoring: False # Monitor all connected powersupplies and sensors regularly
-  monitoring_interval: 10 # Interval for DCS monitoring in seconds
-  analog_monitoring_board: False
+  readout_system: 'BDAQ53'  # Readout system, available platforms are BDAQ53 or MIO3 (+ GPAC)
+  output_directory: '/media/raid/data/tjmonopix2/2021-10-25_elsa/tuning' # Top-level output data directory, default is the current folder where the script is started
 
 # Connected Modules
 modules:
