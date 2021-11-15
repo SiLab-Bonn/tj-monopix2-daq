@@ -56,8 +56,9 @@ proc run_bit { part board xdc_file size} {
 if {$argc == 0} {
     # Standalone mode, directly calling tcl file
     #       FPGA type           board name	  constraints file               flash size
-    # run_bit xc7k160tfbg676-1    MIO3          $vivado_dir/../src/mio3.xdc    64
-    run_bit xc7k160tffg676-2    BDAQ53        $vivado_dir/../src/bdaq.xdc    64
+    # run_bit xc7k160tfbg676-1    MIO3          $vivado_dir/../src/mio3.xdc      64
+    run_bit xc7k160tffg676-2    BDAQ53        $vivado_dir/../src/bdaq53.xdc      64
+    run_bit xc7k160tfbg676-1    BDAQ53        $vivado_dir/../src/bdaq53_kx1.xdc  64
 } else {
     # Build specific firmware by passing arguments
     if {$argc == 4} {
