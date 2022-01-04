@@ -2,7 +2,7 @@
 #  Copyright (c) SILAB , Physics Institute of Bonn University
 # ------------------------------------------------------------
 #
-#   Constraints for the MIO3 PCB with the Mercury KX1(160T-1) FPGA board
+#   Constraints for the BDAQ53 PCB with the Mercury+ KX2(160T-2) FPGA board
 #
 
 # Clock domains
