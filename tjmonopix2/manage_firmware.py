@@ -52,21 +52,23 @@ def compile_firmware(name):
     # Use mappings from run.tcl
     fpga_types = {'BDAQ53': 'xc7k160tffg676-2',
                   'MIO3': 'xc7k160tfbg676-1'}
-    constrains_files = {'BDAQ53': '../src/bdaq53.xdc',
-                        'MIO3': '../src/mio3.xdc'}
-    flash_sizes = {'BDAQ53': '64',
-                   'MIO3': '64'}
+    constraints_files = {'BDAQ53': 'bdaq53_kx2.xdc',
+                         'MIO3': 'mio3_kx1.xdc'}
+    flash_sizes = {'BDAQ53': 64,
+                   'MIO3': 64}
+    suffices = {'BDAQ53': '',
+                'MIO3': ''}
 
     for k, v in fpga_types.items():
         if k in name:
             fpga_type = v
-            constrain_files = constrains_files[k]
+            constraints_file = constraints_files[k]
             flash_size = flash_sizes[k]
-            board_name = k
+            suffix = suffices[k]
 
-    command_args = fpga_type + ' ' + board_name + ' ' + constrain_files + ' ' + flash_size
-    command = 'vivado -mode tcl -source run.tcl -tclargs %s' % command_args
-    log.info('Compiling firmware. Takes about 10 minutes!')
+    command_args = fpga_type + ' ' + constraints_file + ' ' + str(flash_size) + ' ' + suffix
+    command = 'vivado -mode batch -source run.tcl -tclargs %s' % command_args
+    log.info('Compiling firmware. Takes about 5 minutes!')
     try:
         vivado = pexpect.spawn(command, cwd=vivado_tcl, timeout=10)
         vivado.expect('Vivado', timeout=5)

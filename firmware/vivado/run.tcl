@@ -25,7 +25,7 @@ set include_dirs [list $vivado_dir/../src $vivado_dir/../SiTCP $basil_dir/basil/
 file mkdir ../bit reports
 
 
-proc run_bit {part xdc_file size suffix} {
+proc run_bit {part xdc_file size {suffix ""}} {
     global vivado_dir
     set src_dir $vivado_dir/../src
     
@@ -69,14 +69,15 @@ proc run_bit {part xdc_file size suffix} {
 
 if {$argc == 0} {
     # Standalone mode, directly calling tcl file
-    #         FPGA model            constraints file    flash size  suffix
-    # run_bit     xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
-    run_bit     xc7k160tffg676-2    bdaq53_kx2.xdc      64          ""
-    # run_bit     xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
-    # run_bit     xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
+    #          FPGA model          constraints file    flash size  suffix
+    run_bit    xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
+    run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc      64          ""
+    run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
+    run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
 } else {
     # Build specific firmware by passing arguments
-    if {$argc == 4} {
+    # Suffix argument is not required, and default "" can not be read from command line arguments 
+    if {($argc == 3) || ($argc == 4)} {
         run_bit {*}$argv
     } else {
         puts "ERROR: Invalid args"
