@@ -40,7 +40,7 @@ def compile_firmware(name):
             pass
         return flushed.decode('utf-8')
 
-    supported_firmwares = ['BDAQ53', 'MIO3']
+    supported_firmwares = ['BDAQ53', 'BDAQ53_KX1', 'MIO3']
     if name not in supported_firmwares:
         log.error('Can only compile firmwares: %s', ','.join(supported_firmwares))
         return
@@ -51,12 +51,16 @@ def compile_firmware(name):
 
     # Use mappings from run.tcl
     fpga_types = {'BDAQ53': 'xc7k160tffg676-2',
+                  'BDAQ53_KX1': 'xc7k160tfbg676-1',
                   'MIO3': 'xc7k160tfbg676-1'}
     constraints_files = {'BDAQ53': 'bdaq53_kx2.xdc',
+                         'BDAQ53_KX1': 'bdaq53_kx1.xdc',
                          'MIO3': 'mio3_kx1.xdc'}
     flash_sizes = {'BDAQ53': 64,
+                   'BDAQ53_KX1': 64,
                    'MIO3': 64}
     suffices = {'BDAQ53': '',
+                'BDAQ53_KX1': '',
                 'MIO3': ''}
 
     for k, v in fpga_types.items():
