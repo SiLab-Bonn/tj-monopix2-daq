@@ -9,8 +9,14 @@
 #
 
 # Use current environment python instead of vivado included python
-unset ::env(PYTHONPATH)
-unset ::env(PYTHONHOME)
+if {[info exists ::env(PYTHONPATH)]} {
+    unset ::env(PYTHONPATH)
+}
+if {[info exists ::env(PYTHONHOME)]} {
+    unset ::env(PYTHONHOME)
+}
+# Get rid of Vivado python (since Vivado 2021) in PATH and use python from calling shell
+set env(PATH) [join [lsearch -inline -all -not -regexp [split $::env(PATH) ":"] (.*)lnx64\/python(.*)] ":"]
 
 set vivado_dir [exec pwd]
 set basil_dir [exec python -c "import basil, os; print(str(os.path.dirname(os.path.dirname(basil.__file__))))"]
@@ -64,10 +70,10 @@ proc run_bit {part xdc_file size suffix} {
 if {$argc == 0} {
     # Standalone mode, directly calling tcl file
     #         FPGA model            constraints file    flash size  suffix
-    run_bit     xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
+    # run_bit     xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
     run_bit     xc7k160tffg676-2    bdaq53_kx2.xdc      64          ""
-    run_bit     xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
-    run_bit     xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
+    # run_bit     xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
+    # run_bit     xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
 } else {
     # Build specific firmware by passing arguments
     if {$argc == 4} {
