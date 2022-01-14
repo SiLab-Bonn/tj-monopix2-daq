@@ -6,8 +6,8 @@
 #
 
 import unittest
-import utils
 
+from tjmonopix2.tests import utils
 from tjmonopix2.system.bdaq53 import BDAQ53
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
