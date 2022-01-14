@@ -10,9 +10,11 @@
 '''
 
 import os
+import time
 import argparse
 import pexpect
-from sys import platform
+import git
+import fileinput
 
 import tjmonopix2
 from tjmonopix2.system import logger
@@ -20,10 +22,10 @@ from tjmonopix2.system import logger
 log = logger.setup_derived_logger('FirmwareManager')
 
 tjmonopix2_path = os.path.dirname(tjmonopix2.__file__)
+sitcp_repo = r'https://github.com/BeeBeansTechnologies/SiTCP_Netlist_for_Kintex7'
 
 
-
-def compile_firmware(name):
+def compile_firmware(platform):
     ''' Compile firmware using vivado in tcl mode
     '''
 
@@ -41,11 +43,11 @@ def compile_firmware(name):
         return flushed.decode('utf-8')
 
     supported_firmwares = ['BDAQ53', 'BDAQ53_KX1', 'MIO3']
-    if name not in supported_firmwares:
+    if platform not in supported_firmwares:
         log.error('Can only compile firmwares: %s', ','.join(supported_firmwares))
         return
 
-    log.info('Compile firmware %s', name)
+    log.info('Compile firmware %s', platform)
 
     vivado_tcl = os.path.join(tjmonopix2_path, '..', 'firmware/vivado')
 
@@ -64,7 +66,7 @@ def compile_firmware(name):
                 'MIO3': ''}
 
     for k, v in fpga_types.items():
-        if k in name:
+        if k in platform:
             fpga_type = v
             constraints_file = constraints_files[k]
             flash_size = flash_sizes[k]
@@ -80,13 +82,13 @@ def compile_firmware(name):
         log.error('Cannot execute vivado command %d.\nMaybe paid version is missing that is needed for compilation?', command)
         return
 
-    import time
-    timeout = 100  # 500 seconds with no new print to screen
+    timeout = 36  # equals 180 seconds with no new print to screen
     t = 0
     while t < timeout:
         r = get_return_string()
         if r:
             if 'write_cfgmem completed successfully' in r:
+                print('.', end='\n', flush=True)
                 break
             print('.', end='', flush=True)
             t = 0
@@ -215,150 +217,77 @@ def flash_firmware(name):
     log.success('All done!')
 
 
-def find_vivado(path):
-    ''' Search in std. installation paths for vivado(_lab) binary
+def get_sitcp():
+    ''' Download SiTCP sources from official github repo and apply patches
     '''
 
-    if platform == "linux" or platform == "linux2":
-        linux_install_path = '/opt/' if not path else path
-        # Try vivado full install
-        paths = where(name='vivado', path=linux_install_path)
-        for path in paths:
-            if 'bin' in path:
-                return os.path.dirname(os.path.realpath(path))
-        # Try vivado lab install
-        paths = where(name='vivado_lab', path=linux_install_path)
-        for path in paths:
-            if 'bin' in path:
-                return os.path.dirname(os.path.realpath(path))
-    else:
-        raise NotImplementedError('Only Linux supported')
+    def line_prepender(filename, line):
+        with open(filename, 'rb+') as f:
+            content = f.read()
+            f.seek(0, 0)
+            # Python 3, wtf?
+            add = bytearray()
+            add.extend(map(ord, line))
+            add.extend(map(ord, '\n'))
+            f.write(add + content)
 
+    def patch_sitcp():
+        # Patch sources, see README
+        line_prepender(filename=sitcp_folder + 'TIMER.v', line=r'`default_nettype wire')
+        line_prepender(filename=sitcp_folder + 'WRAP_SiTCP_GMII_XC7K_32K.V', line=r'`default_nettype wire')
+        for line in fileinput.input([sitcp_folder + 'WRAP_SiTCP_GMII_XC7K_32K.V'], inplace=True):
+            print(line.replace("assign\tMY_IP_ADDR[31:0]\t= (~FORCE_DEFAULTn | (EXT_IP_ADDR[31:0]==32'd0) \t? DEFAULT_IP_ADDR[31:0]\t\t: EXT_IP_ADDR[31:0]\t\t);",
+                               'assign\tMY_IP_ADDR[31:0]\t= EXT_IP_ADDR[31:0];'), end='')
 
-def where(name, path, flags=os.F_OK):
-    result = []
-    paths = [path]
-    for outerpath in paths:
-        for innerpath, _, _ in os.walk(outerpath):
-            path = os.path.join(innerpath, name)
-            if os.access(path, flags):
-                result.append(os.path.normpath(path))
-    return result
+    sitcp_folder = os.path.join(tjmonopix2_path, '..', 'firmware/SiTCP/')
 
+    # Only download if not already existing SiTCP git repository
+    if not os.path.isdir(os.path.join(sitcp_folder, '.git')):
+        log.info('Downloading SiTCP')
 
+        # Has to be moved to be allowed to use existing folder for git checkout
+        git.Repo.clone_from(url=sitcp_repo,
+                            to_path=sitcp_folder, branch='master')
+        patch_sitcp()
 
-def run(name, path=None, create=False, target='flash'):
-    ''' Steps to download/compile/flash matching firmware to FPGA
-
-        name: str
-            Firmware name:
-                If name has .bit suffix try to flash from local file
-                If not available find suitable firmware online, download, extract, and flash
-        compile: boolean
-            Compile firmware
-    '''
-
-    # TODO: For now assume vivado binary is added to current PATH
-    # vivado_path = find_vivado(path)
-    # if vivado_path:
-    #     log.debug('Found vivado binary at %s', vivado_path)
-    #     os.environ["PATH"] += os.pathsep + vivado_path
-    # else:
-    #     if path:
-    #         log.error('Cannot find vivado installation in %s', path)
-    #     else:
-    #         log.error('Cannot find vivado installation!')
-    #         if not create:
-    #             log.error('Install vivado lab from here:\nhttps://www.xilinx.com/support/download.html')
-    #         else:
-    #             log.error('Install vivado paid version to be able to compile firmware')
-    #     return
-
-    if not create:
-        if os.path.isfile(name):
-            if '.mcs' in name:
-                log.info('Found existing local configuration memory file')
-                mcs_file = name
-            elif '.bit' in name:
-                log.info('Found existing local bit file')
-                bit_file = name
-        # TODO: For now assume repository is properly installed and up to date
-        # else:
-        #     if not name.endswith('.tar.gz'):
-        #         name += '.tar.gz'
-        #     stable_firmware = True  # std. setting: use stable (tag) firmware
-        #     version = pkg_resources.get_distribution("tjmonopix2").version
-        #     if not os.getenv('CI'):
-        #         try:
-        #             import git
-        #             try:
-        #                 repo = git.Repo(search_parent_directories=True, path=bdaq53_path)
-        #                 active_branch = repo.active_branch
-        #                 if active_branch != 'master':
-        #                     stable_firmware = False  # use development firmware
-        #             except git.InvalidGitRepositoryError:  # no github repo --> use stable firmware
-        #                 pass
-        #         except ImportError:  # git not available
-        #             log.warning('Git not properly installed, assume software release %s', version)
-        #             pass
-        #         if stable_firmware:
-        #             tag_list = get_tag_list(firmware_url)
-        #             matches = [i for i in range(len(tag_list)) if version in tag_list[i]]
-        #             if not matches:
-        #                 raise RuntimeError('Cannot find tag version %s at %s', version, firmware_url)
-        #             tag_url = firmware_url + '/' + tag_list[matches[0]]
-        #             log.info('Download stable firmware version %s', version)
-        #             archiv_name = download_firmware(name, tag_url)
-        #         else:
-        #             log.info('Download development firmware')
-        #             archiv_name = download_firmware(name, firmware_dev_url + '.md')
-        #     else:  # always use development version for CI runner
-        #         archiv_name = download_firmware(name, firmware_dev_url + '.md')
-        #     if not archiv_name:
-        #         return
-        #     bit_file, mcs_file = unpack_files(archiv_name)
-        if target == 'flash':
-            flash_firmware(mcs_file)
-        elif target == 'fpga':
-            flash_firmware(bit_file)
+    else:  # update if existing
+        log.info('SiTCP folder already exists, updating if possible')
+        g = git.cmd.Git(sitcp_folder)
+        if 'up to date' in g.pull():
+            log.info('SiTCP is up to date')
         else:
-            log.error('No JTAG target (fpga, flash) specified')
-    else:
-        # get_si_tcp()  # get missing SiTCP sources
-        compile_firmware(name)
+            patch_sitcp()
+            log.info('Updated and patched SiTCP from git repository')
 
 
 def main():
     parser = argparse.ArgumentParser(description='TJ-Monopix2 firmware manager', formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--firmware',
+    parser.add_argument('-f', '--firmware',
                         nargs=1,
                         help='Firmware file name or platform to build firmware for',)
 
-    parser.add_argument('--vivado_path',
-                        default=[None],
-                        nargs=1,
-                        help='Path of vivado installation',)
-
     parser.add_argument('-c', '--compile',
-                        action='store_true',
-                        help='Compiles firmware. Set platform name with --firmware, BDAQ53 and MIO3 are supported',)
+                        nargs=1,
+                        help='Platform to compile firmware for',)
 
-    parser.add_argument('--target',
-                        default='fpga',
-                        help='Selects firmware target:\n  fpga: firmware is written to the FPGA and lost after power-cycle (useful for debugging)\n  flash: firmware is written to the persistent flash memory and loaded after power-cycle',)
+    parser.add_argument('--get_sitcp',
+                        action='store_true',
+                        help='Standalone download and patching of SiTCP.',)
 
     args = parser.parse_args()
 
-    # if args.firmware is None:
-    #     log.info('Available development firmware versions:')
-    #     for link in find_links(firmware_dev_url + '.md'):
-    #         print(link[:-7])
-    # else:
-    #     run(args.firmware[0], path=args.vivado_path[0], create=args.compile, target=args.target)
-    if args.firmware is not None:
-        run(args.firmware[0], path=args.vivado_path[0], create=args.compile, target=args.target)
+    if args.firmware and args.compile:
+        raise RuntimeError("Both firmware file and compile platform is given, choose one.")
 
+    if args.firmware:
+        flash_firmware(args.firmware[0])
+    elif args.compile:
+        get_sitcp()
+        compile_firmware(args.compile[0])
+    elif args.get_sitcp:
+        get_sitcp()
+    
 
 if __name__ == '__main__':
     main()
