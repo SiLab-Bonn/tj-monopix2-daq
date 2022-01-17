@@ -5,25 +5,8 @@
 # ------------------------------------------------------------
 #
 
-import pytest
 
 from tjmonopix2.tests.test_hardware import utils
-from tjmonopix2.system.bdaq53 import BDAQ53
-from tjmonopix2.system.tjmonopix2 import TJMonoPix2
-
-
-@pytest.fixture(scope="session")
-def device() -> None:
-    cfg = utils.setup_cocotb()
-    daq = BDAQ53(conf=cfg)
-    daq.init()
-
-    device = TJMonoPix2(daq=daq)
-    device.init()
-
-    daq.rx_channels["rx0"].set_en(True)  # Enable rx module in FPGA
-    yield device
-    daq.close()
 
 
 def test_register_rw(device) -> None:
