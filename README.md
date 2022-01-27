@@ -1,30 +1,50 @@
 # tj-monopix2-daq
+[![Hardware tests](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/tests.yml/badge.svg)](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/tests.yml)
+
+Data acquisition system for the TJ-Monopix2 pixel detector.
 
 ## Installation
-TBD
+Clone the repository and install the required dependencies with
+```bash
+pip install basil-daq coloredlogs GitPython numba numpy matplotlib tables tqdm scipy basil-daq PyYAML pyzmq
+```
+Afterwards install the package (editable) by running
+```bash
+pip install -e .
+```
+from the root folder.
 
 ## Firmware compilation
-Grab a copy of [SiTCP](https://github.com/BeeBeansTechnologies/SiTCP_Netlist_for_Kintex7) and move the `*.V` and `*.ngc` files to a newly created `firmware/SiTCP` folder in the cloned `tj-monopix2-daq` repository. Add a line `` `default_nettype wire`` in all of the `*.V` files right below the copyright notice in the beginning and before the first module declaration. This ensures compatibility with the rest of the verilog code.
+Clone [basil](https://github.com/SiLab-Bonn/basil) to any location and install it by running `pip install -e .` from its root folder.
+<details>
+  <summary>If you want to download SiTCP and patch it for yourself, click here</summary>
 
-Next, clone the [basil](https://github.com/SiLab-Bonn/basil) directory to any location and install it by running `python setup.py develop` from its root folder.
-Now everything should be set up for compiling the firmware. 
+  Grab a copy of [SiTCP](https://github.com/BeeBeansTechnologies/SiTCP_Netlist_for_Kintex7) and move the `*.V` and `*.ngc` files to a newly created `firmware/SiTCP` folder in the cloned `tj-monopix2-daq` repository. Add a line `` `default_nettype wire`` in all of the `*.V` files right below the copyright notice in the beginning and before the first module declaration. This ensures compatibility with the rest of the verilog code.
+</details>
+
+### Using firmware manager
+This is the recommended method to compile firmware. Simply run
+```bash
+python manage_firmware.py --compile <platform>
+```
+where `<platform>` is either `BDAQ53`, `BDAQ53_KX1` or `MIO3`. Make sure to have a Vivado binary in the current PATH.
 
 ### Using Vivado CLI
 Run
 ```
-vivado -mode tcl -source run.tcl
+vivado -mode batch -source run.tcl
 ```
-from the `firmware/vivado` folder. The resulting bit file will be written to `firmware/bit`.
-
-### Using firmware manager
-Run
-`python manage_firmware.py --firmware <platform> --compile`
-where `<platform>` is either `BDAQ53` or `MIO3`. Make sure to have a Vivado binary in the current PATH.
+from the `firmware/vivado` folder. The resulting bit files will be written to `firmware/bit`. This will build the firmware for multiple supported hardware platforms. If you want to build it for only one, pass the arguments that you can find in `run.tcl` as command line arguments, e.g.
+```
+vivado -mode batch -source run.tcl -tclargs xc7k160tffg676-2 bdaq53_kx2.xdc 64
+```
 
 ## Firmware flashing
-The easiest way to flash the firmware to the FPGA is the firmware manager.
+The easiest way to flash the firmware to the FPGA is again the firmware manager.
 Run
-`python manage_firmware.py --firmware <path-to-bit-or-mcs-file>`
+```bash
+python manage_firmware.py --firmware <path-to-bit-or-mcs-file>
+```
 and specify the path to the firmware file. The file type determines if it is written to FPGA (`.bit`) or persistent flash memory (`.mcs`). 
 
 ## Hardware configuration
