@@ -27,7 +27,7 @@ def test_rx(device) -> None:
 
     device.daq.reset_fifo()
     device.inject(PulseStartCnfg=0, PulseStopCnfg=8, repetitions=5)
-    utils.wait_for_sim(device, repetitions=16)
+    utils.wait_for_sim(device, repetitions=4)
     data = device.daq["FIFO"].get_data()
     hit, _ = device.interpret_data(data)
     tot = (hit['te'] - hit['le']) & 0x7F

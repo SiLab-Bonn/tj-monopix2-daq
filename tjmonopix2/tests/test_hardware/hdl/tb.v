@@ -27,9 +27,9 @@
 
  module tb #(
     // FIRMWARE VERSION
-    parameter VERSION_MAJOR = 8'd0,
-    parameter VERSION_MINOR = 8'd0,
-    parameter VERSION_PATCH = 8'd0
+    parameter VERSION_MAJOR = `VERSION_MAJOR,
+    parameter VERSION_MINOR = `VERSION_MINOR,
+    parameter VERSION_PATCH = `VERSION_PATCH
 )(
     output wire        BUS_CLK /* verilator public_flat_rd */,
     input wire         BUS_RST /* verilator public_flat_rw */,

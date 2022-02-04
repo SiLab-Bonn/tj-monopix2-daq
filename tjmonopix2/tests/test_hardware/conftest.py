@@ -59,10 +59,9 @@ def sim_config(extra_defines=[]):
             basil_dir + "/firmware/modules/utils",
         ),
         compile_args=[
-            "-GVERSION_MAJOR={:s}".format(version[0]),
-            "-GVERSION_MINOR={:s}".format(version[1]),
-            "-GVERSION_PATCH={:s}".format(version[2]),
-            "-LDFLAGS {:s}/tjmonopix2/tests/test_hardware/hdl/libmonopix2.a".format(top_dir),
+            "-DVERSION_MAJOR={:s}".format(version[0]),
+            "-DVERSION_MINOR={:s}".format(version[1]),
+            "-DVERSION_PATCH={:s}".format(version[2]),
             "--hierarchical",
             "-Wno-COMBDLY",
             "-Wno-PINMISSING",
