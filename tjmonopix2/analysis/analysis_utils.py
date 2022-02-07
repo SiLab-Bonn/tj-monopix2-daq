@@ -29,8 +29,7 @@ hit_dtype = np.dtype([
     ("te", "<i1"),
     ("token_id", "<i4"),
     ("timestamp", "<i8"),
-    ("scan_param_id", "<i2")
-])
+    ("scan_param_id", "<i2"),
 ])
 
 
