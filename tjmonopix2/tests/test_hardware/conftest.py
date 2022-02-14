@@ -32,7 +32,8 @@ def sim_config(extra_defines=[]):
     basil_dir = os.path.dirname(basil.__file__)
 
     simulation_modules = {}
-    simulation_modules["tjmonopix2.tests.test_hardware.drivers.HitDefault"] = {}
+    simulation_modules["tjmonopix2.tests.test_hardware.drivers.HitFile"] = {
+    }
     simulation_modules["tjmonopix2.tests.test_hardware.drivers.Drive320Clock"] = {}
     os.environ["SIMULATION_MODULES"] = yaml.dump(simulation_modules)
     os.environ["SIMULATION_END_ON_DISCONNECT"] = "1"
@@ -67,7 +68,12 @@ def sim_config(extra_defines=[]):
             "-Wno-COMBDLY",
             "-Wno-PINMISSING",
             "-Wno-fatal",
-            "-j 4",
+            "--output-split 15000",
+            "-O3",
+            "-CFLAGS -O3",
+        ],
+        build_args=[
+            "-j 2"
         ],
         extra_defines=extra_defines,
         extra="EXTRA_ARGS = --trace-fst --trace-structs",
