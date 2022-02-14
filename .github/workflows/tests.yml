@@ -35,7 +35,7 @@ jobs:
         conda install coloredlogs numba numpy matplotlib pyyaml pytables pytest tqdm scipy
     - name: Install basil from repo
       shell: bash -l {0}
-      run: /
+      run: |
         git clone -b master --depth 1 https://github.com/SiLab-Bonn/basil.git; cd basil; python setup.py develop; cd ..;
     - name: Install Python dependencies
       shell: bash -l {0}
