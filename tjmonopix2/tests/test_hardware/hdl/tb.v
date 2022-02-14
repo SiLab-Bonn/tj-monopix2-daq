@@ -22,8 +22,14 @@
 `include "bram_fifo/bram_fifo.v"
 `include "bram_fifo/bram_fifo_core.v"
 
+`include "tlu_master/tlu_ch_rx.v"
+`include "tlu_master/tlu_master_core.v"
+`include "tlu_master/tlu_master.v"
+`include "tlu_master/tlu_tx.v"
+
 // Chip RTL
 `include "monopix2.sv"
+// `include "MONOPIX_TOP.sv"
 
  module tb #(
     // FIRMWARE VERSION
@@ -69,10 +75,12 @@ localparam FIFO_HIGHADDR = 32'h9000-1;
 localparam FIFO_BASEADDR_DATA = 32'h8000_0000;
 localparam FIFO_HIGHADDR_DATA = 32'h9000_0000;
 
+localparam TLU_MASTER_BASEADDR = 32'h7000;
+localparam TLU_MASTER_HIGHADDR = 32'h8000 - 1;
+
 // Verification
 reg  [512*512-1:0] ANALOG_HIT /* verilator public_flat_rw */;
-wire               START_HIT /* verilator public_flat_rd */;
-reg                TRIGGER /* verilator public_flat_rw */;
+reg                BEAM_TRIGGER /* verilator public_flat_rw */;
 
 // Firmware core
 wire I2C_SDA, I2C_SCL;
@@ -92,6 +100,7 @@ wire LVDS_SER_CLK;
 wire LVDS_DATA;
 wire LVDS_HITOR;
 wire LVDS_PULSE_EXT;
+wire LVDS_CHSYNC_LOCK;
 
 wire [1:0] CHIP_ID;
 
@@ -152,17 +161,44 @@ tjmonopix2_core #(
 wire SELF_TRIGGER;
 assign SELF_TRIGGER = 1'b0;
 
-tlu_model tlu (
-    .SYS_CLK(BUS_CLK),
-    .SYS_RST(BUS_RST),
-    .ENABLE(1'b1),
+// tlu_model tlu (
+//     .SYS_CLK(BUS_CLK),
+//     .SYS_RST(BUS_RST),
+//     .ENABLE(1'b1),
 
-    .START_TRIGGER(SELF_TRIGGER ? LVDS_HITOR : TRIGGER),
+//     .START_TRIGGER(SELF_TRIGGER ? LVDS_HITOR : BEAM_TRIGGER),
 
-    .TLU_CLOCK(RJ45_CLK),
-    .TLU_BUSY(RJ45_BUSY),
-    .TLU_TRIGGER(RJ45_TRIGGER),
-    .TLU_RESET(RJ45_RESET)
+//     .TLU_CLOCK(RJ45_CLK),
+//     .TLU_BUSY(RJ45_BUSY),
+//     .TLU_TRIGGER(RJ45_TRIGGER),
+//     .TLU_RESET(RJ45_RESET)
+// );
+
+tlu_master #(
+    .BASEADDR(TLU_MASTER_BASEADDR),
+    .HIGHADDR(TLU_MASTER_HIGHADDR)
+) tlu (
+    .CLK320(CLK320),
+    .CLK160(CLK160),
+    .CLK40(CLK40),
+
+    .TEST_PULSE(1'b0),
+    .DUT_TRIGGER(RJ45_TRIGGER),
+    .DUT_RESET(RJ45_RESET),
+    .DUT_BUSY(RJ45_BUSY),
+    .DUT_CLOCK(RJ45_CLK),
+    .BEAM_TRIGGER(BEAM_TRIGGER),
+
+    .FIFO_READ(1'b0),
+    .FIFO_EMPTY(),
+    .FIFO_DATA(),
+
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA[7:0]),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR)
 );
 
 bram_fifo
@@ -191,7 +227,7 @@ bram_fifo
 );
 
 monopix2 dut (
-    .RESETB_EXT(RESETB_EXT),
+    .RESETB_EXT(1'b1),  // No need to reset chip in tests
     .ANALOG_HIT(ANALOG_HIT),
     
     .LVDS_CMD(LVDS_CMD), 
@@ -201,8 +237,23 @@ monopix2 dut (
     .LVDS_HITOR_OUT(LVDS_HITOR),
     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
 
-    .LVDS_CHSYNC_LOCKED_OUT(),
+    .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCK),
     .LVDS_CHSYNC_CLK_OUT()
 );
+
+// MONOPIX_TOP dut (
+//     .RESETB_EXT(1'b1),  // No need to reset chip in tests
+//     .ANALOG_HIT(ANALOG_HIT),
+
+//     .LVDS_CMD(LVDS_CMD), 
+//     .LVDS_CMD_CLK(LVDS_CMD_CLK), 
+//     .LVDS_SER_CLK(LVDS_SER_CLK), 
+//     .LVDS_DATA_OUT(LVDS_DATA), 
+//     .LVDS_HITOR_OUT(LVDS_HITOR),
+//     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
+
+//     .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCK),
+//     .LVDS_CHSYNC_CLK_OUT()
+// );
 
 endmodule
