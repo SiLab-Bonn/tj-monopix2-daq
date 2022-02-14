@@ -32,8 +32,6 @@ def sim_config(extra_defines=[]):
     basil_dir = os.path.dirname(basil.__file__)
 
     simulation_modules = {}
-    simulation_modules["tjmonopix2.tests.test_hardware.drivers.HitFile"] = {
-    }
     simulation_modules["tjmonopix2.tests.test_hardware.drivers.Drive320Clock"] = {}
     os.environ["SIMULATION_MODULES"] = yaml.dump(simulation_modules)
     os.environ["SIMULATION_END_ON_DISCONNECT"] = "1"
