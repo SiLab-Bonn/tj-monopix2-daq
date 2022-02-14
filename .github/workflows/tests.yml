@@ -22,7 +22,7 @@ jobs:
             sim-version: v4.106
             python-version: 3.8
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Anaconda ${{matrix.python-version}}
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -33,10 +33,14 @@ jobs:
       run: |
         conda info -a
         conda install coloredlogs numba numpy matplotlib pyyaml pytables pytest tqdm scipy
+    - name: Install basil from repo
+      shell: bash -l {0}
+      run: /
+        git clone -b master --depth 1 https://github.com/SiLab-Bonn/basil.git; cd basil; python setup.py develop; cd ..;
     - name: Install Python dependencies
       shell: bash -l {0}
       run: |
-        pip install basil-daq>=3.2.0 cocotb==1.5.2 cocotb-bus==0.1.0
+        pip install cocotb cocotb-bus
     - name: Install Verilator
       if: matrix.sim == 'verilator'
       run: |
