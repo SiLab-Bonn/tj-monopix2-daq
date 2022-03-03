@@ -193,24 +193,6 @@ localparam I2C_HIGHADDR = 32'h4000 - 1;
 localparam CMD_BASEADDR = 32'h1000;
 localparam CMD_HIGHADDR = 32'h3000 - 1;
 
-// localparam TS_RX0_BASEADDR = 32'h0D00;
-// localparam TS_RX0_HIGHADDR = 32'h0E00-1;
-
-// localparam DIRECT_RX_BASEADDR = 32'h0500;
-// localparam DIRECT_RX_HIGHADDR = 32'h0600-1;
-
-// localparam TS_INJ_BASEADDR = 32'h0700;
-// localparam TS_INJ_HIGHADDR = 32'h0800-1;
-
-// localparam TS_CMOS_HIT_OR_BASEADDR = 32'h0800;
-// localparam TS_CMOS_HIT_OR_HIGHADDR = 32'h0900-1;
-
-// localparam TS_HOR_BASEADDR = 32'h0900;
-// localparam TS_HOR_HIGHADDR = 32'h0A00 - 1;
-
-// localparam PULSE_TRIG_BASEADDR = 32'h0B00;
-// localparam PULSE_TRIG_HIGHADDR = 32'h0C00 - 1;
-
 localparam ABUSWIDTH = 32;
 
 // SYSTEM CONFIG
@@ -273,15 +255,11 @@ gpio
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .IO(IO)
-);    
-wire EN_LVDS_IN, EN_CMOS_IN, EN_CMOS_OUT, SEL_DIRECT, SEL_SER_CLK;
+);
+wire EN_LVDS_IN, EN_CMOS_IN, EN_CMOS_OUT, SEL_DIRECT;
 wire [2:0] GPIO_MODE;
 
 assign GPIO_MODE = IO[14:12];
-assign SEL_SER_CLK = IO[15];
-
-wire SER_CLK;
-assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
 
 `ifdef MIO3
     assign INPUT_SEL = IO[1];
@@ -293,13 +271,6 @@ assign SER_CLK = SEL_SER_CLK ? CLK320 : CLK160;
     assign IO[11] = RO_RST_EXT;
     assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
     assign SEL_DIRECT = IO[16]; 
-    assign LVDS_SER_CLK = EN_LVDS_IN ? ~SER_CLK : 1'b0;
-    assign CMOS_SER_CLK = EN_CMOS_IN ? SER_CLK : 1'b0;
-    assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CLKCMD : 1'b0;
-    assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
-`elsif BDAQ53
-    assign LVDS_SER_CLK = CLK160;
-    assign LVDS_CMD_CLK = CLKCMD;
 `endif
 
 // GPIO module to access general base-board features
@@ -418,7 +389,7 @@ wire EXT_TRIGGER;
 
 // ----- Command encoder ----- //
 wire CMD;
-wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING; //TODO they were output wire but connected to nowhere
+wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING;
 wire CMD_LOOP_START;
 
 wire EXT_START_PIN;
@@ -453,11 +424,24 @@ cmd #(
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT)
 );
+
 `ifdef MIO3
+    assign LVDS_SER_CLK = EN_LVDS_IN ? ~CLK160 : 1'b0;
+    assign CMOS_SER_CLK = EN_CMOS_IN ? CLK160 : 1'b0;
+    assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CLKCMD : 1'b0;
+    assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
     assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
     assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
 `elsif BDAQ53
-    assign LVDS_CMD = CMD_OUT;
+    ODDR ODDR_inst_SER_CLK (
+        .Q(LVDS_SER_CLK), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK (
+        .Q(LVDS_CMD_CLK), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD (
+        .Q(LVDS_CMD), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+    );
 `endif
 
 pulse_gen #(
@@ -477,27 +461,18 @@ pulse_gen #(
     .PULSE(CMD_LOOP_START_PULSE)
 );
 
+// RX
 wire RX_FIFO_READ, RX_FIFO_EMPTY;
 wire [31:0] RX_FIFO_DATA;
-// wire DIRECT_RX_FIFO_READ, DIRECT_RX_FIFO_EMPTY;
-// wire [31:0] DIRECT_RX_FIFO_DATA;
-// wire TS_HOR_FIFO_READ,TS_HOR_FIFO_EMPTY;
-// wire [31:0] TS_HOR_FIFO_DATA;
-// wire TS_HOR_TRAILING_FIFO_READ,TS_HOR_TRAILING_FIFO_EMPTY;
-// wire [31:0] TS_HOR_TRAILING_FIFO_DATA;
 
-wire  TLU_FIFO_READ, TLU_FIFO_EMPTY;
+// TLU
+wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
 wire [31:0] TLU_FIFO_DATA;
-// wire TS_RX0_FIFO_READ,TS_RX0_FIFO_EMPTY;
-// wire [31:0] TS_RX0_FIFO_DATA;
-// wire TS_INJ_FIFO_READ,TS_INJ_FIFO_EMPTY;
-// wire [31:0] TS_INJ_FIFO_DATA;
+wire TLU_FIFO_PREEMPT_REQ;
 
 // TDC
 wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
 wire [31:0] TDC_FIFO_DATA;
-
-wire TLU_FIFO_PREEMPT_REQ;
 
 rrp_arbiter 
 #( 
@@ -636,88 +611,6 @@ tdc_s3 #(
     .TIMESTAMP(TIMESTAMP[15:0])
 );
 
-// timestamp640 #(
-//     .BASEADDR(TS_HOR_BASEADDR),
-//     .HIGHADDR(TS_HOR_HIGHADDR),
-//     .IDENTIFIER(4'b0110)
-// )i_timestamp640_hit_or(
-//     .BUS_CLK(BUS_CLK),
-//     .BUS_ADD(BUS_ADD),
-//     .BUS_DATA(BUS_DATA),
-//     .BUS_RST(BUS_RST),
-//     .BUS_WR(BUS_WR),
-//     .BUS_RD(BUS_RD),
-    
-//     .CLK40(CLK40),
-//     .CLK160(CLK160),
-//     .CLK320(CLK320),
-//     .DI(1'b0),
-//     .EXT_ENABLE(),
-//     .EXT_TIMESTAMP(TIMESTAMP),
-//     .TIMESTAMP_OUT(),
-//     .FIFO_READ(TS_HOR_FIFO_READ),
-//     .FIFO_EMPTY(TS_HOR_FIFO_EMPTY),
-//     .FIFO_DATA(TS_HOR_FIFO_DATA),
-//     .FIFO_READ_TRAILING(TS_HOR_TRAILING_FIFO_READ),
-//     .FIFO_EMPTY_TRAILING(TS_HOR_TRAILING_FIFO_EMPTY),
-//     .FIFO_DATA_TRAILING(TS_HOR_TRAILING_FIFO_DATA)
-// );
-
-// timestamp640 #(
-//     .BASEADDR(TS_RX0_BASEADDR),
-//     .HIGHADDR(TS_RX0_HIGHADDR),
-//     .IDENTIFIER(4'b0110)
-// )i_timestamp640_rx0(
-//     .BUS_CLK(BUS_CLK),
-//     .BUS_ADD(BUS_ADD),
-//     .BUS_DATA(BUS_DATA),
-//     .BUS_RST(BUS_RST),
-//     .BUS_WR(BUS_WR),
-//     .BUS_RD(BUS_RD),
-    
-//     .CLK40(CLK40),
-//     .CLK160(CLK160),
-//     .CLK320(CLK320),
-//     .DI(1'b0),
-//     .EXT_ENABLE(),
-//     .EXT_TIMESTAMP(TIMESTAMP),
-//     .TIMESTAMP_OUT(),
-//     .FIFO_READ(TS_RX0_FIFO_READ),
-//     .FIFO_EMPTY(TS_RX0_FIFO_EMPTY),
-//     .FIFO_DATA(TS_RX0_FIFO_DATA),
-//     .FIFO_READ_TRAILING(),
-//     .FIFO_EMPTY_TRAILING(),
-//     .FIFO_DATA_TRAILING()
-// );
-
-// // LEMO_RX0 or flatcable 5 is loop back of injection pulse
-// timestamp640 #(
-//     .BASEADDR(TS_INJ_BASEADDR),
-//     .HIGHADDR(TS_INJ_HIGHADDR),
-//     .IDENTIFIER(4'b0110)
-// )i_timestamp640_inj(
-//     .BUS_CLK(BUS_CLK),
-//     .BUS_ADD(BUS_ADD),
-//     .BUS_DATA(BUS_DATA),
-//     .BUS_RST(BUS_RST),
-//     .BUS_WR(BUS_WR),
-//     .BUS_RD(BUS_RD),
-    
-//     .CLK40(CLK40),
-//     .CLK160(CLK160),
-//     .CLK320(CLK320),
-//     .DI(LEMO_RX[1]),
-//     .EXT_ENABLE(),
-//     .EXT_TIMESTAMP(TIMESTAMP),
-//     .TIMESTAMP_OUT(),
-//     .FIFO_READ(TS_INJ_FIFO_READ),
-//     .FIFO_EMPTY(TS_INJ_FIFO_EMPTY),
-//     .FIFO_DATA(TS_INJ_FIFO_DATA),
-//     .FIFO_READ_TRAILING(),
-//     .FIFO_EMPTY_TRAILING(),
-//     .FIFO_DATA_TRAILING()
-// );
-
 // sync TIMESTAMP from CLK40 to CLK16
 wire [26:0] timestep_gray;
 bin2gray bin2gray (.bin(TIMESTAMP), .gray(timestep_gray));
@@ -736,11 +629,7 @@ end
 wire [26:0] TIMESTAMP16;
 gray2bin gray2bin ( .gray(timestep_gray_16), .bin(TIMESTAMP16));
 
-//************************************************
 // fast readout
-wire  RX_CLKX2, RX_CLKW;
-assign  RX_CLKX2 = SEL_SER_CLK ? CLK320 : CLK160;
-assign  RX_CLKW = SEL_SER_CLK ? CLK32 : CLK16;
 tjmono2_rx #(
     .BASEADDR(RX_BASEADDR),
     .HIGHADDR(RX_HIGHADDR),
@@ -774,36 +663,5 @@ tjmono2_rx #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR)
 );
-
-// //************************************************
-// // direct readout
-// wire DIRECT_DATA,RX_CLK;
-// assign DIRECT_DATA = SEL_DIRECT ? CMOS_DATA_OUT : DATA_OUT;
-// assign RX_CLK = SEL_SER_CLK ? CLK32 : CLK16;
-// tjmono_direct_rx #(
-//     .BASEADDR(DIRECT_RX_BASEADDR),
-//     .HIGHADDR(DIRECT_RX_HIGHADDR),
-//     .ABUSWIDTH(16),
-//     .IDENTIFIER(2'b00)
-// )tjmono_direct_rx(
-//     .BUS_CLK(BUS_CLK),
-//     .BUS_RST(BUS_RST),
-//     .BUS_ADD(BUS_ADD),
-//     .BUS_DATA(BUS_DATA),
-//     .BUS_RD(BUS_RD),
-//     .BUS_WR(BUS_WR),
-
-//     .TIMESTAMP(TIMESTAMP),
-
-//     .RX_TOKEN(TOKEN_OUT), 
-//     .RX_DATA(DIRECT_DATA), 
-//     .RX_CLK(RX_CLK),
-//     .RX_READ(READ_EXT), 
-//     .RX_FREEZE(FREEZE_EXT),
-
-//     .FIFO_READ(DIRECT_RX_FIFO_READ),
-//     .FIFO_EMPTY(DIRECT_RX_FIFO_EMPTY),
-//     .FIFO_DATA(DIRECT_RX_FIFO_DATA)
-// ); 
 
 endmodule

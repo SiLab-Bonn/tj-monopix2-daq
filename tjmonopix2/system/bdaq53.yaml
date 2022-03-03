@@ -3,7 +3,6 @@
 name    : tjmonopix2-daq
 version : 0.1.0
 
-# MIO3
 transfer_layer:
   - name  : intf
     type  : SiTcp
@@ -72,36 +71,10 @@ hw_drivers:
     interface : intf
     base_addr : 0x0800
   
-  # - name      : timestamp_rx0  #4
-  #   type      : tjmonopix2.timestamp640
-  #   interface : intf
-  #   base_addr : 0x10C00
-  #   size      : 8
-
-  # - name      : timestamp_hitor  #6
-  #   type      : tjmonopix2.timestamp640
-  #   interface : intf
-  #   base_addr : 0x10900
-    
-  # - name      : timestamp_inj  #5
-  #   type      : tjmonopix2.timestamp640
-  #   interface : intf
-  #   base_addr : 0x0700
-    
-  # - name      : trig
-  #   type      : pulse_gen
-  #   interface : intf
-  #   base_addr : 0x0B00
-
   - name      : pulser_cmd_start_loop
     type      : pulse_gen
     interface : intf
     base_addr : 0x0C00
-
-  # - name      : timestamp_rx0  #4
-  #   type      : tjmonopix2.timestamp640
-  #   interface : intf
-  #   base_addr : 0x10D00
 
   - name      : cmd
     type      : tjmonopix2.system.cmd
@@ -144,9 +117,6 @@ registers:
       - name    : SEL_DIRECT
         size    : 1
         offset  : 16
-      - name    : SEL_SER_CLK
-        size    : 1
-        offset  : 15
       - name    : GPIO_MODE
         size    : 3
         offset  : 14

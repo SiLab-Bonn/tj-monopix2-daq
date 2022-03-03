@@ -80,7 +80,7 @@ always @(posedge FCLK) begin
     if (RESET_WCLK)
         {raw_k,raw_eof, raw_data} <= {1'b1, 1'b0, 8'b001_11100};
     else if (load_raw) begin            // parameterize
-        if ((raw10bdata[9] == 1'b1) && (raw10bdata[7:0]==empty_record))
+        if ((raw10bdata[9] == 1'b1) && (raw10bdata[7:0] == empty_record))
             {raw_k, raw_eof, raw_data} <= {1'b1, raw10bdata[8], 8'b001_11100};
         else
             {raw_k, raw_eof, raw_data} <= raw10bdata;
