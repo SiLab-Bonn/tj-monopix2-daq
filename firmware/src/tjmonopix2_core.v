@@ -748,7 +748,8 @@ tjmono2_rx #(
     .ABUSWIDTH(ABUSWIDTH),
     .USE_FIFO_CLK(0)
 ) tjmono2_rx (
-    .RX_CLKX2(CLK160),
+    .FCLK(CLK160),
+    .FCLK2X(CLK320),
     .RX_CLKW(CLK16),
     .RX_DATA(LVDS_DATA),
 

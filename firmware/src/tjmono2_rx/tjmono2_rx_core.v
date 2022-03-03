@@ -13,7 +13,8 @@ module tjmono2_rx_core
     parameter           ABUSWIDTH = 32
 )
 (
-    input wire RX_CLKX2,
+    input wire FCLK,
+    input wire FCLK2X,
     input wire RX_CLKW,
     input wire RX_DATA,
     
@@ -189,7 +190,7 @@ wire Q1, Q2;
 IDDR IDDR_RX (
     .Q1(Q1),
     .Q2(Q2),
-    .C(RX_CLKX2),
+    .C(FCLK),
     .CE(1'b1),
     .D(RX_DATA_DLY),
     .R(1'b0),
@@ -204,7 +205,8 @@ receiver_logic receiver_logic
     .RESET(RST),
     
     .WCLK(RX_CLKW),
-    .FCLK(RX_CLKX2),
+    .FCLK(FCLK),
+    .FCLK2X(FCLK2X),
     .BUS_CLK(BUS_CLK),
     .RX_DATA(RX_DATA_DDR),
     

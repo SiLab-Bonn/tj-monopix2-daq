@@ -12,6 +12,7 @@ module receiver_logic
     input wire              RESET,
     input wire              WCLK,
     input wire              FCLK,
+    input wire              FCLK2X,
     input wire              BUS_CLK,
     input wire              RX_DATA,
     input wire              read,

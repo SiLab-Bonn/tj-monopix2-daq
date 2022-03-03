@@ -14,7 +14,8 @@ module tjmono2_rx #(
     parameter   ABUSWIDTH = 16,
     parameter   USE_FIFO_CLK = 0
 ) (
-    input wire RX_CLKX2,
+    input wire FCLK,
+    input wire FCLK2X,
     input wire RX_CLKW,
     input wire RX_DATA,
     
@@ -82,7 +83,8 @@ tjmono2_rx_core
     .BUS_WR(IP_WR),
     .BUS_DATA_OUT(IP_DATA_OUT),
 
-    .RX_CLKX2(RX_CLKX2),
+    .FCLK(FCLK),
+    .FCLK2X(FCLK2X),
     .RX_CLKW(RX_CLKW),
     .RX_DATA(RX_DATA),
     
