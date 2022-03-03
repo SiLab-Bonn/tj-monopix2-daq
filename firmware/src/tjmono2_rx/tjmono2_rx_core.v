@@ -154,35 +154,33 @@ always @ (posedge BUS_CLK)
 `ifdef COCOTB_SIM   
      assign RX_DATA_DLY = RX_DATA;
 `else
-    assign RX_DATA_DLY = RX_DATA;
-// TODO fix this!!!
-//     IODELAYE1 #(
-//         .CINVCTRL_SEL("FALSE"),
-//         .DELAY_SRC("I"),
-//         .HIGH_PERFORMANCE_MODE("TRUE"), 
-//         .IDELAY_TYPE("VAR_LOADABLE"), 
-//         .IDELAY_VALUE(0),
-//         .ODELAY_TYPE("FIXED"),
-//         .ODELAY_VALUE(0),
-//         .REFCLK_FREQUENCY(200.0),
-//         .SIGNAL_PATTERN("DATA")
-//     )
-//     IODELAYE1_RX (
-//         .CNTVALUEOUT(),
-//         .DATAOUT(RX_DATA_DLY),
-//         .C(BUS_CLK),
-//         .CE(1'b0),
-//         .CINVCTRL(1'b0),
-//         .CLKIN(1'b0),
-//         .CNTVALUEIN(CONF_RX_DATA_DLY[4:0]),
-//         .DATAIN(1'b0),
-//         .IDATAIN(RX_DATA),
-//         .INC(1'b0),
-//         .ODATAIN(1'b0),
-//         .RST(CONF_RX_DATA_DLY_WR),
-//         .T(1'b1)
+    IODELAYE1 #(
+        .CINVCTRL_SEL("FALSE"),
+        .DELAY_SRC("I"),
+        .HIGH_PERFORMANCE_MODE("TRUE"), 
+        .IDELAY_TYPE("VAR_LOADABLE"), 
+        .IDELAY_VALUE(0),
+        .ODELAY_TYPE("FIXED"),
+        .ODELAY_VALUE(0),
+        .REFCLK_FREQUENCY(200.0),
+        .SIGNAL_PATTERN("DATA")
+    )
+    IODELAYE1_RX (
+        .CNTVALUEOUT(),
+        .DATAOUT(RX_DATA_DLY),
+        .C(BUS_CLK),
+        .CE(1'b0),
+        .CINVCTRL(1'b0),
+        .CLKIN(1'b0),
+        .CNTVALUEIN(CONF_RX_DATA_DLY[4:0]),
+        .DATAIN(1'b0),
+        .IDATAIN(RX_DATA),
+        .INC(1'b0),
+        .ODATAIN(1'b0),
+        .RST(CONF_RX_DATA_DLY_WR),
+        .T(1'b1)
+    );
 
-//     );
 `endif
    
   
