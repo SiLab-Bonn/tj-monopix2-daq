@@ -44,6 +44,7 @@ class TJMonopix2(Transceiver):
         self.mask_noisy_pixel = False
 
         # Init result hists
+        self.interpreter = RawDataInterpreter()
         self.reset_hists()
 
         # Number of readouts to integrate
@@ -60,8 +61,6 @@ class TJMonopix2(Transceiver):
         # self.trigger_id = -1  # Last chunk trigger id
         # self.ext_trg_num = -1  # external trigger number
         self.last_rawdata = None  # Leftover from last chunk
-
-        self.interpreter = RawDataInterpreter()
 
     def deserialize_data(self, data):
         ''' Inverse of TJ-Monopix2 serialization '''
@@ -112,8 +111,9 @@ class TJMonopix2(Transceiver):
         self.total_trigger_words += n_triggers
         self.readout += 1
 
-        hist_occupancy(self.hist_occ, self.hist_tot, hits)
-        occupancy_hist = self.hist_occ[:, :]
+        self.hist_occ, self.hist_tot = self.interpreter.get_histograms()
+        occupancy_hist = self.hist_occ.sum(axis=2)
+
         # Mask Noisy pixels
         if self.mask_noisy_pixel:
             sel = occupancy_hist > self.noisy_threshold * np.median(occupancy_hist[occupancy_hist > 0])
@@ -122,7 +122,7 @@ class TJMonopix2(Transceiver):
         interpreted_data = {
             'meta_data': meta_data,
             'occupancy': occupancy_hist,
-            'tot_hist': self.hist_tot.sum(axis=(0, 1)),
+            'tot_hist': self.hist_tot.sum(axis=(0, 1, 2)),
         }
 
         if self.int_readouts != 0:  # = 0 for infinite integration
@@ -156,5 +156,4 @@ class TJMonopix2(Transceiver):
         # Readout number
         self.readout = 0
 
-        self.hist_tot = np.zeros((512, 512, 128), dtype=np.int64)
-        self.hist_occ = np.zeros((512, 512), dtype=np.int64)
+        self.interpreter.reset_histograms()

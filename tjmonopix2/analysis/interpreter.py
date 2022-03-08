@@ -12,6 +12,7 @@ class_spec = [
     ('le', numba.int8),
     ('te', numba.int8),
     ('tj_timestamp', numba.int64),
+    ('n_scan_params', numba.int32),
 
     ('hitor_timestamp_flag', numba.uint8),
     ('ext_timestamp_flag', numba.uint8),
@@ -62,8 +63,9 @@ class RawDataInterpreter(object):
         self.token_id = 0
         self.tj_data_flag = 0
 
-        self.hist_occ = np.zeros((512, 512, n_scan_params), dtype=numba.uint32)
-        self.hist_tot = np.zeros((512, 512, n_scan_params, 128), dtype=numba.uint16)
+        self.n_scan_params = n_scan_params
+
+        self.reset_histograms()
 
     def interpret(self, raw_data, hit_data, scan_param_id=0):
         hit_index = 0
@@ -151,7 +153,9 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot
+    def reset_histograms(self):
+        self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
+        self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
 
     def get_error_count(self):
         return self.error_cnt
