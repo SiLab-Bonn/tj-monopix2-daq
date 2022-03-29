@@ -1,24 +1,10 @@
 import numpy as np
-from numba import njit
 
 from online_monitor.converter.transceiver import Transceiver
 from online_monitor.utils import utils
 
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
 from tjmonopix2.analysis import analysis_utils as au
-
-
-@njit(cache=True)
-def hist_occupancy(occ, tot, hits):
-    for hit_i in range(hits.shape[0]):
-        if hits[hit_i]["col"] < occ.shape[0] and hits[hit_i]["row"] < occ.shape[1]:
-            occ[hits[hit_i]["col"], hits[hit_i]["row"]] += 1
-            tot[hits[hit_i]["col"], hits[hit_i]["row"], (hits[hit_i]["te"] - hits[hit_i]["le"]) & 0x7F] += 1
-
-        # if pix[0] == 0xFFFF and pix[1] == 0xFFFF:
-        #     tot[hits[hit_i]["tot"]] += 1
-        # if pix[0] == hits[hit_i]["col"] and pix[1] == hits[hit_i]["row"]:
-            # tot[hits[hit_i]["tot"]] += 1
 
 
 class TJMonopix2(Transceiver):
@@ -58,9 +44,6 @@ class TJMonopix2(Transceiver):
         self.hps = 0.  # Hits per second
         self.tps = 0.  # Triggers per second
         self.total_trigger_words = 0
-        # self.trigger_id = -1  # Last chunk trigger id
-        # self.ext_trg_num = -1  # external trigger number
-        self.last_rawdata = None  # Leftover from last chunk
 
     def deserialize_data(self, data):
         ''' Inverse of TJ-Monopix2 serialization '''
@@ -103,18 +86,20 @@ class TJMonopix2(Transceiver):
         hit_buffer = np.zeros(4 * len(raw_data), dtype=au.hit_dtype)
         hits = self.interpreter.interpret(raw_data, hit_buffer)
 
-        n_triggers = len(hits[hits['col'] == 1024])
+        n_hits = len(hits[hits['col'] < 512])
 
-        self.hits_last_readout = len(hits)
-        self.total_hits += len(hits)
-        self.triggers_last_readout = n_triggers
-        self.total_trigger_words += n_triggers
+        last_triggers = self.total_trigger_words
+        n_triggers = self.interpreter.get_n_triggers()
+        self.hits_last_readout = n_hits
+        self.total_hits += n_hits
+        self.triggers_last_readout = n_triggers - last_triggers
+        self.total_trigger_words = n_triggers
         self.readout += 1
 
         self.hist_occ, self.hist_tot, self.hist_tdc = self.interpreter.get_histograms()
         occupancy_hist = self.hist_occ.sum(axis=2)
 
-        # Mask Noisy pixels
+        # Mask noisy pixels
         if self.mask_noisy_pixel:
             sel = occupancy_hist > self.noisy_threshold * np.median(occupancy_hist[occupancy_hist > 0])
             occupancy_hist[sel] = 0

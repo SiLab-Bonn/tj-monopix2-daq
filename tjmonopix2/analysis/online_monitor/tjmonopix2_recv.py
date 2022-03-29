@@ -78,13 +78,11 @@ class TJMonopix2(Receiver):
         occupancy_graphics = pg.GraphicsLayoutWidget()
         occupancy_graphics.show()
         view = occupancy_graphics.addViewBox()
-        view.invertY(True)
         self.occupancy_img = pg.ImageItem(border='w')
         # Set colormap from matplotlib
         lut = generateColorMapLut("viridis")
 
         self.occupancy_img.setLookupTable(lut, update=True)
-        # view.addItem(self.occupancy_img)
         plot = pg.PlotWidget(viewBox=view, labels={'bottom': 'Column', 'left': 'Row'})
         plot.addItem(self.occupancy_img)
 
