@@ -124,10 +124,11 @@ class TJMonopix2(Receiver):
         self.tot_plot.setData(x=np.arange(-0.5, 128.5, 1),
                               y=data['tot_hist'], fillLevel=0,
                               brush=(0, 0, 255, 150))
-        # self.tdc_plot.setData(x=np.linspace(-0.5, data['tdc_hist'].shape[0] - 0.5, data['tdc_hist'].shape[0] + 1),
-        #                       y=data['tdc_hist'],
-        #                       stepMode=True,
-        #                       fillLevel=0, brush=(0, 0, 255, 150))
+        self.tdc_plot.setData(x=np.linspace(-0.5, data['tdc_hist'].shape[0] - 0.5, data['tdc_hist'].shape[0] + 1),
+                              y=data['tdc_hist'],
+                            #   stepMode=True,
+                              fillLevel=0,
+                              brush=(0, 0, 255, 150))
         
         # Meta data
         self._update_rate(data['meta_data']['fps'],

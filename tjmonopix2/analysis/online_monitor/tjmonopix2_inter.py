@@ -111,7 +111,7 @@ class TJMonopix2(Transceiver):
         self.total_trigger_words += n_triggers
         self.readout += 1
 
-        self.hist_occ, self.hist_tot = self.interpreter.get_histograms()
+        self.hist_occ, self.hist_tot, self.hist_tdc = self.interpreter.get_histograms()
         occupancy_hist = self.hist_occ.sum(axis=2)
 
         # Mask Noisy pixels
@@ -123,6 +123,7 @@ class TJMonopix2(Transceiver):
             'meta_data': meta_data,
             'occupancy': occupancy_hist,
             'tot_hist': self.hist_tot.sum(axis=(0, 1, 2)),
+            'tdc_hist': self.hist_tdc,
         }
 
         if self.int_readouts != 0:  # = 0 for infinite integration

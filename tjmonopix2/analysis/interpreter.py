@@ -26,6 +26,9 @@ class_spec = [
 
     ('hist_occ', numba.uint32[:,:,:]),
     ('hist_tot', numba.uint16[:,:,:,:]),
+    ('hist_tdc', numba.uint32[:]),
+    ('n_triggers', numba.int64),
+    ('n_tdc', numba.int64),
 ]
 
 
@@ -45,6 +48,11 @@ def is_tlu(word):
 
 
 @numba.njit
+def is_tdc(word):
+    return word & 0xF0000000 == 0x20000000
+
+
+@numba.njit
 def get_tlu_number(word):
     return word & 0xFFFF
 
@@ -52,6 +60,11 @@ def get_tlu_number(word):
 @numba.njit
 def get_tlu_timestamp(word):
     return (word >> 16) & 0x7FFF
+
+
+@numba.njit
+def get_tdc_value(word):
+    return word & 0xFFF
 
 
 @numba.experimental.jitclass(class_spec)
@@ -64,6 +77,9 @@ class RawDataInterpreter(object):
         self.tj_data_flag = 0
 
         self.n_scan_params = n_scan_params
+
+        self.n_triggers = 0
+        self.n_tdc = 0
 
         self.reset_histograms()
 
@@ -126,6 +142,7 @@ class RawDataInterpreter(object):
 
                             self._fill_hist(self.col, self.row, (self.te - self.le) & 0x7F, scan_param_id)
 
+                            # Prepare for next data block. Increase hit index
                             hit_index += 1
                         else:
                             self.error_cnt += 1
@@ -137,13 +154,34 @@ class RawDataInterpreter(object):
                 tlu_word = get_tlu_number(raw_data_word)
                 tlu_timestamp_low_res = get_tlu_timestamp(raw_data_word)  # TLU data contains a 15bit timestamp
 
-                hit_data[hit_index]["col"] = 0x400
+                hit_data[hit_index]["col"] = 0x3FF  # 1023 as TLU identifier
                 hit_data[hit_index]["row"] = 0
                 hit_data[hit_index]["le"] = 0
                 hit_data[hit_index]["te"] = 0
                 hit_data[hit_index]["token_id"] = tlu_word
                 hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
+                self.n_triggers += 1
+
+                # Prepare for next data block. Increase hit index
+                hit_index += 1
+
+            ##############################
+            # Part 3: interpret TDC word #
+            ##############################
+            elif is_tdc(raw_data_word):
+                tdc_value = get_tdc_value(raw_data_word)
+
+                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
+                hit_data[hit_index]["row"] = 0
+                hit_data[hit_index]["le"] = 0
+                hit_data[hit_index]["te"] = 0
+                hit_data[hit_index]["token_id"] = tdc_value
+                hit_data[hit_index]["timestamp"] = 0
+                hit_data[hit_index]["scan_param_id"] = scan_param_id
+                self.n_tdc += 1
+
+                self.hist_tdc[tdc_value] += 1
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
@@ -153,9 +191,20 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
+        return self.hist_occ, self.hist_tot, self.hist_tdc
+
+    def get_n_triggers(self):
+        return self.n_triggers
+
+    def get_n_tdc(self):
+        return self.n_tdc
+
     def reset_histograms(self):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
+        self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.n_triggers = 0
+        self.n_tdc = 0
 
     def get_error_count(self):
         return self.error_cnt
@@ -173,3 +222,4 @@ class RawDataInterpreter(object):
     def _fill_hist(self, col, row, tot, scan_param_id):
         self.hist_occ[col, row, scan_param_id] += 1
         self.hist_tot[col, row, scan_param_id, tot] += 1
+        
