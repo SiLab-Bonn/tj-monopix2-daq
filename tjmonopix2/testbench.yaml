@@ -6,14 +6,6 @@ general: # General configuration
 modules:
   module_0: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
-    # powersupply:
-    #   lv_name: LV-0
-    #   lv_voltage: 1.7
-    #   lv_current_limit: 2.0
-    # #   hv_name: HV-0
-    # #   hv_voltage: 5
-    # #   hv_current_limit: 1e-6
-    # power_cycle: False # power cycle all chip of this module before scan start
     chip_0: # Arbitrary name of chip, defines folder name with chip data
       chip_sn: "W11R07"
       chip_id: 0
@@ -41,25 +33,17 @@ TDC:
   EN_INVERT_TDC: 0 # Inverting TDC input
   EN_INVERT_TRIGGER: 0 # Inverting trigger input, e.g. for using Test output from EUDET TLU
 
-notifications: # Notification settings
-  enable_notifications: False
-  slack_token: "~/slack_api_token"
-  slack_users:
-    - AAAAAA123
-
 # Standard analysis settings
 # Scans might overwrite these settings if needed.
 # Detailed description of parameters in bdaq53/analysis/analysis.py
 analysis:
-  skip: True # Omit analysis in scans
+  skip: False # Omit analysis in scans
   create_pdf: True # Create analysis summary pdf
   # module_plotting: True  # Create combined plots for chip in a module
-  # store_hits: False # store hit table
+  store_hits: True # store hit table
   # cluster_hits: False # store cluster data
   # analyze_tdc: False # analyze TDC words
-  # analyze_ptot: False  # analyze PTOT words (only possible for RD53B)
   # use_tdc_trigger_dist: False # analyze TDC to TRG distance
   # align_method: 0 # how to detect new events
   # chunk_size: 1000000 # scales amount of data in RAM (~150 MB)
   # blocking: True # block main process during analysis
-

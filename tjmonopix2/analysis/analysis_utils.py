@@ -14,11 +14,8 @@ import warnings
 
 from scipy.special import erf
 from scipy.optimize import curve_fit, OptimizeWarning
-import numba
 import numpy as np
 from tqdm import tqdm
-
-
 
 logger = logging.getLogger('Analysis')
 

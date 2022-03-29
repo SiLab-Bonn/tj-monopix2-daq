@@ -23,7 +23,6 @@ from threading import Lock
 import numpy as np
 import tables as tb
 
-# from slack import WebClient
 from online_monitor.utils import utils as ou
 
 from tjmonopix2 import utils
@@ -34,7 +33,6 @@ from tjmonopix2.system import logger, fifo_readout
 from tjmonopix2.system.mio3 import MIO3
 from tjmonopix2.system.bdaq53 import BDAQ53
 
-# from tjmonopix2_daq.system.periphery import BDAQ53Periphery
 from tjmonopix2.system.fifo_readout import FifoReadout
 
 # Compression for data files
@@ -43,7 +41,6 @@ FILTER_TABLES = tb.Filters(complib='zlib', complevel=5, fletcher32=False)
 # Default locations
 PROJECT_FOLDER = os.path.join(os.path.dirname(__file__), '..')
 SYSTEM_FOLDER = os.path.join(PROJECT_FOLDER, 'system')
-# CHIP_FOLDER = os.path.join(PROJECT_FOLDER, 'chips')
 DEFAULT_CONFIG_FILE = os.path.join(PROJECT_FOLDER, 'system', 'default.cfg.yaml')
 TESTBENCH_DEFAULT_FILE = os.path.join(PROJECT_FOLDER, 'testbench.yaml')
 
@@ -94,21 +91,6 @@ class MapTable(tb.IsDescription):
     scan_param_id = tb.UInt32Col(pos=3)
 
 
-# class PtotTable(tb.IsDescription):
-#     cmd_number_start = tb.UInt32Col(pos=0)
-#     cmd_number_stop = tb.UInt32Col(pos=1)
-#     cmd_length = tb.UInt32Col(pos=2)
-#     scan_param_id = tb.UInt32Col(pos=3)
-#     hit_or_1_col = tb.UInt16Col(pos=4)
-#     hit_or_1_row = tb.UInt16Col(pos=5)
-#     hit_or_2_col = tb.UInt16Col(pos=6)
-#     hit_or_2_row = tb.UInt16Col(pos=7)
-#     hit_or_3_col = tb.UInt16Col(pos=8)
-#     hit_or_3_row = tb.UInt16Col(pos=9)
-#     hit_or_4_col = tb.UInt16Col(pos=10)
-#     hit_or_4_row = tb.UInt16Col(pos=11)
-
-
 class RunConfigTable(tb.IsDescription):
     attribute = tb.StringCol(64)
     value = tb.StringCol(512)
@@ -123,12 +105,6 @@ class RunConfigTable(tb.IsDescription):
 class RegisterTable(tb.IsDescription):
     register = tb.StringCol(64)
     value = tb.StringCol(256)
-
-
-# class PowersupplyTable(tb.IsDescription):
-#     powersupply = tb.StringCol(128, pos=0)
-#     voltage = tb.Float64Col(pos=1)
-#     current = tb.Float64Col(pos=2)
 
 
 class ScanData:
@@ -371,9 +347,6 @@ class ScanBase(object):
                         self.ana_proc = multiprocessing.Process(target=analyze_and_close_file)
                         self.ana_proc.daemon = True
                         self.ana_proc.start()
-            if self.configuration['bench']['analysis'].get('module_plotting', True):
-                with self._logging_through_handler(self.log_fh):
-                    self._run_module_plotting()
             return ret_values
         except Exception as e:
             self._on_exception()
@@ -498,14 +471,6 @@ class ScanBase(object):
         if self.ana_proc:
             self.log.info('Waiting for analysis process to finish...')
             self.ana_proc.join()
-
-    def notify(self, message):
-        if self.configuration['bench']['notifications']['enable_notifications']:
-            try:
-                for user in self.configuration['bench']['notifications']['slack_users']:
-                    self.slack.chat_postMessage(channel=user, text=message, username='BDAQ53 Bot', icon_emoji=':robot_face:')
-            except Exception as e:
-                self.log.error('Notification error: {0}'.format(e))
 
     def get_module_cfgs(self):
         ''' Returns the module configurations defined in the test bench '''
@@ -717,20 +682,6 @@ class ScanBase(object):
             conf['bench'] = bench_config
 
         return conf
-
-    def _setup_slack(self):
-        ''' Setup Slack notifications
-        '''
-        if not self.configuration['bench']['notifications']['enable_notifications']:
-            self.slack = None
-        else:
-            slack_token = self.configuration['bench']['notifications']['slack_token']
-            if os.path.isfile(os.path.expanduser(slack_token)):
-                with open(os.path.expanduser(slack_token), 'r') as token_file:
-                    token = token_file.read().strip()
-            else:
-                token = slack_token
-            self.slack = WebClient(token)
 
     def _parse_chip_cfg_file(self, file_name):
         if file_name.endswith('h5'):  # config from data file
@@ -1055,17 +1006,6 @@ class ScanBase(object):
         else:
             for rx_channel in self.daq.rx_channels.values():
                 rx_channel.set_en(enabled)
-
-    def _run_module_plotting(self):
-        data_files = []
-        if len(self.chips) == 2 or len(self.chips) == 4:
-            for _ in self.iterate_chips():
-                if not os.path.isfile(self.output_filename + '_interpreted.h5'):
-                    self.log.warning('No interpreted data file %s exists.\nSkip module data plotting.' % self.output_filename)
-                    return
-                data_files.append(self.output_filename + '_interpreted.h5')
-            with module_plotting.ModulePlotting(*data_files) as mp:
-                mp.create_standard_plots()
 
     def _close_h5_file(self):
         # Must be closed if already opened, otherwise access to file handle is only
