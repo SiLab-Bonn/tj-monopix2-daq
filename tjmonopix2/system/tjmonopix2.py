@@ -846,85 +846,6 @@ class TJMonoPix2(object):
         hit['te'] = gray2bin(np.copy(hit['te']))
         return hit, reg
 
-    def prepare_injection_mask(self, start_col=0, stop_col=112, step_col=56, start_row=0, stop_row=224, step_row=4):
-        raise NotImplementedError("Not implemented")
-
-    # SET BIAS CURRENTS AND VOLTAGES
-    def set_ibias(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_ithr(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_icasn(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_idb(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_itune(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_icomp(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_idel(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_iram(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_vreset(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_vh(self, dacunits, print_en=False):
-        raise NotImplementedError("Not implemented")
-
-    def get_vh(self):
-        raise NotImplementedError("Not implemented")
-
-    def set_vl(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def get_vl(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-    def set_vcasn_dac(self, dacunits, printen=False):
-        raise NotImplementedError("Not implemented")
-
-############################## SET data readout ##############################
-
-    def set_monoread(self):
-        self.cleanup_fifo(2)
-        self.daq.rx_channels['rx0'].set_en(True)
-
-    def stop_monoread(self):
-        self.daq.rx_channels['rx0'].set_en(False)
-        lost_cnt = self["rx"]["LOST_COUNT"]
-        if lost_cnt != 0:
-            self.log.warn("stop_monoread: error cnt=%d" % lost_cnt)
-
-    def set_direct_read(self, en=True, **kwargs):
-        for k in kwargs:
-            self['direct_rx']['CONF_{0:s}'.format(k.upper())] = kwargs[k]
-        self.cleanup_fifo(2)
-        self['direct_rx'].set_en(en)
-
-    def stop_direct_read(self):
-        self['direct_rx'].set_en(False)
-        lost_cnt = self["direct_rx"]["LOST_COUNT"]
-        if lost_cnt != 0:
-            self.log.warn("stop_monoread: error cnt=%d" % lost_cnt)
-
-    def stop_all(self):
-        self.stop_tlu()
-        self.stop_monoread()
-        self.stop_direct_read()
-        self.stop_timestamp("rx0")
-        self.stop_timestamp("inj")
-        self.stop_timestamp("hit_or")
-
-########################## pcb components #####################################
     def get_temperature(self, n=10):
         # TODO: Why is this needed? Should be handled by basil probably
         vol = self.daq["NTC"].get_voltage()
@@ -942,88 +863,7 @@ class TJMonoPix2(object):
         for i in range(len(temp)):
             temp[i] = self.daq["NTC"].get_temperature("C")
         return np.average(temp[temp != float("nan")])
-
-    def get_pixel_status(self, maskV=None, maskH=None, maskD=None):
-        raise NotImplementedError("Not implemented")     
-
-    # New functions
-    def enable_hitor(self, col, row, write=True):
-        '''
-            Enable HitOr for one column/row
-
-            Parameters:
-            ----------
-                col : int
-                    Between 0 and 511
-                row : int
-                    Between 0 and 511
-        '''
-        col_reg_addr = 47 + col // 16  # 47 is start address of HOR_COL_EN register
-        col_reg_value = 1 << (col % 16)
-        row_reg_addr = 79 + row // 16  # 79 is start address of HOR_ROW_EN register
-        row_reg_value =  1 << (row % 16)
-
-        indata = self._write_register(col_reg_addr, col_reg_value, write=False)
-        indata += self._write_register(row_reg_addr, row_reg_value, write=False)
-
-        if write:
-            self.write_command(indata)
-        return indata
-
-    def enable_injection(self, col, row, write=True):
-        '''
-            Enable injection for one column/row
-
-            Parameters:
-            ----------
-                col : int
-                    Between 0 and 511
-                row : int
-                    Between 0 and 511
-        '''
-        col_conf = np.any(self.injection_conf, axis=1)
-        row_conf = np.any(self.injection_conf, axis=0)
-
-        col_conf = col_conf[16 * (col // 16): 16 + 16 * (col // 16)]
-        col_conf = int("0b" + "".join([hex(i)[2:] for i in col_conf.astype(np.uint8)[::-1]]), 2)
-        row_conf = row_conf[16 * (row // 16): 16 + 16 * (row // 16)]
-        row_conf = int("0b" + "".join([hex(i)[2:] for i in row_conf.astype(np.uint8)[::-1]]), 2)
-
-        col_reg_addr = 82 + col // 16  # 111 is start address of INJ_COL_EN register
-        col_reg_value = col_conf | (1 << (col % 16))
-        row_reg_addr = 114 + row // 16  # 143 is start address of INJ_ROW_EN register
-        row_reg_value = row_conf | (1 << (row % 16))
-
-        self.injection_conf[col, row] = True
-
-        indata = self._write_register(col_reg_addr, col_reg_value, write=False)
-        indata += self._write_register(row_reg_addr, row_reg_value, write=False)
-
-        if write:
-            self.write_command(indata)
-        return indata
-
-    def write_pixel_conf(self, colgroup, row, conf, write=True):
-        '''
-            Write pixel configuration for one column group (4 adjacent pixels)
-
-            Parameters:
-            ----------
-                colgroup : int
-                    Between 0 and 127
-                row : int
-                    Between 0 and 511
-                conf : int
-                    Configuration (4 * 4 bits)
-        '''
-        indata = self._write_register('row_sel', row, write=False)
-        indata += self._write_register('colgroup_sel', colgroup, write=False)
-        indata += self._write_register('pix_portal', conf, write=False)
-
-        if write:
-            self.write_command(indata)
-        return indata
-
+  
     # COMMAND DECODER
     def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False):
         '''
@@ -1184,9 +1024,6 @@ class TJMonoPix2(object):
         if write:
             self.write_command(indata, repetitions=repetitions)
         return indata
-
-    def set_RO(self, EnROCnfg="all", EnBcidCnfg="all", EnRORstBCnfg="all"):
-        raise NotImplementedError()
 
 
 if __name__ == '__main__':
