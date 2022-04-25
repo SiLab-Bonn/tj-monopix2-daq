@@ -975,6 +975,8 @@ class TJMonoPix2(object):
         for _ in range(tries):
             self._read_register(address)
             self.write_command(self.write_sync(write=False) * 10)
+            if self.daq.board_version == 'SIMULATION':
+                timeout = 2 
             for _ in range(timeout):
                 if self.daq['FIFO'].get_FIFO_SIZE() > 0:
                     data = self.daq['FIFO'].get_data()

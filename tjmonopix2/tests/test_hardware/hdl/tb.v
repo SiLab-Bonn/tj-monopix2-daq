@@ -4,13 +4,12 @@
  * ------------------------------------------------------------
  */
 
-`timescale 1ns / 1ps
+`timescale 1ns / 100ps
 
 `define BDAQ53
 `define SIM
 
 `include "tjmonopix2_core.v"
-`include "tlu_model.v"
 `include "utils/bus_to_ip.v"
 `include "utils/generic_fifo.v"
 
@@ -29,7 +28,6 @@
 
 // Chip RTL
 `include "monopix2.sv"
-// `include "MONOPIX_TOP.sv"
 
  module tb #(
     // FIRMWARE VERSION
@@ -102,8 +100,6 @@ wire LVDS_HITOR;
 wire LVDS_PULSE_EXT;
 wire LVDS_CHSYNC_LOCK;
 
-wire [1:0] CHIP_ID;
-
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
@@ -123,12 +119,15 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
+    .MGT_REF_SEL(),
 
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),
 
     //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
+
+    .GPIO_SENSE(4'b0),
 
     //fifo
     .ARB_READY_OUT(ARB_READY_OUT),
@@ -148,31 +147,13 @@ tjmonopix2_core #(
 
     .RESETB_EXT(RESETB_EXT), 
 
-    .LVDS_CMD(LVDS_CMD), 
-    .LVDS_CMD_CLK(LVDS_CMD_CLK), 
-    .LVDS_SER_CLK(LVDS_SER_CLK), 
-    .LVDS_DATA(LVDS_DATA), 
+    .LVDS_CMD(LVDS_CMD),
+    .LVDS_CMD_CLK(LVDS_CMD_CLK),
+    .LVDS_SER_CLK(LVDS_SER_CLK),
+    .LVDS_DATA(LVDS_DATA),
     .LVDS_HITOR(LVDS_HITOR),
-    .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
-
-    .CHIP_ID(CHIP_ID)
+    .LVDS_PULSE_EXT(LVDS_PULSE_EXT)
 );
-
-wire SELF_TRIGGER;
-assign SELF_TRIGGER = 1'b0;
-
-// tlu_model tlu (
-//     .SYS_CLK(BUS_CLK),
-//     .SYS_RST(BUS_RST),
-//     .ENABLE(1'b1),
-
-//     .START_TRIGGER(SELF_TRIGGER ? LVDS_HITOR : BEAM_TRIGGER),
-
-//     .TLU_CLOCK(RJ45_CLK),
-//     .TLU_BUSY(RJ45_BUSY),
-//     .TLU_TRIGGER(RJ45_TRIGGER),
-//     .TLU_RESET(RJ45_RESET)
-// );
 
 tlu_master #(
     .BASEADDR(TLU_MASTER_BASEADDR),
@@ -230,7 +211,7 @@ monopix2 dut (
     .RESETB_EXT(1'b1),  // No need to reset chip in tests
     .ANALOG_HIT(ANALOG_HIT),
     
-    .LVDS_CMD(LVDS_CMD), 
+    .LVDS_CMD(~LVDS_CMD),  // invert for simulation only
     .LVDS_CMD_CLK(LVDS_CMD_CLK), 
     .LVDS_SER_CLK(LVDS_SER_CLK), 
     .LVDS_DATA_OUT(LVDS_DATA), 
@@ -240,20 +221,5 @@ monopix2 dut (
     .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCK),
     .LVDS_CHSYNC_CLK_OUT()
 );
-
-// MONOPIX_TOP dut (
-//     .RESETB_EXT(1'b1),  // No need to reset chip in tests
-//     .ANALOG_HIT(ANALOG_HIT),
-
-//     .LVDS_CMD(LVDS_CMD), 
-//     .LVDS_CMD_CLK(LVDS_CMD_CLK), 
-//     .LVDS_SER_CLK(LVDS_SER_CLK), 
-//     .LVDS_DATA_OUT(LVDS_DATA), 
-//     .LVDS_HITOR_OUT(LVDS_HITOR),
-//     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
-
-//     .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCK),
-//     .LVDS_CHSYNC_CLK_OUT()
-// );
 
 endmodule
