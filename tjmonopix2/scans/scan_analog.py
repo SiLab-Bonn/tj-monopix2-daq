@@ -26,7 +26,7 @@ class AnalogScan(ScanBase):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
-        self.chip.masks['hitor'][0, 0] = True
+        #self.chip.masks['hitor'][0, 0] = True
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
