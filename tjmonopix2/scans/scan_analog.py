@@ -13,7 +13,7 @@ from tjmonopix2.analysis import analysis
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 224,
+    'stop_column': 512,
     'start_row': 0,
     'stop_row': 512,
 }
@@ -40,7 +40,8 @@ class AnalogScan(ScanBase):
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
-    def _scan(self, n_injections=100, **_):
+    def _scan(self, n_injections=50, **_):
+        n_injections=50
         pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
         with self.readout(scan_param_id=0):
             shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=0)

@@ -729,7 +729,7 @@ class ScanBase(object):
 
         # Detect modules defined in testbench by the definition of a module serial number
         module_cfgs = self.get_module_cfgs()
-
+        print('saz something')
         for mod_name, mod_cfg in module_cfgs.items():
             for k, v in mod_cfg.items():
                 # Detect chips defined in testbench by the definition of a chip serial number
@@ -746,16 +746,23 @@ class ScanBase(object):
                     module_settings.pop(k)
                     module_settings['name'] = mod_name
                     # Set chip config file name
+                    print('saz something 2')
                     with self._logging_through_handlers():
                         chip_settings = v
                         if not chip_settings['chip_config_file']:  # take chip cfg from latest scan
+                            print('..................... Use last scan.......................')
                             chip_settings['chip_config_file'] = utils.get_latest_config_node_from_files(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to yaml
+                                print('..................... Use yaml......................')
                                 chip_settings['chip_config_file'] = utils.get_latest_chip_configuration_file(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to std. config
+                                print('..................... Use our default config yaml .......................')
                                 std_cfg = DEFAULT_CONFIG_FILE
                                 self.log.warning("No explicit configuration supplied for chip {0}. Using '{1}'!".format(chip_settings['chip_sn'], std_cfg))
                                 chip_settings['chip_config_file'] = std_cfg
+                        print(chip_settings['chip_config_file'])
+                        #Force to use default.cfg.yaml
+                        chip_settings['chip_config_file'] = DEFAULT_CONFIG_FILE
                         self.log.info('Loading chip configuration for chip {0} from {1}'.format(chip_settings['chip_sn'], chip_settings['chip_config_file']))
                         chip_conf = self._parse_chip_cfg_file(chip_settings['chip_config_file'])
                     # Set scan and chip configuration

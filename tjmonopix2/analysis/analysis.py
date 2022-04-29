@@ -16,6 +16,8 @@ from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
 
+import datetime
+
 
 class Analysis(object):
     def __init__(self, raw_data_file=None, analyzed_data_file=None,
@@ -173,12 +175,16 @@ class Analysis(object):
                     if self.store_hits:
                         hit_table.append(hit_dat)
                         hit_table.flush()
+                        print("type(hit_table)  ", type(hit_table))
                     pbar.update(upd)
                 pbar.close()
 
                 hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
                 print("11111111111111111111111111111111111111111111111")
-                np.save("hawkeye.npz",hist_occ)
+                timestamp_test=datetime.datetime.now()
+                timestamp_test= timestamp_test.strftime("%Y-%m-%d_%H:%M")
+                np.save("analoge_hist_occ"+timestamp_test,hist_occ)
+                np.save("analoge_hist_tot"+timestamp_test,hist_tot)
 
         self._create_additional_hit_data(hist_occ, hist_tot)
 
