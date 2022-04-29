@@ -485,8 +485,8 @@ class MaskObject(dict):
                 if (colgroup, rowgroup) in written:
                     continue
 
-                indata += self.chip._write_register(82 + colgroup, self.get_inj_column_group_data(colgroup))
-                indata += self.chip._write_register(114 + rowgroup, self.get_inj_row_group_data(rowgroup))
+                indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup))
+                indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup))
                 indata += self.chip.write_sync(write=False)
                 last_coords = (col, row)
                 written.add((colgroup, rowgroup))
