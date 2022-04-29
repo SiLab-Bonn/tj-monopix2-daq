@@ -6,15 +6,13 @@
 #
 
 import os
+
 import numpy as np
 import tables as tb
-
-from tqdm import tqdm
-from pixel_clusterizer.clusterizer import HitClusterizer
-
-from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
+from tjmonopix2.system import logger
+from tqdm import tqdm
 
 
 class Analysis(object):
@@ -75,7 +73,6 @@ class Analysis(object):
             if scan_parameter:
                 scan_param_table = scan_param_table[:][scan_parameter]
         return scan_param_table
-
 
     def _range_of_parameter(self, meta_data):
         ''' Calculate the raw data word indeces of each scan parameter id

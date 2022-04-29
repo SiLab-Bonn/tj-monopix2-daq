@@ -5,11 +5,11 @@
 # ------------------------------------------------------------
 #
 
-from tqdm import tqdm
- 
+from tjmonopix2.analysis import analysis, plotting
+from tjmonopix2.scans.shift_and_inject import (get_scan_loop_mask_steps,
+                                               shift_and_inject)
 from tjmonopix2.system.scan_base import ScanBase
-from tjmonopix2.scans.shift_and_inject import shift_and_inject, get_scan_loop_mask_steps
-from tjmonopix2.analysis import analysis
+from tqdm import tqdm
 
 scan_configuration = {
     'start_column': 0,
@@ -26,7 +26,7 @@ class AnalogScan(ScanBase):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
-        self.chip.masks['hitor'][0, 0] = True
+        # self.chip.masks['hitor'][0, 0] = True
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)

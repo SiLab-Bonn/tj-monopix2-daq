@@ -7,14 +7,13 @@
 
 import ast
 import logging
-import tables as tb
 import multiprocessing as mp
-from functools import partial
 import warnings
+from functools import partial
 
-from scipy.special import erf
-from scipy.optimize import curve_fit, OptimizeWarning
 import numpy as np
+from scipy.optimize import OptimizeWarning, curve_fit
+from scipy.special import erf
 from tqdm import tqdm
 
 logger = logging.getLogger('Analysis')

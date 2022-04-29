@@ -7,7 +7,6 @@
 
 import unittest
 
-from basil.dut import Dut
 from basil.utils.sim.utils import cocotb_compile_clean
 from tjmonopix2.tests.test_hardware import utils
 
@@ -43,7 +42,7 @@ class FirmwareTest(unittest.TestCase):
         data = self.daq["FIFO"].get_data()
         hit, _ = self.dut.interpret_data(data)
         tot = (hit['te'] - hit['le']) & 0x7F
-        assert hit['col'].tolist() ==  [1] * 5
+        assert hit['col'].tolist() == [1] * 5
         assert hit['row'].tolist() == [128] * 5
         assert tot.tolist() == [1] * 5
 

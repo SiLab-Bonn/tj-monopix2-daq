@@ -20,7 +20,7 @@ import basil
 from basil.utils.sim.utils import cocotb_compile_and_run
 
 
-def setup_cocotb(extra_defines=[]) -> dict:
+def setup_cocotb(extra_defines: list = []) -> dict:
     if "SIM" not in os.environ.keys():
         os.environ["SIM"] = "verilator"
 
@@ -112,11 +112,11 @@ def patch_cocotb_makefile() -> None:
         makefile.write(content.replace("--public-flat-rw ", ""))
 
 
-def wait_for_sim(dut, repetitions=8) -> None:
+def wait_for_sim(dut: BDAQ53, repetitions=8) -> None:
     dut.write_command(dut.write_sync(write=False), repetitions=repetitions)
 
 
-def init_device(sim_config) -> typing.Tuple[BDAQ53, TJMonoPix2]:
+def init_device(sim_config: dict) -> typing.Tuple[BDAQ53, TJMonoPix2]:
     daq = BDAQ53(conf=sim_config)
     daq.init()
 

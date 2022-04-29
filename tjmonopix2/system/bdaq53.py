@@ -5,18 +5,16 @@
 # ------------------------------------------------------------
 #
 import collections
-import yaml
 import os
 import time
-import math
-import struct
-import numpy as np
 
+import pkg_resources
+import yaml
 from basil.dut import Dut
+
 from tjmonopix2.system import logger
 from tjmonopix2.system.tjmono2_rx import tjmono2_rx
 
-import pkg_resources
 VERSION = pkg_resources.get_distribution("tjmonopix2").version
 
 
@@ -136,9 +134,6 @@ class BDAQ53(Dut):
             self.log.info('%s set to %s (%s)' % (connector, value, signal))
         else:
             self.log.error('%s or %s are invalid' % (connector, value))
-
-    def get_trigger_counter(self):
-        return self['tlu']['TRIGGER_COUNTER']
 
     def set_chip_type(self):
         ''' Defines chip type ITkPixV1-like '''
