@@ -1,5 +1,6 @@
 # tj-monopix2-daq
 [![Hardware tests](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/tests.yml/badge.svg)](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/tests.yml)
+[![Codestyle](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/codestyle.yml/badge.svg)](https://github.com/SiLab-Bonn/tj-monopix2-daq/actions/workflows/codestyle.yml)
 
 Data acquisition system for the TJ-Monopix2 pixel detector.
 
