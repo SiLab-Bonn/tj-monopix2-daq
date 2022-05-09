@@ -198,7 +198,7 @@ def flash_firmware(name):
         try:
             vivado.sendline('create_hw_cfgmem -hw_device [current_hw_device] [lindex [get_cfgmem_parts {%s}] 0]' % flash_chip)
             ret = write_flash_memory(name)
-        except:
+        except Exception:
             log.warning("Configuration with memory type s25fl512s-spi-x1_x2_x4 failed, trying mt25ql256-spi-x1_x2_x4")
             flash_chip = 'mt25ql256-spi-x1_x2_x4'  # Try flash memory of earlier revisions
             vivado.sendline('create_hw_cfgmem -hw_device [current_hw_device] [lindex [get_cfgmem_parts {%s}] 0]' % flash_chip)
@@ -287,7 +287,7 @@ def main():
         compile_firmware(args.compile[0])
     elif args.get_sitcp:
         get_sitcp()
-    
+
 
 if __name__ == '__main__':
     main()

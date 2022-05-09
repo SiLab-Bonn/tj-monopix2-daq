@@ -6,18 +6,17 @@
 #
 
 import os
-import cocotb
-import yaml
 import socketserver
 import typing
 
+import basil
+import cocotb
 import tjmonopix2
+import yaml
+from basil.utils.sim.utils import cocotb_compile_and_run
 from tjmonopix2 import utils
 from tjmonopix2.system.bdaq53 import BDAQ53
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
-
-import basil
-from basil.utils.sim.utils import cocotb_compile_and_run
 
 
 def setup_cocotb(extra_defines: list = []) -> dict:

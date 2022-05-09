@@ -24,8 +24,8 @@ class_spec = [
     ('inj_timestamp', numba.int64),
     ('tlu_timestamp', numba.int64),
 
-    ('hist_occ', numba.uint32[:,:,:]),
-    ('hist_tot', numba.uint16[:,:,:,:]),
+    ('hist_occ', numba.uint32[:, :, :]),
+    ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
@@ -81,7 +81,7 @@ class RawDataInterpreter(object):
         self.n_triggers = 0
         self.n_tdc = 0
 
-        self.reset_histograms()
+        self.reset()
 
     def interpret(self, raw_data, hit_data, scan_param_id=0):
         hit_index = 0
@@ -199,7 +199,7 @@ class RawDataInterpreter(object):
     def get_n_tdc(self):
         return self.n_tdc
 
-    def reset_histograms(self):
+    def reset(self):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
@@ -222,4 +222,3 @@ class RawDataInterpreter(object):
     def _fill_hist(self, col, row, tot, scan_param_id):
         self.hist_occ[col, row, scan_param_id] += 1
         self.hist_tot[col, row, scan_param_id, tot] += 1
-        

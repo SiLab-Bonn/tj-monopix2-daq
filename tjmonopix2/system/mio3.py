@@ -4,19 +4,18 @@
 # SiLab, Institute of Physics, University of Bonn
 # ------------------------------------------------------------
 #
+
 import collections
-import yaml
 import os
 import time
-import math
-import struct
-import numpy as np
 
+import pkg_resources
+import yaml
 from basil.dut import Dut
+
 from tjmonopix2.system import logger
 from tjmonopix2.system.tjmono2_rx import tjmono2_rx
 
-import pkg_resources
 VERSION = pkg_resources.get_distribution("tjmonopix2").version
 
 
@@ -106,9 +105,6 @@ class MIO3(Dut):
                 if isinstance(v, collections.abc.Mapping) and 'chip_sn' in v:  # Detect chips defined in testbench by the definition of a chip serial number
                     chip_cfgs.append(v)
         return chip_cfgs
-
-    def get_trigger_counter(self):
-        return self['tlu']['TRIGGER_COUNTER']
 
     def set_chip_type(self):
         ''' Defines chip type as ITkPixV1-like '''

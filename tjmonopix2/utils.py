@@ -69,6 +69,7 @@ def recursive_update_deep(first, second={}):
     retVal = recursive_update(retVal, second)
     return retVal
 
+
 def get_latest_file(directory, condition, file_timestamps=False):
     files = [os.path.join(directory, f) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     files = filter(condition, files)

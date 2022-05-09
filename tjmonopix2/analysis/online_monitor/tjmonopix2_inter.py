@@ -65,7 +65,7 @@ class TJMonopix2(Transceiver):
 
             # Calculate trigger rate with smoothing
             recent_tps = self.triggers_last_readout * recent_fps
-            self.tps = self.tps * 0.95  + recent_tps * 0.05
+            self.tps = self.tps * 0.95 + recent_tps * 0.05
 
         self.ts_last_readout = ts_now
 
@@ -77,7 +77,7 @@ class TJMonopix2(Transceiver):
              'total_hits': self.total_hits,
              'total_triggers': self.total_trigger_words})
         return meta_data
-    
+
     def interpret_data(self, data):
         ''' Called for every chunk received '''
         raw_data, meta_data = data[0][1]
@@ -142,4 +142,4 @@ class TJMonopix2(Transceiver):
         # Readout number
         self.readout = 0
 
-        self.interpreter.reset_histograms()
+        self.interpreter.reset()

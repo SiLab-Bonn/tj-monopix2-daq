@@ -114,7 +114,6 @@ class TJMonopix2(Receiver):
             self.hit_rate_label.setText("Hit Rate\n%d Hz" % int(hps))
             self.trigger_rate_label.setText("Trigger Rate\n%d Hz" % int(tps))
 
-
     def handle_data(self, data):
         # Histogram data
         self.occupancy_img.setImage(data['occupancy'][:, :],
@@ -124,10 +123,10 @@ class TJMonopix2(Receiver):
                               brush=(0, 0, 255, 150))
         self.tdc_plot.setData(x=np.linspace(-0.5, data['tdc_hist'].shape[0] - 0.5, data['tdc_hist'].shape[0] + 1),
                               y=data['tdc_hist'],
-                            #   stepMode=True,
+                              # stepMode=True,
                               fillLevel=0,
                               brush=(0, 0, 255, 150))
-        
+
         # Meta data
         self._update_rate(data['meta_data']['fps'],
                           data['meta_data']['hps'],

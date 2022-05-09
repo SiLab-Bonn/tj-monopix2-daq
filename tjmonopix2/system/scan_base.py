@@ -12,9 +12,6 @@ import multiprocessing
 import os
 import time
 import traceback
-import yaml
-import zmq
-
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
@@ -22,18 +19,17 @@ from threading import Lock
 
 import numpy as np
 import tables as tb
-
+import yaml
+import zmq
 from online_monitor.utils import utils as ou
 
 from tjmonopix2 import utils
 from tjmonopix2.analysis import analysis_utils as au
-from tjmonopix2.system.tjmonopix2 import TJMonoPix2
-
-from tjmonopix2.system import logger, fifo_readout
-from tjmonopix2.system.mio3 import MIO3
+from tjmonopix2.system import fifo_readout, logger
 from tjmonopix2.system.bdaq53 import BDAQ53
-
 from tjmonopix2.system.fifo_readout import FifoReadout
+from tjmonopix2.system.mio3 import MIO3
+from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 # Compression for data files
 FILTER_RAW_DATA = tb.Filters(complib='blosc', complevel=5, fletcher32=False)
@@ -148,7 +144,6 @@ class ChipContainer:
 
     def __repr__(self):
         return 'ChipContainer for %s (%s) of %s with data at %s' % (self.name, self.chip_settings['chip_sn'], self.module_settings['name'], self.output_dir)
-
 
 
 class ScanBase(object):
@@ -284,7 +279,6 @@ class ScanBase(object):
             if self.is_parallel_scan:
                 # Enable all channels of defined chips
                 for _ in self.iterate_chips():
-                    # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
                 self.daq.reset_fifo()
                 self._scan(**self.scan_config)
@@ -294,7 +288,6 @@ class ScanBase(object):
                 self.daq.reset_fifo()
                 for i, _ in enumerate(self.iterate_chips()):
                     with self._logging_through_handler(self.log_fh):
-                        # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
                         ret_values[i] = self._scan(**self.scan_config)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
@@ -698,7 +691,7 @@ class ScanBase(object):
                 if not configuration:
                     raise RuntimeError('No configuration found in ' + file_name)
                 chip_conf = {}
-                settings = fill_dict_from_conf_table(configuration.chip.settings)
+                # settings = fill_dict_from_conf_table(configuration.chip.settings)
                 # chip_conf['chip_type'] = settings['chip_type']
                 # chip_conf['calibration'] = fill_dict_from_conf_table(configuration.chip.calibration)
                 # chip_conf['trim'] = fill_dict_from_conf_table(configuration.chip.trim)
@@ -1112,7 +1105,6 @@ class ScanBase(object):
         '''
             Handling of the data.
         '''
-
         total_words = self.raw_data_earray.nrows
 
         self.raw_data_earray.append(data_tuple[0])

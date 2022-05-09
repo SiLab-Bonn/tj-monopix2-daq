@@ -6,8 +6,8 @@
 #
 
 import cocotb
-from cocotb_bus.drivers import BusDriver
 from cocotb.clock import Clock
+from cocotb_bus.drivers import BusDriver
 
 
 class Drive320Clock(BusDriver):

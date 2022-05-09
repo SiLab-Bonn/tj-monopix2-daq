@@ -1,4 +1,5 @@
 import logging
+
 import coloredlogs
 
 FORMAT = '%(asctime)s [%(name)-17s] - %(levelname)-7s %(message)s'
@@ -65,6 +66,7 @@ def close_logfile(fh):
     for lg in logging.Logger.manager.loggerDict.values():
         if isinstance(lg, logging.Logger):
             lg.removeHandler(fh)
+            # fh.close()
 
 
 def _setup_coloredlogs(logger):

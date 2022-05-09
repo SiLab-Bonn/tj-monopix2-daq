@@ -50,7 +50,7 @@ def histogram(raw_data, occ_hist, hit_data, is_sof, is_eof, tj_data_flag):
         dat[0] = (word & 0x7FC0000) >> 18
         dat[1] = (word & 0x003FE00) >> 9
         dat[2] = (word & 0x00001FF)
-    
+
         for d in dat:
             if d == 0x1bc:
                 is_sof = 1

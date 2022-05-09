@@ -5,15 +5,14 @@
 # ------------------------------------------------------------
 #
 
-import sys
 import datetime
-from time import sleep, time, mktime
-from threading import Thread, Event
+import sys
 from collections import deque
-from queue import Queue, Empty
+from queue import Empty, Queue
+from threading import Event, Thread
+from time import mktime, sleep, time
 
 from tjmonopix2.system import logger
-
 
 data_iterable = ("data", "timestamp_start", "timestamp_stop", "error")
 
