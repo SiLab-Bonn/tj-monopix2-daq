@@ -49,10 +49,15 @@ python manage_firmware.py --firmware <path-to-bit-or-mcs-file>
 and specify the path to the firmware file. The file type determines if it is written to FPGA (`.bit`) or persistent flash memory (`.mcs`). 
 
 ## Hardware configuration
-### IP Address configuration
+### Connecting a module
+**BDAQ53 hardware platform:**
+The DisplayPort cable has to be connected between the `DP1` (Data) plug on the carrier PCB and the `DP_ML` on the short side of the readout board.
+The second DisplayPort plug on the carrier PCB is not required for operation and transmits only HitOr data. If needed, it has to be connected to the `DP_SL` close to the `DP_ML` on the long side of the readout board.
+
+### Readout board IP address configuration
 To support multiple readout boards on one PC, different IP addresses have to be used. The IP address can be changed using jumpers on the PMOD connector on both supported hardware platforms. The PMOD connector is located between the power connector and the USB port.
 
-The default IP address is 192.168.10.**23**, but you can set the subnet in a range between 192.168.**10**.23 and 192.168.**25**.23.
+The default IP address (when using the firmware manager) is 192.168.10.**23**, but you can set the subnet in a range between 192.168.**10**.23 and 192.168.**25**.23.
 
 **Procedure**:
 1. Make sure, the readout system is not powered.
@@ -69,3 +74,6 @@ The default IP address is 192.168.10.**23**, but you can set the subnet in a ran
 
 4. Double check, that you did not place the jumper in the wrong place!
 5. Turn the readout system on and verify the setting by a ping to the new IP address.
+
+## Test setup and software configuration
+A `testbench.yaml` file containing information on the individual setup is required for operation. It is located in the `tjmonopix2` folder and contains an extensive list of configuration options that are documented there.

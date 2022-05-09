@@ -7,11 +7,11 @@ import tjmonopix2
 
 version = tjmonopix2.__version__
 
-author = 'Christian Bespin, Toko Hirono'
-author_email = ''
+author = 'Christian Bespin'
+author_email = 'bespin@physik.uni-bonn.de'
 
 # Requirements
-install_requires = ['basil-daq>=3.0.0', 'coloredlogs', 'numba', 'numpy', 'matplotlib', 'tables', 'tqdm', 'scipy']
+install_requires = ['basil-daq>=3.0.0', 'coloredlogs', 'gitpython', 'numba', 'numpy', 'matplotlib', 'online_monitor', 'pyyaml', 'pyzmq', 'tables', 'tqdm', 'scipy']
 
 setup(
     name='tjmonopix2',
@@ -25,7 +25,7 @@ setup(
     author_email=author_email,
     maintainer_email=author_email,
     install_requires=install_requires,
-    python_requires=">=3.0",
+    python_requires=">=3.8",
     packages=find_packages(),
     include_package_data=True,
     platforms='any',
