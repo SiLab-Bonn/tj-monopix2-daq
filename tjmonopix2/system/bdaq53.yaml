@@ -42,7 +42,7 @@ hw_drivers:
     size      : 16
 
   - name      : inj
-    type      : tjmonopix2.pulse_gen640
+    type      : tjmonopix2.system.pulse_gen640
     interface : intf
     base_addr : 0x0100
 

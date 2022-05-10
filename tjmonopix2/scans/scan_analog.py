@@ -38,8 +38,6 @@ class AnalogScan(ScanBase):
         self.chip.registers["VH"].write(150)
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
-        self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
-
     def _scan(self, n_injections=100, **_):
         pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
         with self.readout(scan_param_id=0):
