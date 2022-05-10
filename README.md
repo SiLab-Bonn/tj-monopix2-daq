@@ -4,7 +4,7 @@
 
 Data acquisition system for the TJ-Monopix2 pixel detector.
 
-## Installation
+# Installation
 Clone the repository and install the required dependencies with
 ```bash
 pip install basil-daq coloredlogs GitPython numba numpy matplotlib tables tqdm scipy basil-daq PyYAML pyzmq
@@ -75,5 +75,8 @@ The default IP address (when using the firmware manager) is 192.168.10.**23**, b
 4. Double check, that you did not place the jumper in the wrong place!
 5. Turn the readout system on and verify the setting by a ping to the new IP address.
 
-## Test setup and software configuration
+# Usage
 A `testbench.yaml` file containing information on the individual setup is required for operation. It is located in the `tjmonopix2` folder and contains an extensive list of configuration options that are documented there.
+
+# Contributing
+The `master` branch contains stable and well-tested code for reading out TJ-Monopix2. The `development` branch is not guaranteed to have stable and working code. If you want to contribute, create a feature branch off either of the mentioned branches and make a pull request against the respective branch when you have made progress on ongoing work or implemented a new feature.
