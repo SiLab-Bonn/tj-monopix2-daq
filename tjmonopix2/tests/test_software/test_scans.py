@@ -15,7 +15,7 @@ import tjmonopix2
 import yaml
 from tjmonopix2.scans.scan_analog import AnalogScan
 from tjmonopix2.tests.test_software import utils as sw_utils
-from tjmonopix2.tests.test_software.mock import TJMonopix2_Mock
+from tjmonopix2.tests.test_software.mock import TJMonopix2Mock
 
 scan_configuration = {
     'start_column': 0,
@@ -41,7 +41,7 @@ class TestScans(unittest.TestCase):
             cls.bench_config = yaml.full_load(f)
         cls.bench_config['analysis']['skip'] = True  # deactivate failing feature
 
-        cls.hw_mock = TJMonopix2_Mock()
+        cls.hw_mock = TJMonopix2Mock()
         cls.hw_mock.start()
 
     def test_scans(self) -> None:

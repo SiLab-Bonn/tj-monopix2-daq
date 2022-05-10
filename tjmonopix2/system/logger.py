@@ -66,7 +66,6 @@ def close_logfile(fh):
     for lg in logging.Logger.manager.loggerDict.values():
         if isinstance(lg, logging.Logger):
             lg.removeHandler(fh)
-            # fh.close()
 
 
 def _setup_coloredlogs(logger):

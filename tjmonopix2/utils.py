@@ -65,9 +65,9 @@ def recursive_update_deep(first, second={}):
         The merged dict.
     '''
 
-    retVal = deepcopy(first)
-    retVal = recursive_update(retVal, second)
-    return retVal
+    ret_val = deepcopy(first)
+    ret_val = recursive_update(ret_val, second)
+    return ret_val
 
 
 def get_latest_file(directory, condition, file_timestamps=False):

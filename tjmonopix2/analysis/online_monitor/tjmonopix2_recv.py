@@ -14,7 +14,7 @@ from online_monitor.utils import utils
 from online_monitor.receiver.receiver import Receiver
 
 
-def generateColorMapLut(cm_name):
+def generate_colormap_lut(cm_name):
     # https://github.com/pyqtgraph/pyqtgraph/issues/561
     colormap = copy.copy(cm.get_cmap(cm_name))
     colormap._init()
@@ -80,7 +80,7 @@ class TJMonopix2(Receiver):
         view = occupancy_graphics.addViewBox()
         self.occupancy_img = pg.ImageItem(border='w')
         # Set colormap from matplotlib
-        lut = generateColorMapLut("viridis")
+        lut = generate_colormap_lut("viridis")
 
         self.occupancy_img.setLookupTable(lut, update=True)
         plot = pg.PlotWidget(viewBox=view, labels={'bottom': 'Column', 'left': 'Row'})

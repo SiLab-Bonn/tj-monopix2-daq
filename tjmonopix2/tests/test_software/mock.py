@@ -17,7 +17,7 @@ import tjmonopix2
 from tjmonopix2.system import scan_base  # noqa: F401
 
 
-class TJMonopix2_Mock(object):
+class TJMonopix2Mock(object):
     """ Mock to use software package without actual hardware to a level that scans work in software
 
         raw_data_file: h5 raw data file from a scan
