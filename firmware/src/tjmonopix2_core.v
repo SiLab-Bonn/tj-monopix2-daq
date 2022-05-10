@@ -34,10 +34,6 @@
 // Custom modules
 `include "cmd/cmd.v"
 `include "cmd/cmd_core.v"
-`include "timestamp640/timestamp640.v"
-`include "timestamp640/timestamp640_core.v"
-`include "pulse_gen640/pulse_gen640.v"
-`include "pulse_gen640/pulse_gen640_core.v"
 
 `include "tjmono2_rx/tjmono2_rx.v"
 `include "tjmono2_rx/tjmono2_rx_core.v"
@@ -362,37 +358,15 @@ i2c
 );
 
 // ----- Pulser for injection ----- //
-wire EXT_TRIGGER;
-`ifndef SIM
-    pulse_gen640 #( 
-        .BASEADDR(PULSE_INJ_BASEADDR), 
-        .HIGHADDR(PULSE_INJ_HIGHADDR),
-        .ABUSWIDTH(ABUSWIDTH),
-        .CLKDV(4),
-        .OUTPUT_SIZE(2)
-    ) pulse_gen_inj (
-        .BUS_CLK(BUS_CLK),
-        .BUS_RST(BUS_RST),
-        .BUS_ADD(BUS_ADD),
-        .BUS_DATA(BUS_DATA),
-        .BUS_RD(BUS_RD),
-        .BUS_WR(BUS_WR),
-
-        .PULSE_CLK320(CLK320),
-        .PULSE_CLK160(CLK160),
-        .PULSE_CLK(CLK40),
-        .EXT_START(EXT_TRIGGER),
-        .PULSE({CMOS_PULSE_EXT, LVDS_PULSE_EXT}),
-        .DEBUG()
-    );
-`endif
+assign CMOS_PULSE_EXT = 1'b0;  // not connected for now
+assign LVDS_PULSE_EXT = 1'b0;  // not connected for now
 
 // ----- Command encoder ----- //
 wire CMD;
 wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING;
 wire CMD_LOOP_START;
 
-wire EXT_START_PIN;
+wire EXT_START_PIN, EXT_TRIGGER;
 wire CMD_EXT_START_ENABLED;
 wire AZ_VETO_FLAG, AZ_VETO_TLU_PULSE;
 assign AZ_VETO_TLU_PULSE = 1'b0;

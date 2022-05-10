@@ -581,6 +581,7 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
+    .MGT_REF_SEL(MGT_REF_SEL),
 
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),

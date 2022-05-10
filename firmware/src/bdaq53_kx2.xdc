@@ -26,11 +26,11 @@ create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
 create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
-create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKOUT0] -divide_by 1600 [get_pins i_clock_divisor_i2c/CLOCK_reg/Q]
+create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKOUT0] -divide_by 1600 [get_pins i_tjmonopix2_core/i_clock_divisor_i2c/CLOCK_reg/Q]
 create_generated_clock -name rgmii_txc -source [get_pins rgmii/ODDR_inst/C] -divide_by 1 [get_ports rgmii_txc]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous -group {BUS_CLK_PLL} -group {I2C_CLK} -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
+set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000
@@ -181,14 +181,14 @@ set_property IOSTANDARD LVCMOS33 [get_ports {rgmii_txd[3]}]
 set_property PACKAGE_PIN K22 [get_ports {rgmii_txd[3]}]
 
 # DP_ML ("DP2") connected to SelectIOs
-set_property PACKAGE_PIN A18 [get_ports DP_GPIO_P[0]]
-set_property PACKAGE_PIN A19 [get_ports DP_GPIO_N[0]]
-set_property PACKAGE_PIN C19 [get_ports DP_GPIO_P[1]]
-set_property PACKAGE_PIN B19 [get_ports DP_GPIO_N[1]]
-set_property PACKAGE_PIN E18 [get_ports DP_GPIO_P[2]]
-set_property PACKAGE_PIN D18 [get_ports DP_GPIO_N[2]]
-set_property PACKAGE_PIN B17 [get_ports DP_GPIO_P[3]]
-set_property PACKAGE_PIN A17 [get_ports DP_GPIO_N[3]]
+set_property PACKAGE_PIN A18 [get_ports {DP_GPIO_P[0]}]
+set_property PACKAGE_PIN A19 [get_ports {DP_GPIO_N[0]}]
+set_property PACKAGE_PIN C19 [get_ports {DP_GPIO_P[1]}]
+set_property PACKAGE_PIN B19 [get_ports {DP_GPIO_N[1]}]
+set_property PACKAGE_PIN E18 [get_ports {DP_GPIO_P[2]}]
+set_property PACKAGE_PIN D18 [get_ports {DP_GPIO_N[2]}]
+set_property PACKAGE_PIN B17 [get_ports {DP_GPIO_P[3]}]
+set_property PACKAGE_PIN A17 [get_ports {DP_GPIO_N[3]}]
 set_property IOSTANDARD LVDS_25 [get_ports DP_GPIO*]
 set_property PACKAGE_PIN C16 [get_ports DP_GPIO_AUX_P]
 set_property PACKAGE_PIN B16 [get_ports DP_GPIO_AUX_N]
