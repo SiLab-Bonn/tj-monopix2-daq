@@ -18,9 +18,13 @@ from tjmonopix2.system.bdaq53 import BDAQ53
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 # those registers somehot winterfere eg diable transmission or
-skip = [12, 13, 14, 15, 146, 147, 149, 154]
 
-skip.extend([155, 153, 152]) # work on W5R12 but not on W8R3
+# 147: CHSYNC_THR_HIGH_CONF&LOW, value changes on its own - probably read only
+# 154: multiple bits, eg CMOS_TX_EN_CONF - writing 1 causes Read timeout
+skip = [12, 13, 14, 15, 147, 154]
+
+# 153: LOAD_CONF
+skip.extend([153, ]) # work on W5R12 but not on W8R3
 
 regs_safe = [x for x in range(146, 218) if x not in skip]
 
