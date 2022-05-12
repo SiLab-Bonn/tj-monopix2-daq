@@ -20,6 +20,8 @@ from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 # those registers somehot winterfere eg diable transmission or
 skip = [12, 13, 14, 15, 146, 147, 149, 154]
 
+skip.extend([155, 153, 152]) # work on W5R12 but not on W8R3
+
 regs_safe = [x for x in range(146, 218) if x not in skip]
 
 # analog parts and so on
