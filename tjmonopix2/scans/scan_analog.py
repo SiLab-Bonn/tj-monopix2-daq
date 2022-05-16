@@ -13,9 +13,9 @@ from tjmonopix2.analysis import analysis
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 512,
+    'stop_column': 100,
     'start_row': 0,
-    'stop_row': 512,
+    'stop_row': 100,
 }
 
 

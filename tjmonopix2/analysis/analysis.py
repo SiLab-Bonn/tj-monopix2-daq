@@ -135,11 +135,11 @@ class Analysis(object):
         return hit_table
 
     def analyze_data(self):
-        print("00000000000000000000000000000000")
+        #print("00000000000000000000000000000000")
         self.log.info('Analyzing data...')
         self.chunk_offset = 0
         with tb.open_file(self.raw_data_file) as in_file:
-            print("0.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.5")
+            #print("0.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.5")
             n_words = in_file.root.raw_data.shape[0]
             meta_data = in_file.root.meta_data[:]
 
@@ -180,18 +180,18 @@ class Analysis(object):
                 pbar.close()
 
                 hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
-                print("11111111111111111111111111111111111111111111111")
+                #print("11111111111111111111111111111111111111111111111")
                 timestamp_test=datetime.datetime.now()
                 timestamp_test= timestamp_test.strftime("%Y-%m-%d_%H:%M")
-                np.save("analoge_hist_occ"+timestamp_test,hist_occ)
-                np.save("analoge_hist_tot"+timestamp_test,hist_tot)
+                np.save("output_data/analoge_hist_occ"+timestamp_test,hist_occ)
+                np.save("output_data/analoge_hist_tot"+timestamp_test,hist_tot)
 
         self._create_additional_hit_data(hist_occ, hist_tot)
 
     def _create_additional_hit_data(self, hist_occ, hist_tot):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
-            np.save("hawkeye.npz",hist_occ)
+            np.save("output_data/hawkeye.npz",hist_occ)
             out_file.create_carray(out_file.root,
                                    name='HistOcc',
                                    title='Occupancy Histogram',

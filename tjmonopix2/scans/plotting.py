@@ -6,6 +6,7 @@ import os
 import re
 
 path = os.path.dirname(__file__)
+path = os.path.join(path, "output_data")
 #path = "/home/bellevtx01/vtx/tj-monopix2-daq/tjmonopix2/scans"
 
 
