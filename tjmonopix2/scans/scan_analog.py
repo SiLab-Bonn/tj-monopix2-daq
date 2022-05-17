@@ -42,7 +42,8 @@ class AnalogScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
         
         for r in self.register_overrides:
-            self.chip.registers[r].write(self.register_overrides[r])
+            if r != 'n_injections':
+                self.chip.registers[r].write(self.register_overrides[r])
             #print("Write: ", r, " to ", self.register_overrides[r])
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
