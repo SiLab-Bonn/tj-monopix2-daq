@@ -124,6 +124,7 @@ class ChipContainer:
 
     def __init__(self, name, chip_settings, chip_conf, module_settings, output_filename, output_dir, log_fh, scan_config, suffix=''):
         self.name = name
+        
         self.chip_settings = chip_settings  # chip settings from testbench; not to be confused with self.chip_settings['chip_config_file']
         self.module_settings = module_settings  # module configuration of this chip from testbench
         self.chip_conf = chip_conf  # configuration object for chip
@@ -159,7 +160,7 @@ class ScanBase(object):
 
     is_parallel_scan = False  # Parallel readout of ExtTrigger-type scans etc.; must be overridden in the derived classes if needed
 
-    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
+    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix='', register_overrides={}):
         '''
             Initializer.
 
@@ -215,7 +216,8 @@ class ScanBase(object):
         self._log_handlers_per_scan = []  # FIXME: all log handlers of all chips
         self.hardware_initialized = False
         self.initialized = False
-
+        self.register_overrides = register_overrides
+        
         self.daq = None  # readout system, defined during scan init if not existing
 
         # Needed for parallel scans where several readout threads change the chip handles

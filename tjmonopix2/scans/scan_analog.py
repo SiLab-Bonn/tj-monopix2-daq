@@ -18,6 +18,13 @@ scan_configuration = {
     'stop_row': 100,
 }
 
+register_overrides = {
+    'ITHR': 50,
+    'VL': 30,
+    'VH': 150,
+    
+}
+
 
 class AnalogScan(ScanBase):
     scan_id = 'analog_scan'
@@ -31,12 +38,11 @@ class AnalogScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        self.chip.registers["ITHR"].write(50)
-        self.chip.registers["IDB"].write(100)
-
-        self.chip.registers["VL"].write(30)
-        self.chip.registers["VH"].write(150)
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+        
+        for r in self.register_overrides:
+            self.chip.registers[r].write(self.register_overrides[r])
+            #print("Write: ", r, " to ", self.register_overrides[r])
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
@@ -55,5 +61,5 @@ class AnalogScan(ScanBase):
 
 
 if __name__ == "__main__":
-    with AnalogScan(scan_config=scan_configuration) as scan:
+    with AnalogScan(scan_config=scan_configuration, register_overrides=register_overrides) as scan:
         scan.start()
