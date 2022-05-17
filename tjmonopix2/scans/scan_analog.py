@@ -19,12 +19,13 @@ scan_configuration = {
 }
 
 register_overrides = {
+    'n_injections' : 50,
     'ITHR': 50,
     'VL': 30,
     'VH': 150,
-    
 }
 
+registers = ['IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VH', 'VL', 'VCLIP', 'VCASC', 'IRAM']
 
 class AnalogScan(ScanBase):
     scan_id = 'analog_scan'
@@ -47,19 +48,30 @@ class AnalogScan(ScanBase):
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
     def _scan(self, n_injections=50, **_):
-        n_injections=50
+        n_injections=self.register_overrides.get("n_injections", 50)
+        
         pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
         with self.readout(scan_param_id=0):
             shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=0)
         pbar.close()
+        
+        ret = {}
+        for r in registers:
+            ret[r] = self.chip.registers[r].read()
+        self.scan_registers = ret
 
         self.log.success('Scan finished')
 
     def _analyze(self):
+        self.hist_occ = 0
+        self.hist_tot = 0
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
+            self.hist_occ = a.hist_occ
+            self.hist_tot = a.hist_tot
 
-
+    
+    
 if __name__ == "__main__":
     with AnalogScan(scan_config=scan_configuration, register_overrides=register_overrides) as scan:
         scan.start()

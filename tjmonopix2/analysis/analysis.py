@@ -185,6 +185,9 @@ class Analysis(object):
                 timestamp_test= timestamp_test.strftime("%Y-%m-%d_%H:%M")
                 np.save("output_data/analoge_hist_occ"+timestamp_test,hist_occ)
                 np.save("output_data/analoge_hist_tot"+timestamp_test,hist_tot)
+                
+                self.hist_occ = hist_occ
+                self.hist_tot = hist_tot
 
         self._create_additional_hit_data(hist_occ, hist_tot)
 
