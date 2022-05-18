@@ -5,9 +5,8 @@ import time
 
 import pyeudaq
 
-
 import numpy as np
-#import tables as tb
+# import tables as tb
 from tqdm import tqdm
 import yaml
 
@@ -119,23 +118,25 @@ class Monopix2Producer(pyeudaq.Producer):
 
         board_ip = self.GetConfigItem("BOARD_IP")
         testbench_file = self.GetConfigItem("TESTBENCH_FILE")
-        chip_config_file = self.GetConfigItem("CHIP_CONF_FILE")
-        bdaq_conf = self.GetConfigItem("BDAQ_CONF_FILE")
+        bdaq_conf_file = self.GetConfigItem("BDAQ_CONF_FILE")
 
-        conf = None
-        if bdaq_conf:
-            with open(bdaq_conf) as f:
-                conf = yaml.full_load(f)
-        bench = None
+        bdaq_conf = None
+        if bdaq_conf_file:
+            with open(bdaq_conf_file) as f:
+                bdaq_conf = yaml.full_load(f)
+
+            if board_ip:
+                # override values for more comfortable usage with eudaq
+                bdaq_conf['transfer_layer'][0]['init']['ip'] = board_ip
+
+        bench_conf = None
         if testbench_file:
             with open(testbench_file) as f:
-                bench = yaml.full_load(f)
+                bench_conf = yaml.full_load(f)
 
-        conf['transfer_layer'][0]['init']['ip'] = board_ip
-        bench['modules']['module_0']['chip_0']['chip_config_file'] = chip_config_file
-        self.scan = EudaqScan(bdaq_conf=conf, bench_config=testbench_file, scan_config=scan_configuration)
+        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
+        # attentione 'daq_conf' is called 'bdaq_conf' in original bbdaq53
 
-        print("about to init")
         self.scan.init()
         # self.scan.scan_config['callback'] = self.SendEvent  # i'm shit, do me properly
 
