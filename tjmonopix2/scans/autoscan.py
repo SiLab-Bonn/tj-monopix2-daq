@@ -117,15 +117,23 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
     
     cols = regs.copy()
     cols["n_hits_1"] = np.sum(hist_occ[0:224, :], axis=(0,1,2))
+    tots = hist_tot[0:244, 10]
+    cols["avg_tot_1"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_1"] = n_inj_12
     
     cols["n_hits_2"] = np.sum(hist_occ[224:448, :], axis=(0,1,2))
+    tots = hist_tot[244:488, 10]
+    cols["avg_tot_2"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_2"] = n_inj_12
     
     cols["n_hits_3"] = np.sum(hist_occ[448:480, :], axis=(0,1,2))
+    tots = hist_tot[448:480, 10]
+    cols["avg_tot_3"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_3"] = n_inj_34
     
     cols["n_hits_4"] = np.sum(hist_occ[480:512, :], axis=(0,1,2))
+    tots = hist_tot[480:512, 10]
+    cols["avg_tot_4"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_4"] = n_inj_34
     
     cols["n_inj_perpixel"] = register_overrides.get('n_injections', 50)
