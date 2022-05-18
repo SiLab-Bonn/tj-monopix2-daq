@@ -46,7 +46,7 @@ for f in files:
     
     ys = ['Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE (3)', 'HV FE (4)', ]
     df.plot(x=reg, y=ys, style='-+')
-    plt.hlines(y=1, xmin=0, xmax=255, colors='red')
+    plt.hlines(y=1, xmin=min(df[reg]), xmax=max(df[reg]), colors='red')
     plt.vlines(x=defaults[reg], ymin=0, ymax=1, colors='green')
     plt.grid()
     plt.xlabel(reg + " / LSBs")

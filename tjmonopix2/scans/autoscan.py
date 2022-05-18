@@ -8,6 +8,75 @@ from scan_analog import AnalogScan
 import numpy as np
 import pathlib
 
+#regs_to_test = ['ITHR', 'IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VCLIP', 'VCASC', 'IRAM', 'VH', 'VL']
+register_config = {
+    'ITHR': {
+        'min': 0,
+        'max': 60,
+        'step': 2,
+    },
+    'VRESET': {
+        'min': 0,
+        'max': 170,
+        'step': 5,
+    },
+    'VCASC': {
+        'min': 30,
+        'max': 150,
+        'step': 5,
+    },
+    'VCASP': {
+        'min': 0,
+        'max': 160,
+        'step': 5,
+    },
+    'HV': {
+        'min': 120,
+        'max': 256,
+        'step': 5,
+    },
+    
+    'IBIAS': {
+        'min': 0,
+        'max': 256,
+        'step': 10,
+    },
+    'ICASN': {
+        'min': 0,
+        'max': 100,
+        'step': 2,
+    },
+    'ICOMP': {
+        'min': 0,
+        'max': 256,
+        'step': 20,
+    },
+    'IDB': {
+        'min': 0,
+        'max': 256,
+        'step': 10,
+    },
+    'IDEL': {
+        'min': 0,
+        'max': 256,
+        'step': 20,
+    },
+    'IRAM': {
+        'min': 0,
+        'max': 256,
+        'step': 20,
+    },
+    'ITUNE': {
+        'min': 0,
+        'max': 256,
+        'step': 20,
+    },
+}
+
+
+
+
+
 scan_configuration = {
     'start_column': 0,
     'stop_column': 512,
@@ -79,9 +148,10 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
     file1.close()
 
 if __name__ == "__main__":
-    regs_to_test = ['ITHR', 'IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VCLIP', 'VCASC', 'IRAM', 'VH', 'VL']
-    for reg in regs_to_test:
-        for val in range(0, 256, 5):
+    
+    for reg in register_config:
+        conf = register_config[reg]
+        for val in range(conf.get('min', 0), conf.get('max', 256), conf.get('step', 5)):
             for retries in range(3):
                 try:
                     ro = register_overrides_default.copy()
