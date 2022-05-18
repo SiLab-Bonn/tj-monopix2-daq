@@ -16,6 +16,11 @@ register_config = {
         'max': 60,
         'step': 2,
     },
+    'VH': {
+        'min': 120,
+        'max': 256,
+        'step': 5,
+    },
     'VRESET': {
         'enabled': True,
         'min': 0,
@@ -33,11 +38,7 @@ register_config = {
         'max': 160,
         'step': 5,
     },
-    'HV': {
-        'min': 120,
-        'max': 256,
-        'step': 5,
-    },
+    
     
     'IBIAS': {
         'min': 0,
