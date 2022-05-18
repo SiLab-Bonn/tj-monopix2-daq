@@ -174,6 +174,12 @@ class BDAQ53(Dut):
         self['tlu']['TRIGGER_ENABLE'] = False
         self.tlu_module_enabled = False
 
+    def enable_ext_trigger(self):
+        self['cmd'].set_ext_trigger(True)
+
+    def disable_ext_trigger(self):
+        self['cmd'].set_ext_trigger(False)
+
     def get_trigger_counter(self):
         return self['tlu']['TRIGGER_COUNTER']
 
@@ -194,6 +200,13 @@ class BDAQ53(Dut):
 
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
+
+    def configure_trigger_cmd_pulse(self, trigger_length, trigger_delay):
+        # configures pulse which is sent to CMD for incoming triggers; factor 4 is needed for conversion from 160 MHz to 40 MHz (BC)
+        self['pulser_trig'].set_en(True)
+        self['pulser_trig'].set_width(trigger_length * 4)
+        self['pulser_trig'].set_delay(trigger_delay * 4)
+        self['pulser_trig'].set_repeat(1)
 
     def configure_tlu_veto_pulse(self, veto_length):
         # configures pulse for veto of new triggers

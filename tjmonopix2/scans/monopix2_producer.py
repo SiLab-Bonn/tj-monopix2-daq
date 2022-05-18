@@ -50,8 +50,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     def _configure(self, callback=None, **_):
         super(EudaqScan, self)._configure(**_)
+
         # Set callback in configure step since callback is needed for every producer (chip)
-        self.callback = callback[self.chip.receiver]
+        #self.callback = callback[self.chip.receiver]
         self.last_readout_data = np.array([], dtype=np.uint32)
         self.last_trigger = 0
 
@@ -60,6 +61,11 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         Called on every readout (a few Hz)
         Sends data per event by checking for the trigger word that comes first.
         '''
+
+        print('handling some data')
+        print(data_tuple)
+        print(receiver)
+
         super(EudaqScan, self).handle_data(data_tuple, receiver)
 
         raw_data = data_tuple[0]
@@ -138,7 +144,7 @@ class Monopix2Producer(pyeudaq.Producer):
         # attentione 'daq_conf' is called 'bdaq_conf' in original bbdaq53
 
         self.scan.init()
-        # self.scan.scan_config['callback'] = self.SendEvent  # i'm shit, do me properly
+        #self.scan.scan_config['callback'] = self.SendEvent  # I'm shit, do me properly
 
     def DoStartRun(self):
         print('DoStartRun')

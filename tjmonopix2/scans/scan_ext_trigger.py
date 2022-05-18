@@ -105,12 +105,14 @@ class ExtTriggerScan(ScanBase):
         if (scan_timeout and max_triggers) or (scan_timeout and min_spec_occupancy) or (max_triggers and min_spec_occupancy):
             self.log.warning('You should only use one of the stop conditions at a time.')
 
-        self.bdaq.configure_tlu_module(max_triggers=max_triggers)                                           # Configure tlu module using trigger configuration
-        self.bdaq.configure_trigger_cmd_pulse(trigger_length=trigger_length, trigger_delay=trigger_delay)   # Configure trigger command pulse
-        self.bdaq.configure_tlu_veto_pulse(veto_length=veto_length)                                         # Configure veto pulse
+        self.daq.configure_tlu_module(max_triggers=max_triggers)                                           # Configure tlu module using trigger configuration
 
-        self.old_trigger_latency = self.chip.get_trigger_latency()
-        self.chip.write_trigger_latency(trigger_latency)
+        # in use in original, might be needed...
+        #self.daq.configure_trigger_cmd_pulse(trigger_length=trigger_length, trigger_delay=trigger_delay)   # Configure trigger command pulse
+        self.daq.configure_tlu_veto_pulse(veto_length=veto_length)                                         # Configure veto pulse
+
+        #self.old_trigger_latency = self.chip.get_trigger_latency()
+        #self.chip.write_trigger_latency(trigger_latency)
 
         self.data.n_trigger = 0                                                                             # Count trigger words in rawdata stream
 
@@ -119,7 +121,7 @@ class ExtTriggerScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         if use_tdc:
             # Configure all four TDC modules
-            self.bdaq.configure_tdc_modules()
+            self.daq.configure_tdc_modules()
             # Enable Hitor
             self.chip.masks['hitbus'][:] = self.chip.masks['enable'][:]
 #         self.chip.masks.load_logo_mask(masks=['enable'])
@@ -155,20 +157,20 @@ class ExtTriggerScan(ScanBase):
 
         if use_tdc:
             self.enable_hitor(True)
-            self.bdaq.enable_tdc_modules()
+            self.daq.enable_tdc_modules()
 
         # Configure and start AZ prodecure if SYNC FE is activated. Since only one CMD buffer
         # is available, this has to be done after the configure step. Otherwise AZ command will
         # be overwritten.
         if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
             self.log.info('SYNC enabled: Enabling auto-zeroing')
-            self.bdaq['tlu']['TRIGGER_VETO_SELECT'] = 2  # Veto trigger during AZ procedure
+            self.daq['tlu']['TRIGGER_VETO_SELECT'] = 2  # Veto trigger during AZ procedure
             az_cmd = self.chip._az_setup(delay=80, repeat=0, width=6, synch=6)  # Configure AZ procedure
             self.chip._az_start()  # Start AZ procedure
 
         # Sanity check: Check if AZ CMD is loaded into CMD, otherwise SYNC FE will get stuck
         if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
-            cmd_data = self.bdaq['cmd'].get_data()[:len(az_cmd)].tolist()
+            cmd_data = self.daq['cmd'].get_data()[:len(az_cmd)].tolist()
             if cmd_data != az_cmd:
                 self.log.warning('AZ CMD is not properly loaded into CMD!')
 
@@ -184,18 +186,18 @@ class ExtTriggerScan(ScanBase):
         with self.readout():
             self.stop_scan.clear()
 
-            self.bdaq.enable_ext_trigger()  # Enable external trigger
-            self.bdaq.enable_tlu_module()   # Enable TLU module
+            self.daq.enable_ext_trigger()  # Enable external trigger
+            self.daq.enable_tlu_module()   # Enable TLU module
 
             start_time = time.time()
 
             # Scan loop
             while not (self.stop_scan.is_set() or timed_out()):
                 try:
-                    triggers = self.bdaq.get_trigger_counter()
+                    triggers = self.daq.get_trigger_counter()
 
                     # Read tlu error counters
-                    trig_low_timeout_errors, trig_accept_errors = self.bdaq.get_tlu_erros()
+                    trig_low_timeout_errors, trig_accept_errors = self.daq.get_tlu_erros()
                     if trig_low_timeout_errors != 0 or trig_accept_errors != 0:
                         self.log.warning('TLU errors detected! TRIGGER_LOW_TIMEOUT_ERROR_COUNTER: {0}, TLU_TRIGGER_ACCEPT_ERROR_COUNTER: {1}'.format(trig_low_timeout_errors, trig_accept_errors))
 
@@ -226,11 +228,11 @@ class ExtTriggerScan(ScanBase):
         if self.chip.chip_type.lower() == 'rd53a':
             self.chip._az_stop()
 
-        self.bdaq.disable_tlu_module()      # disable TLU module
-        self.bdaq.disable_ext_trigger()     # disable external trigger
+        self.daq.disable_tlu_module()      # disable TLU module
+        self.daq.disable_ext_trigger()     # disable external trigger
         if use_tdc:
             self.enable_hitor(False)
-            self.bdaq.disable_tdc_modules()
+            self.daq.disable_tdc_modules()
 
         if min_spec_occupancy:              # close online analysis for each chip
             for self.data in self._scan_data_containers:
