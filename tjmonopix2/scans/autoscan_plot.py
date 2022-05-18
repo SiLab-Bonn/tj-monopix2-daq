@@ -4,8 +4,9 @@ import os, glob, re
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sample="output_data"
-files = hist_occ_files = glob.glob(sample+'/*.dat')
+sample="W8R3"
+basepath="output_data"
+files = hist_occ_files = glob.glob(basepath+'/*.dat')
 
 defaults = {'IBIAS': 50,
             'ICASN': 0,
@@ -28,14 +29,18 @@ for f in files:
     print(reg)
     
     df = pd.read_csv(f, delimiter=' ')
-    df['efficiency'] = df['n_hits'] / df['n_inj_total']
+    df['Normal FE (1)'] = df['n_hits_1'] / df['n_inj_1']
+    df['Cascode FE (2)'] = df['n_hits_2'] / df['n_inj_2']
+    df['HV Casc. FE (3)'] = df['n_hits_3'] / df['n_inj_3']
+    df['HV FE (4)'] = df['n_hits_4'] / df['n_inj_4']
     
     
     fig, ax= plt.subplots()
 
-    ax.set_ylabel("Efficiency")
+    ax.set_ylabel("Injection Efficiency")
     
-    df.plot(x=reg, y="efficiency", style='-+', legend=None)
+    ys = ['Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE (3)', 'HV FE (4)', ]
+    df.plot(x=reg, y=ys, style='-+')
     plt.hlines(y=1, xmin=0, xmax=255, colors='red')
     plt.vlines(x=defaults[reg], ymin=0, ymax=1, colors='green')
     plt.grid()
@@ -44,8 +49,9 @@ for f in files:
     plt.title(sample+": DAC Parameter scan: "+reg)
     plt.text(x=defaults[reg]-9, y=0.5, s="default value", rotation=90, size=12, color='green')
     
-    plt.savefig(sample+"/hiteff_"+reg+".png")
+    plt.savefig(basepath+"/hiteff_"+reg+".png")
     
+    #print(df)
     
 
 

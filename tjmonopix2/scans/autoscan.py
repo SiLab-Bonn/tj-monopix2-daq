@@ -10,9 +10,9 @@ import pathlib
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 10,
-    'start_row': 0,
-    'stop_row': 10,
+    'stop_column': 512,
+    'start_row': 10,
+    'stop_row': 11,
 }
 
 register_overrides_default = {
@@ -26,24 +26,39 @@ registers = ['IBIAS', 'VH', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'V
 
 def run_scan(register_overrides=register_overrides_default, basename='autoscan'):
     hist_occ = None
+    hist_tot = None
     regs={}
     
     with AnalogScan(scan_config=scan_configuration, register_overrides=register_overrides) as scan:
         scan.start()
         hist_occ = scan.hist_occ
+        hist_tot = scan.hist_tot
         regs = scan.scan_registers.copy()
-    
-    n_hits = np.sum(hist_occ, axis=(0,1,2))
-    
-    n_inj = (scan_configuration['stop_column']-scan_configuration['start_column']) * \
+     
+    n_inj_12 = 224 * \
             (scan_configuration['stop_row']-scan_configuration['start_row']) * \
             register_overrides.get('n_injections', 50)
-    print("Got: {} from {} possible hits ({}%)".format(n_hits, n_inj, n_hits/n_inj*100))
+            
+    n_inj_34 = 32 * \
+            (scan_configuration['stop_row']-scan_configuration['start_row']) * \
+            register_overrides.get('n_injections', 50)
+            
     
+    #print("Got: {} from {} possible hits ({}%)".format(n_hits, n_inj, n_hits/n_inj*100))
     
     cols = regs.copy()
-    cols["n_hits"] = n_hits
-    cols["n_inj_total"] = n_inj
+    cols["n_hits_1"] = np.sum(hist_occ[0:224, :], axis=(0,1,2))
+    cols["n_inj_1"] = n_inj_12
+    
+    cols["n_hits_2"] = np.sum(hist_occ[224:448, :], axis=(0,1,2))
+    cols["n_inj_2"] = n_inj_12
+    
+    cols["n_hits_3"] = np.sum(hist_occ[448:480, :], axis=(0,1,2))
+    cols["n_inj_3"] = n_inj_34
+    
+    cols["n_hits_4"] = np.sum(hist_occ[480:512, :], axis=(0,1,2))
+    cols["n_inj_4"] = n_inj_34
+    
     cols["n_inj_perpixel"] = register_overrides.get('n_injections', 50)
     
     
@@ -66,7 +81,7 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
 if __name__ == "__main__":
     regs_to_test = ['ITHR', 'IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VCLIP', 'VCASC', 'IRAM', 'VH', 'VL']
     for reg in regs_to_test:
-        for val in range(0, 256, 10):
+        for val in range(0, 256, 5):
             for retries in range(3):
                 try:
                     ro = register_overrides_default.copy()
