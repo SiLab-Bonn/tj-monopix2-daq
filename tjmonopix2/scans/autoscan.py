@@ -11,16 +11,19 @@ import pathlib
 #regs_to_test = ['ITHR', 'IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VCLIP', 'VCASC', 'IRAM', 'VH', 'VL']
 register_config = {
     'ITHR': {
+        'enabled': True,
         'min': 0,
         'max': 60,
         'step': 2,
     },
     'VRESET': {
+        'enabled': True,
         'min': 0,
         'max': 170,
         'step': 5,
     },
-    'VCASC': {
+    'VCASC': {  # causes unrecoverable sof_error
+        'enabled': False,
         'min': 30,
         'max': 150,
         'step': 5,
@@ -159,17 +162,18 @@ if __name__ == "__main__":
     
     for reg in register_config:
         conf = register_config[reg]
-        for val in range(conf.get('min', 0), conf.get('max', 256), conf.get('step', 5)):
-            for retries in range(3):
-                try:
-                    ro = register_overrides_default.copy()
-                    ro[reg] = val
-                    run_scan(register_overrides=ro, basename="autoscan_"+reg)
-                    break
-                except KeyboardInterrupt:
-                    exit(0)
-                except:
-                    print("Error: retry...")
+        if conf.get('enabled', True):
+            for val in range(conf.get('min', 0), conf.get('max', 256), conf.get('step', 5)):
+                for retries in range(3):
+                    try:
+                        ro = register_overrides_default.copy()
+                        ro[reg] = val
+                        run_scan(register_overrides=ro, basename="autoscan_"+reg)
+                        break
+                    except KeyboardInterrupt:
+                        exit(0)
+                    except:
+                        print("Error: retry...")
     
 
 
