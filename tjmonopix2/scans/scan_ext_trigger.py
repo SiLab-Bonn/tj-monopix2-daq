@@ -37,11 +37,11 @@ import threading
 
 from tqdm import tqdm
 
-from bdaq53.system.scan_base import ScanBase
-from bdaq53.analysis import analysis
-from bdaq53.analysis import analysis_utils as au
-from bdaq53.analysis import online as oa
-from bdaq53.analysis import plotting
+from tjmonopix2.system.scan_base import ScanBase
+from tjmonopix2.analysis import analysis
+from tjmonopix2.analysis import analysis_utils as au
+from tjmonopix2.analysis import online as oa
+#from tjmonopix2.analysis import plotting
 
 
 scan_configuration = {
