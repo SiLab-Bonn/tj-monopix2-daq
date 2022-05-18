@@ -4,8 +4,13 @@ import os, glob, re
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
+
+
 sample="W8R3"
 basepath="output_data"
+
+commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation
 files = hist_occ_files = glob.glob(basepath+'/*.dat')
 
 defaults = {'IBIAS': 50,
@@ -46,6 +51,10 @@ for f in files:
     plt.grid()
     plt.xlabel(reg + " / LSBs")
     plt.ylabel("Fraction of received over injected")
+    plt.text(0.9, -0.08, commit,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax.transAxes)
     plt.title(sample+": DAC Parameter scan: "+reg)
     plt.text(x=defaults[reg]-9, y=0.5, s="default value", rotation=90, size=12, color='green')
     
