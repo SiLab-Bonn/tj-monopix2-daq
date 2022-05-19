@@ -6,7 +6,7 @@
 #
 
 from tqdm import tqdm
- 
+
 from tjmonopix2.system.scan_base import ScanBase
 from tjmonopix2.scans.shift_and_inject import shift_and_inject, get_scan_loop_mask_steps
 from tjmonopix2.analysis import analysis

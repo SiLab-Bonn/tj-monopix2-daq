@@ -11,6 +11,10 @@ import traceback
 import time
 import yaml
 import os
+from tqdm import tqdm
+import logging
+
+
 
 with open('autoscan.yaml', 'r') as file:
     register_config = yaml.safe_load(file)
@@ -115,15 +119,16 @@ if __name__ == "__main__":
         
         if conf.get('enabled', default_enabled):
             rng = range(conf.get('min', 0), conf.get('max', 256), conf.get('step', 5))
-            pixogram = np.zeros((512, len(rng)))
-            for index, val in enumerate(rng):
+            pixogram = np.zeros((513, len(rng)))
+            for index, val in enumerate(tqdm(rng)):
                 for retries in range(3):
                     check_availability()
                     try:
                         ro = register_overrides_default.copy()
                         ro[reg] = val
                         occ, tot = run_scan(register_overrides=ro, basename="autoscan_"+reg)
-                        pixogram[:, index] = occ.flatten()
+                        pixogram[0:-1, index] = occ.flatten()
+                        pixogram[-1, index] = val
                         break
                     except KeyboardInterrupt:
                         exit(0)

@@ -107,14 +107,17 @@ for f in files:
     
     pxg = np.load(f)
     
-    
+    if len(pxg[:,0]) == 512:
+        extent = (50, 255, 511, 0)
+    else:  # extra column with register information
+        extent = (np.min(pxg[-1,:]), np.max(pxg[-1,:]), 511, 0)
     
     fig, ax= plt.subplots(5, 1, gridspec_kw={'height_ratios': [224, 224, 32, 32, 5]})
     fig.suptitle(sample+": DAC Parameter scan per Pixel: "+reg)
     slices = [0, 224, 448, 480, 512]
     ylabels = 'Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE', 'HV FE', 
     for i in range(4):
-        im=ax[i].imshow(pxg, interpolation='none', aspect='auto', vmin=0, vmax=50)
+        im=ax[i].imshow(pxg, interpolation='none', aspect='auto', vmin=0, vmax=50, extent=extent)
         ax[i].set_ylim(slices[i], slices[i+1])
         
         ax[i].set_ylabel("colum:\n"+ylabels[i])
@@ -126,12 +129,21 @@ for f in files:
     cbar = fig.colorbar(im, cax=ax[4],orientation='horizontal')
     cbar.set_label('number of hits')
     
-    
-    
-    
-    
-    
     plt.tight_layout()
+    
+    ax[3].text(0.9, -4, commit,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax[4].transAxes)
+     
+    ax[3].text(0.1, -4, register_text, size=6,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax[4].transAxes)
+    
+    
+    
+    
     plt.savefig(os.path.join(basepath,"pixogram_"+reg+".png"))
     
 

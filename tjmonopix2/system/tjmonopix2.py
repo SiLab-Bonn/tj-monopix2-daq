@@ -740,9 +740,9 @@ class TJMonoPix2(object):
         return hit
 
     def interpret_ts(self, raw_data):
-        print("=====sim=====ts", end=" ")
-        for r in raw_data:
-            print(hex(r), end=" ")
+        #print("=====sim=====ts", end=" ")
+        #for r in raw_data:
+        #    print(hex(r), end=" ")
         hit_dtype = np.dtype([("le", "<u8"), ("te", "<u8")])
         hit_le0 = raw_data[(raw_data & 0xFF000000) == 0x61000000] & 0xFFFFFF
         hit_le1 = raw_data[(raw_data & 0xFF000000) == 0x62000000] & 0xFFFFFF
@@ -763,8 +763,8 @@ class TJMonoPix2(object):
         r0 = (r & 0x7FC0000) >> 18
         r1 = (r & 0x003FE00) >> 9
         r2 = (r & 0x00001FF)
-        for i in range(len(r)):
-            print("=====sim=====", i, hex(r0[i]), hex(r1[i]), hex(r2[i]))
+        #for i in range(len(r)):
+        #    print("=====sim=====", i, hex(r0[i]), hex(r1[i]), hex(r2[i]))
         rx_data = np.reshape(np.vstack((r0, r1, r2)), -1, order="F")
         hit = np.empty(len(rx_data) // 4 + 10, dtype=hit_dtype)
         i=0
@@ -782,7 +782,7 @@ class TJMonoPix2(object):
                 ii = ii +1
                 i = i +4
             else:
-                print(i, hex(rx_data[i]))
+                #print(i, hex(rx_data[i]))
                 i=i+1
         return hit[:ii]
 

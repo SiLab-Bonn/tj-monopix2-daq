@@ -26,6 +26,7 @@ class BDAQ53(Dut):
     '''
     def __init__(self, conf=None, bench_config=None):
         self.log = logger.setup_main_logger()
+        
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.configuration = {}
         self.board_version = 'bdaq53'
