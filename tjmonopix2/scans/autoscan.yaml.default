@@ -1,0 +1,67 @@
+
+enable_default: True
+
+1d-scans:
+  - register: ITHR
+    enabled: True
+    min: 0
+    max: 60
+    step: 2
+
+  - register: VH   
+    enabled: True
+    min: 50
+    max: 256
+    step: 5
+
+  - register: VRESET
+    min: 0
+    max: 170
+    step: 5
+    
+  - register: VCASC
+    enabled: False
+    min: 30
+    max: 150
+    step: 5
+    
+  - register: VCASP
+    min: 0
+    max: 160
+    step: 5
+    
+  - register: IBIAS
+    min: 0
+    max: 256
+    step: 10
+    
+  - register: ICASN
+    min: 0
+    max: 100
+    step: 2
+    
+  - register: ICOMP
+    min: 120
+    max: 256
+    step: 20
+    
+  - register: IDB
+    min: 120
+    max: 256
+    step: 10
+    
+  - register: IDEL
+    min: 120
+    max: 256
+    step: 20
+    
+  - register: IRAM
+    min: 120
+    max: 256
+    step: 20
+    
+  - register: ITUNE
+    min: 120
+    max: 256
+    step: 20
+    

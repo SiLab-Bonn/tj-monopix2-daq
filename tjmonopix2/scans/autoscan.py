@@ -2,82 +2,17 @@
 # 
 # so for example to find good values for the DACs
 # 
-
+# you need to copy autoscan-yaml.default to autoscan.yaml for custom modicications (autoscan.yaml is in .gitignore)
 
 from scan_analog import AnalogScan
 import numpy as np
 import pathlib
+import traceback
+import time
+import yaml
 
-#regs_to_test = ['ITHR', 'IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VCLIP', 'VCASC', 'IRAM', 'VH', 'VL']
-register_config = {
-    'ITHR': {
-        'enabled': True,
-        'min': 0,
-        'max': 60,
-        'step': 2,
-    },
-    'VH': {
-        'min': 120,
-        'max': 256,
-        'step': 5,
-    },
-    'VRESET': {
-        'enabled': True,
-        'min': 0,
-        'max': 170,
-        'step': 5,
-    },
-    'VCASC': {  # causes unrecoverable sof_error
-        'enabled': False,
-        'min': 30,
-        'max': 150,
-        'step': 5,
-    },
-    'VCASP': {
-        'min': 0,
-        'max': 160,
-        'step': 5,
-    },
-    
-    
-    'IBIAS': {
-        'min': 0,
-        'max': 256,
-        'step': 10,
-    },
-    'ICASN': {
-        'min': 0,
-        'max': 100,
-        'step': 2,
-    },
-    'ICOMP': {
-        'min': 0,
-        'max': 256,
-        'step': 20,
-    },
-    'IDB': {
-        'min': 0,
-        'max': 256,
-        'step': 10,
-    },
-    'IDEL': {
-        'min': 0,
-        'max': 256,
-        'step': 20,
-    },
-    'IRAM': {
-        'min': 0,
-        'max': 256,
-        'step': 20,
-    },
-    'ITUNE': {
-        'min': 0,
-        'max': 256,
-        'step': 20,
-    },
-}
-
-
+with open('autoscan.yaml', 'r') as file:
+    register_config = yaml.safe_load(file)
 
 
 
@@ -159,11 +94,16 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
     file1.flush()
     file1.close()
 
+
+
+
 if __name__ == "__main__":
     
-    for reg in register_config:
-        conf = register_config[reg]
-        if conf.get('enabled', True):
+    for conf in register_config['1d-scans']:
+        reg = conf['register']
+        default_enabled = register_config.get('enable_default', True)
+        
+        if conf.get('enabled', default_enabled):
             for val in range(conf.get('min', 0), conf.get('max', 256), conf.get('step', 5)):
                 for retries in range(3):
                     try:
@@ -174,8 +114,10 @@ if __name__ == "__main__":
                     except KeyboardInterrupt:
                         exit(0)
                     except:
-                        print("Error: retry...")
-    
+                        traceback.print_exc()
+                        print("Error: retry in a minute...")
+                        time.sleep(60)
+                        print("that has passed: now again ;)")
 
 
 

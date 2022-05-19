@@ -1,6 +1,6 @@
 # output files
 tjmonopix2/scans/output_data
-
+tjmonopix2/scans/autoscan.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
