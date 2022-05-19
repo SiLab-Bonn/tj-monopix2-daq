@@ -11,7 +11,7 @@ sample="W8R3"
 basepath="output_data"
 
 commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation
-files = hist_occ_files = glob.glob(basepath+'/*.dat')
+
 
 defaults = {'IBIAS': 50,
             'ICASN': 0,
@@ -28,10 +28,10 @@ defaults = {'IBIAS': 50,
             'VCASC': 228,
             'IRAM': 50,}
 
-
+files = glob.glob(os.path.join(basepath,'autoscan_*.dat'))
 for f in files:
-    reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between first '_' and '.')
-    print(reg)
+    reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between second '_' and '.')
+    print('autoscan: ', reg)
     
     df = pd.read_csv(f, delimiter=' ')
     df['Normal FE (1)'] = df['n_hits_1'] / df['n_inj_1']
@@ -75,9 +75,38 @@ for f in files:
     
     ax[0].text(x=defaults[reg], y=0.3, s="default value", rotation=90, size=8, color='green',horizontalalignment='right',)
     
-    plt.savefig(basepath+"/hiteff_"+reg+".png")
+    plt.savefig(os.path.join(basepath,"hiteff_"+reg+".png"))
     
     #print(df)
     
+files = glob.glob(os.path.join(basepath,'pixogram*.npy'))
+plt.rcParams['figure.figsize'] = 7, 12
+for f in files:
+    reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between second '_' and '.')
+    print('pixogram: ', reg)
+    
+    pxg = np.load(f)
+    
+    
+    
+    fig, ax= plt.subplots(5, 1, gridspec_kw={'height_ratios': [224, 224, 32, 32, 5]})
+    fig.suptitle(sample+": DAC Parameter scan per Pixel: "+reg)
+    slices = [0, 224, 448, 480, 512]
+    ylabels = 'Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE', 'HV FE', 
+    for i in range(4):
+        im=ax[i].imshow(pxg, interpolation='none', aspect='auto', vmin=0, vmax=50)
+        ax[i].set_ylim(slices[i], slices[i+1])
+        
+        ax[i].set_ylabel("colum:\n"+ylabels[i])
+        ax[i].invert_yaxis()
+        
+    fig.subplots_adjust(right=0.8)
 
+    cbar = fig.colorbar(im, cax=ax[4],orientation='horizontal')
+    cbar.set_label('number of hits')
+    
+    ax[3].set_xlabel(reg + " / LSBs")
+    plt.tight_layout()
+    plt.savefig(os.path.join(basepath,"pixogram_"+reg+".png"))
+    
 
