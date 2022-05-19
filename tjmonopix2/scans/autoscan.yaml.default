@@ -1,6 +1,12 @@
 
 enable_default: True
 
+register-overrides:
+    VL: 30
+    VH: 85
+    ITHR: 50
+
+
 1d-scans:
   - register: ITHR
     enabled: True

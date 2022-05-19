@@ -14,7 +14,12 @@ import yaml
 with open('autoscan.yaml', 'r') as file:
     register_config = yaml.safe_load(file)
 
+# values here will be overridden by autoscan.yaml
+register_overrides_default = {
+    'n_injections' : 50,
+}
 
+register_overrides_default.update(register_config['register-overrides'])
 
 scan_configuration = {
     'start_column': 0,
@@ -23,12 +28,7 @@ scan_configuration = {
     'stop_row': 11,
 }
 
-register_overrides_default = {
-    'n_injections' : 50,
-    'ITHR': 50,
-    'VL': 30,
-    'VH': 150,
-}
+
 
 registers = ['IBIAS', 'VH', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VL', 'VCLIP', 'VCASC', 'IRAM']
 

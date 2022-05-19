@@ -3,7 +3,7 @@ import numpy as np
 import os, glob, re
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import yaml
 
 
 
@@ -12,6 +12,20 @@ basepath="output_data"
 
 commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation
 
+
+with open('autoscan.yaml', 'r') as file:
+    register_config = yaml.safe_load(file)
+
+
+register_text = ''
+cnt = 0
+for reg in register_config['register-overrides']:
+    cnt += 1
+    register_text = "{}{}: {}, ".format(register_text, reg, register_config['register-overrides'][reg])
+    if cnt > 3:
+        cnt = 0
+        register_text += '\n'
+        
 
 defaults = {'IBIAS': 50,
             'ICASN': 0,
@@ -72,6 +86,12 @@ for f in files:
      horizontalalignment='center',
      verticalalignment='top',
      transform = ax[1].transAxes)
+     
+    ax[1].text(0.1, -0.15, register_text, size=6,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax[1].transAxes)
+     
     
     ax[0].text(x=defaults[reg], y=0.3, s="default value", rotation=90, size=8, color='green',horizontalalignment='right',)
     
@@ -99,13 +119,18 @@ for f in files:
         
         ax[i].set_ylabel("colum:\n"+ylabels[i])
         ax[i].invert_yaxis()
+        ax[i].set_xlabel(reg + " / LSBs")
         
     fig.subplots_adjust(right=0.8)
 
     cbar = fig.colorbar(im, cax=ax[4],orientation='horizontal')
     cbar.set_label('number of hits')
     
-    ax[3].set_xlabel(reg + " / LSBs")
+    
+    
+    
+    
+    
     plt.tight_layout()
     plt.savefig(os.path.join(basepath,"pixogram_"+reg+".png"))
     
