@@ -51,7 +51,7 @@ scan_configuration = {
     'stop_row': 192,
 
     # Stop conditions (choose one)
-    'scan_timeout': 10,             # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
+    'scan_timeout': False,             # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
     'max_triggers': False,          # Number of maximum received triggers after stopping readout, if False no limit on received trigger
     'min_spec_occupancy': False,    # Minimum hits for each pixel above which the scan will be stopped; only a fraction of all pixels needs to reach this limit (see below)
 
@@ -210,9 +210,9 @@ class ExtTriggerScan(ScanBase):
                     self.pbar.refresh()
 
                     # Stop scan if fraction of pixels reached minimum hits per pixel
-                    if min_spec_occupancy and np.count_nonzero(self.data.occupancy >= min_spec_occupancy) >= fraction * num_enabled_pixels:
-                        self.stop_scan.set()
-                        self.log.info('Reached required minimal number of hits per pixel ({0})'.format(min_spec_occupancy))
+                    #if min_spec_occupancy and np.count_nonzero(self.data.occupancy >= min_spec_occupancy) >= fraction * num_enabled_pixels:
+                        #self.stop_scan.set()
+                        #self.log.info('Reached required minimal number of hits per pixel ({0})'.format(min_spec_occupancy))
 
                     # Stop scan if reached trigger limit
                     if max_triggers and triggers >= max_triggers:
@@ -225,8 +225,8 @@ class ExtTriggerScan(ScanBase):
 
         self.pbar.close()
 
-        if self.chip.chip_type.lower() == 'rd53a':
-            self.chip._az_stop()
+        # if self.chip.chip_type.lower() == 'rd53a':
+            #self.chip._az_stop()
 
         self.daq.disable_tlu_module()      # disable TLU module
         self.daq.disable_ext_trigger()     # disable external trigger
@@ -239,8 +239,9 @@ class ExtTriggerScan(ScanBase):
                 self.data.hist_occ.close()
 
         self.n_trigger = self.data.n_trigger    # Print number of triggers in ScanBase
+
         # Reset latency
-        self.chip.write_trigger_latency(self.old_trigger_latency)
+        #self.chip.write_trigger_latency(self.old_trigger_latency)
 
         self.log.success('Scan finished')
 
@@ -253,15 +254,18 @@ class ExtTriggerScan(ScanBase):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
-        if self.configuration['bench']['analysis']['create_pdf']:
-            with plotting.Plotting(analyzed_data_file=a.analyzed_data_file) as p:
-                p.create_standard_plots()
+        #if self.configuration['bench']['analysis']['create_pdf']:
+            #with plotting.Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+                #p.create_standard_plots()
 
     def handle_data(self, data_tuple, receiver=None):
         ''' Check recorded trigger number '''
-        super(ExtTriggerScan, self).handle_data(data_tuple, receiver)
+        super(ExtTriggerScan, self).handle_data(data_tuple)
 
         raw_data = data_tuple[0]
+
+        print('ext trigger handling')
+        print(raw_data)
 
         if self.min_spec_occupancy:
             self.data.hist_occ.add(raw_data)

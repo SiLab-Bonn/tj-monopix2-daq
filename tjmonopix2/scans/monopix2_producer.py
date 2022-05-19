@@ -9,6 +9,7 @@ import numpy as np
 # import tables as tb
 from tqdm import tqdm
 import yaml
+import threading
 
 from tjmonopix2.system import logger
 from tjmonopix2.scans import scan_ext_trigger
@@ -48,13 +49,15 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     min_spec_occupancy = False  # needed for handle data function of ext. trigger scan
 
+    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
+        super().__init__(daq_conf, bench_config, scan_config, scan_config_per_chip, suffix)
+        self.last_readout_data = None
+        self.last_trigger = None
+
     def _configure(self, callback=None, **_):
         super(EudaqScan, self)._configure(**_)
 
-        # Set callback in configure step since callback is needed for every producer (chip)
-        #self.callback = callback[self.chip.receiver]
         self.last_readout_data = np.array([], dtype=np.uint32)
-        self.last_trigger = 0
 
     def handle_data(self, data_tuple, receiver=None):
         '''
@@ -62,13 +65,12 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         Sends data per event by checking for the trigger word that comes first.
         '''
 
-        print('handling some data')
-        print(data_tuple)
-        print(receiver)
-
         super(EudaqScan, self).handle_data(data_tuple, receiver)
 
         raw_data = data_tuple[0]
+
+        print('handling data raw:')
+        print(raw_data)
 
         if np.any(self.last_readout_data):  # no last readout data for first readout
             actual_data = np.concatenate((self.last_readout_data, raw_data))
@@ -77,6 +79,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
         trg_idx = np.where(actual_data & au.TRIGGER_HEADER > 0)[0]
         trigger_data = np.split(actual_data, trg_idx)
+
+        print('trigger')
+        print(trigger_data)
 
         # Send data of each trigger
         for dat in trigger_data[:-1]:
@@ -94,6 +99,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                                          trigger)
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
                 self.callback(dat)
+                print('we did get data, callback = ')
+                print(self.callback)
+
 
         self.last_readout_data = trigger_data[-1]
 
@@ -104,6 +112,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         # Send remaining data after stopped readout
         self.callback(self.last_readout_data)
 
+    def get_last_trigger(self):
+        return self.last_trigger
+
 
 class Monopix2Producer(pyeudaq.Producer):
     def __init__(self, name, runctrl):
@@ -111,20 +122,17 @@ class Monopix2Producer(pyeudaq.Producer):
         pyeudaq.Producer.__init__(self, name, runctrl)
 
         self.scan = None
+        self.scan_thread = None
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
 
     def DoInitialise(self):
         print('DoInitialise')
-        # print 'key_a(init) = ', self.GetInitItem("key_a")
-
-    def DoConfigure(self):
-        print('DoConfigure')
-
-        board_ip = self.GetConfigItem("BOARD_IP")
-        testbench_file = self.GetConfigItem("TESTBENCH_FILE")
-        bdaq_conf_file = self.GetConfigItem("BDAQ_CONF_FILE")
+                
+        board_ip = self.GetInitItem("BOARD_IP")
+        testbench_file = self.GetInitItem("TESTBENCH_FILE")
+        bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
 
         bdaq_conf = None
         if bdaq_conf_file:
@@ -141,45 +149,56 @@ class Monopix2Producer(pyeudaq.Producer):
                 bench_conf = yaml.full_load(f)
 
         self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
-        # attentione 'daq_conf' is called 'bdaq_conf' in original bbdaq53
 
         self.scan.init()
-        #self.scan.scan_config['callback'] = self.SendEvent  # I'm shit, do me properly
+
+    def DoConfigure(self):
+        print('DoConfigure')
+
+        self.scan.configure()
+        self.scan.callback = self.build_event
 
     def DoStartRun(self):
         print('DoStartRun')
         self.is_running = 1
-        self.scan.start()
+        self.scan_thread = threading.Thread(target=self.scan.scan)
+        self.scan_thread.start()
 
     def DoStopRun(self):
         print('DoStopRun')
         self.is_running = 0
         self.scan.stop_scan.set()
+        #self.scan.stop_readout()
+        self.scan_thread.join()
 
     def DoReset(self):
         print('DoReset')
         self.is_running = 0
         self.scan.stop_scan.set()
+        self.scan_thread.join()
 
     def RunLoop(self):
         print("Start of RunLoop in Monopix2Producer")
         trigger_n = 0
         while self.is_running:
-            ev = pyeudaq.Event("RawEvent", "sub_name")
-            ev.SetTriggerN(trigger_n)
-            # block = bytes(r'raw_data_string')
-            # ev.AddBlock(0, block)
-            # print ev
-            # Mengqing:
-            datastr = 'raw_data_string'
-            block = bytes(datastr, 'utf-8')
-            ev.AddBlock(0, block)
-            print(ev)
+            # doing nothing special here, different thread is handling FIFO read out and sending data to "build_event"
+            self.sleep(1)
 
-            self.SendEvent(ev)
-            trigger_n += 1
-            time.sleep(1)
         print("End of RunLoop in Monopix2Producer")
+
+    def build_event(self, data):
+        if data.size > 0:
+            print('trying to send event')
+            print('test' + str(data))
+            ev = pyeudaq.Event("RawEvent", "idk")
+            ev.SetTriggerN(self.scan.get_last_trigger())
+            #self.buffer.put(data)
+            block = bytes(data)
+            ev.AddBlock(0, block)
+
+            self.sendEvent(ev)
+        else:
+            print('trtying to send empty data in event')
 
 
 if __name__ == "__main__":
