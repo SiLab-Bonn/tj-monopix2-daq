@@ -10,6 +10,7 @@ import pathlib
 import traceback
 import time
 import yaml
+import os
 
 with open('autoscan.yaml', 'r') as file:
     register_config = yaml.safe_load(file)
@@ -29,6 +30,15 @@ scan_configuration = {
 }
 
 
+# This function looks for processes containing monopix2_producer.py
+# If it finds one, it stalls the scan until it goes away...
+def check_availability():
+    while int(os.popen('ps aux | grep -c "monopix2_producer\.py"').read()) > 0:
+        print("monopix2_producer.py is running - sending SIGUSR1 and waiting for it to be finished")
+        pid = os.popen('ps aux | grep "monopix2_producer\.py"| grep -o "^[a-zA-Z0-9]*\ *[0-9]*"|grep -o "[0-9]*"').read()
+        print(pid)
+        os.popen('kill -USR1 '+pid).read()
+        time.sleep(60)
 
 registers = ['IBIAS', 'VH', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VL', 'VCLIP', 'VCASC', 'IRAM']
 
@@ -108,6 +118,7 @@ if __name__ == "__main__":
             pixogram = np.zeros((512, len(rng)))
             for index, val in enumerate(rng):
                 for retries in range(3):
+                    check_availability()
                     try:
                         ro = register_overrides_default.copy()
                         ro[reg] = val
@@ -118,8 +129,8 @@ if __name__ == "__main__":
                         exit(0)
                     except:
                         traceback.print_exc()
-                        print("Error: retry in a minute...")
-                        time.sleep(60)
+                        print("Error: retry in 10 secs...")
+                        time.sleep(10)
                         print("that has passed: now again ;)")
             np.save("output_data/pixogram_"+reg+".npy", pixogram)
 
