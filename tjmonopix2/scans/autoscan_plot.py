@@ -112,6 +112,8 @@ for f in files:
     else:  # extra column with register information
         extent = (np.min(pxg[-1,:]), np.max(pxg[-1,:]), 511, 0)
     
+    pxg[0:512, :][pxg[0:512, :] > 50] = None
+    
     fig, ax= plt.subplots(5, 1, gridspec_kw={'height_ratios': [224, 224, 32, 32, 5]})
     fig.suptitle(sample+": DAC Parameter scan per Pixel: "+reg)
     slices = [0, 224, 448, 480, 512]
