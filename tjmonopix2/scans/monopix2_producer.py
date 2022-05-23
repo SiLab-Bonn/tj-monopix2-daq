@@ -59,8 +59,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         self.last_trigger = None
 
     def __del__(self):
-        print('destructor')
-        self.close()
+        pass
+        #print('destructor')
+        #self.close()
 
 
     def _configure(self, callback=None, **_):
@@ -170,15 +171,13 @@ class Monopix2Producer(pyeudaq.Producer):
     def DoConfigure(self):
         self.scan.configure()
         self.scan.callback = self.build_event
-        self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS")
+        self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS") == '1'
 
         if self.en_sim_hits:
             print('we simulate')
 
             for reg in self.sim_reg_names:
                 self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
-
-            print('old regs = ', self.init_register_vals)
 
             # the following lines are basically a copy of the register configuration,
             # which is performed in "scan_analog.py"
@@ -254,15 +253,19 @@ class Monopix2Producer(pyeudaq.Producer):
 
     def build_event(self, data):
         last_trigger = self.scan.get_last_trigger()
-        if data.size > 0 and last_trigger:
+        if data.size > 0:
             print('trying to send event')
-            print('data = ',data)
-            print('trigger = ', last_trigger)
-            ev = pyeudaq.Event("RawEvent", "idk")
-            ev.SetTriggerN(last_trigger)
+            print('data = ', data)
+            ev = pyeudaq.Event("RawEvent", "Monopix2RawEvent")
+            if last_trigger:
+                print('trigger = ', last_trigger)
+                ev.SetTriggerN(last_trigger)
+            else:
+                ev.SetTag("No Trigger Number", "1")
+
             block = bytes(data)
             ev.AddBlock(0, block)
-            self.sendEvent(ev)
+            self.SendEvent(ev)
         else:
             print('trying to send empty data in event or no trigger available')
 
