@@ -159,20 +159,25 @@ class ExtTriggerScan(ScanBase):
             self.enable_hitor(True)
             self.daq.enable_tdc_modules()
 
+
         # Configure and start AZ prodecure if SYNC FE is activated. Since only one CMD buffer
         # is available, this has to be done after the configure step. Otherwise AZ command will
         # be overwritten.
-        if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
-            self.log.info('SYNC enabled: Enabling auto-zeroing')
-            self.daq['tlu']['TRIGGER_VETO_SELECT'] = 2  # Veto trigger during AZ procedure
-            az_cmd = self.chip._az_setup(delay=80, repeat=0, width=6, synch=6)  # Configure AZ procedure
-            self.chip._az_start()  # Start AZ procedure
 
-        # Sanity check: Check if AZ CMD is loaded into CMD, otherwise SYNC FE will get stuck
-        if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
-            cmd_data = self.daq['cmd'].get_data()[:len(az_cmd)].tolist()
-            if cmd_data != az_cmd:
-                self.log.warning('AZ CMD is not properly loaded into CMD!')
+        # this is only for chip_type 'rd53a' we (hopefully) don't need it
+        # is crashing with TJMonopix2 (no 'chip_type' field)
+
+        # if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
+        #     self.log.info('SYNC enabled: Enabling auto-zeroing')
+        #     self.daq['tlu']['TRIGGER_VETO_SELECT'] = 2  # Veto trigger during AZ procedure
+        #     az_cmd = self.chip._az_setup(delay=80, repeat=0, width=6, synch=6)  # Configure AZ procedure
+        #     self.chip._az_start()  # Start AZ procedure
+        #
+        # # Sanity check: Check if AZ CMD is loaded into CMD, otherwise SYNC FE will get stuck
+        # if any(x in range(0, 128) for x in range(start_column, stop_column)) and self.chip.chip_type.lower() == 'rd53a':
+        #     cmd_data = self.daq['cmd'].get_data()[:len(az_cmd)].tolist()
+        #     if cmd_data != az_cmd:
+        #         self.log.warning('AZ CMD is not properly loaded into CMD!')
 
         if scan_timeout:
             self.pbar = tqdm(total=scan_timeout, unit='')  # [s]
@@ -263,9 +268,6 @@ class ExtTriggerScan(ScanBase):
         super(ExtTriggerScan, self).handle_data(data_tuple)
 
         raw_data = data_tuple[0]
-
-        print('ext trigger handling')
-        print(raw_data)
 
         if self.min_spec_occupancy:
             self.data.hist_occ.add(raw_data)
