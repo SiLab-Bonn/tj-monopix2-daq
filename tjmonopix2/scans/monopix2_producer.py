@@ -3,23 +3,27 @@
 import ctypes
 import time
 
-import pyeudaq
 
 import numpy as np
-# import tables as tb
+#import tables as tb
 from tqdm import tqdm
 import yaml
 import threading
+import signal
+import os
+import time
+
+import pyeudaq
 
 from tjmonopix2.system import logger
 from tjmonopix2.scans import scan_ext_trigger
 from tjmonopix2.analysis import analysis_utils as au
 
 scan_configuration = {
-    'start_column': 128,
-    'stop_column': 264,
+    'start_column': 0,
+    'stop_column': 512,
     'start_row': 0,
-    'stop_row': 192,
+    'stop_row': 512,
 
     'scan_timeout': False,
     # timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
@@ -54,6 +58,11 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         self.last_readout_data = None
         self.last_trigger = None
 
+    def __del__(self):
+        print('destructor')
+        self.close()
+
+
     def _configure(self, callback=None, **_):
         super(EudaqScan, self)._configure(**_)
 
@@ -78,9 +87,12 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             actual_data = raw_data
 
         trg_idx = np.where(actual_data & au.TRIGGER_HEADER > 0)[0]
+
+        print('trg idx ', trg_idx)
+
         trigger_data = np.split(actual_data, trg_idx)
 
-        print('trigger')
+        print('trigger_data ', trigger_data)
         print(trigger_data)
 
         # Send data of each trigger
@@ -102,7 +114,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                 print('we did get data, callback = ')
                 print(self.callback)
 
-
         self.last_readout_data = trigger_data[-1]
 
     def _scan(self, start_column=0, stop_column=400, scan_timeout=10, max_triggers=False, min_spec_occupancy=False,
@@ -118,18 +129,18 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
 class Monopix2Producer(pyeudaq.Producer):
     def __init__(self, name, runctrl):
-        # pyeudaq.Producer.__init__(self, 'PyProducer', name, runctrl)
         pyeudaq.Producer.__init__(self, name, runctrl)
 
         self.scan = None
-        self.scan_thread = None
+        self.thread_sim = None
+        self.thread_scan = None
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
 
     def DoInitialise(self):
-        print('DoInitialise')
-                
+        self.check_availability()
+
         board_ip = self.GetInitItem("BOARD_IP")
         testbench_file = self.GetInitItem("TESTBENCH_FILE")
         bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
@@ -153,52 +164,96 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.init()
 
     def DoConfigure(self):
-        print('DoConfigure')
-
         self.scan.configure()
         self.scan.callback = self.build_event
+
+        if self.GetConfigItem("SIMULATE_HITS") == '1':
+            print('we simulate')
+
+            # the following lines are basically a copy of the register configuration,
+            # which is performed in "scan_analog.py"
+            # the values are chosen so the pixel already fire from noise alone
+            # this way we definitely should get hits, data might be trash, yes,
+            # but at least something we can investigate event building with
+
+            self.scan.chip.registers["VL"].write(30)
+            self.scan.chip.registers["VH"].write(150)
+
+            self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+
+            self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
+
+            self.scan.chip.registers["ITHR"].write(20)
+            self.scan.chip.registers["IBIAS"].write(200)
+            self.scan.chip.registers["VCASP"].write(40)
+            self.scan.chip.registers["ICASN"].write(8)
+            self.scan.chip.registers["VRESET"].write(125)
+
+            start_column = 0
+            stop_column = 512
+            start_row = 0
+            stop_row = 512
+
+            self.scan.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
+
+            self.scan.chip.masks.apply_disable_mask()
+            self.scan.chip.masks.update(force=True)
+
 
     def DoStartRun(self):
         print('DoStartRun')
         self.is_running = 1
-        self.scan_thread = threading.Thread(target=self.scan.scan)
-        self.scan_thread.start()
+        self.thread_scan = threading.Thread(target=self.scan.scan)
+        self.thread_scan.start()
+
 
     def DoStopRun(self):
         print('DoStopRun')
         self.is_running = 0
         self.scan.stop_scan.set()
-        #self.scan.stop_readout()
-        self.scan_thread.join()
+        self.thread_scan.join()
 
     def DoReset(self):
         print('DoReset')
         self.is_running = 0
-        self.scan.stop_scan.set()
-        self.scan_thread.join()
+        if self.scan:
+            self.scan.stop_scan.set()
+            self.scan.close()
+        if self.thread_scan and self.is_running:
+            self.thread_scan.join()
+        if self.thread_sim:
+            self.thread_sim.join()
 
     def RunLoop(self):
         print("Start of RunLoop in Monopix2Producer")
         trigger_n = 0
         while self.is_running:
             # doing nothing special here, different thread is handling FIFO read out and sending data to "build_event"
-            self.sleep(1)
+            time.sleep(1)
 
         print("End of RunLoop in Monopix2Producer")
 
     def build_event(self, data):
-        if data.size > 0:
+        last_trigger = self.scan.get_last_trigger()
+        if data.size > 0 and last_trigger:
             print('trying to send event')
-            print('test' + str(data))
+            print('data = ',data)
+            print('trigger = ', last_trigger)
             ev = pyeudaq.Event("RawEvent", "idk")
-            ev.SetTriggerN(self.scan.get_last_trigger())
-            #self.buffer.put(data)
+            ev.SetTriggerN(last_trigger)
             block = bytes(data)
             ev.AddBlock(0, block)
-
             self.sendEvent(ev)
         else:
-            print('trtying to send empty data in event')
+            print('trying to send empty data in event or no trigger available')
+
+    def check_availability(self):
+        if int(os.popen('ps aux | grep -c "autoscan\\.py"').read()) > 0:
+            print("autoscan.py is running - waiting for SIGUSR1...")
+            signal.pause()
+            self.check_availability()
+
+        print("free now...")
 
 
 if __name__ == "__main__":
