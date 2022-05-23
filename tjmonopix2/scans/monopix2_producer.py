@@ -128,12 +128,16 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
 
 class Monopix2Producer(pyeudaq.Producer):
+    sim_reg_names = ["VL", "VH", "SEL_PULSE_EXT_CONF", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET"]
+
     def __init__(self, name, runctrl):
         pyeudaq.Producer.__init__(self, name, runctrl)
 
+        self.en_sim_hits = None
         self.scan = None
         self.thread_sim = None
         self.thread_scan = None
+        self.init_register_vals = {}
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -166,9 +170,15 @@ class Monopix2Producer(pyeudaq.Producer):
     def DoConfigure(self):
         self.scan.configure()
         self.scan.callback = self.build_event
+        self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS")
 
-        if self.GetConfigItem("SIMULATE_HITS") == '1':
+        if self.en_sim_hits:
             print('we simulate')
+
+            for reg in self.sim_reg_names:
+                self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
+
+            print('old regs = ', self.init_register_vals)
 
             # the following lines are basically a copy of the register configuration,
             # which is performed in "scan_analog.py"
@@ -199,22 +209,28 @@ class Monopix2Producer(pyeudaq.Producer):
             self.scan.chip.masks.apply_disable_mask()
             self.scan.chip.masks.update(force=True)
 
-
     def DoStartRun(self):
         print('DoStartRun')
         self.is_running = 1
         self.thread_scan = threading.Thread(target=self.scan.scan)
         self.thread_scan.start()
 
-
     def DoStopRun(self):
         print('DoStopRun')
         self.is_running = 0
+
+        if self.en_sim_hits:
+            self.reset_registers()
+
         self.scan.stop_scan.set()
         self.thread_scan.join()
 
     def DoReset(self):
         print('DoReset')
+
+        if self.en_sim_hits:
+            self.reset_registers()
+
         self.is_running = 0
         if self.scan:
             self.scan.stop_scan.set()
@@ -223,6 +239,9 @@ class Monopix2Producer(pyeudaq.Producer):
             self.thread_scan.join()
         if self.thread_sim:
             self.thread_sim.join()
+
+            self.scan = None
+            self.thread_scan = None
 
     def RunLoop(self):
         print("Start of RunLoop in Monopix2Producer")
@@ -254,6 +273,15 @@ class Monopix2Producer(pyeudaq.Producer):
             self.check_availability()
 
         print("free now...")
+
+    def reset_registers(self):
+        # we want to reset the registers to the default values when closing
+        # they might have been set to different values.
+        # calling scan.init() on a chip with already set registers might result in a high current on the 1V8 line
+        if self.init_register_vals:
+            for reg in self.init_register_vals.keys():
+                val = self.init_register_vals[reg]
+                self.scan.chip.registers[reg].write(val)
 
 
 if __name__ == "__main__":
