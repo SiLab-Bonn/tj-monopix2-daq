@@ -99,7 +99,47 @@ for f in files:
     
     #print(df)
     
+    
+    
+    
+    
 files = glob.glob(os.path.join(basepath,'pixogram*.npy'))
+for f in files:
+    reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between second '_' and '.')
+    print('pixoplot: ', reg)
+    
+    pxg = np.load(f)
+    
+    if len(pxg[:,0]) == 512:
+        extent = (50, 255, 511, 0)
+    else:  # extra column with register information
+        extent = (np.min(pxg[-1,:]), np.max(pxg[-1,:]), 511, 0)
+    xvalues = pxg[-1,:]
+    pxg[0:512, :][pxg[0:512, :] > 50] = None
+    
+    # multiple 1D plots overlayed
+    fig, ax= plt.subplots()
+    fig.suptitle(sample+": DAC Parameter scan per Pixel: "+reg)
+    
+    slices = [0, 224, 448, 480, 512]
+    ylabels = 'Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE', 'HV FE', 
+    
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color'] 
+    
+    for i in range(4):
+        for col in range(slices[i], slices[i+1]):
+            if col%30 == 0:
+                ax.plot(xvalues, pxg[col,:], '-+', linewidth=0.5, color=colors[i], alpha=0.5)
+    
+    ax.grid()
+    
+    plt.tight_layout()
+    
+    
+    plt.savefig(os.path.join(basepath,"pixoplot_"+reg+".png"))
+    
+    
 plt.rcParams['figure.figsize'] = 7, 12
 for f in files:
     reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between second '_' and '.')
@@ -111,9 +151,11 @@ for f in files:
         extent = (50, 255, 511, 0)
     else:  # extra column with register information
         extent = (np.min(pxg[-1,:]), np.max(pxg[-1,:]), 511, 0)
-    
+    xvalues = pxg[-1,:]
     pxg[0:512, :][pxg[0:512, :] > 50] = None
     
+    
+    # the 2D plot with color-code:
     fig, ax= plt.subplots(5, 1, gridspec_kw={'height_ratios': [224, 224, 32, 32, 5]})
     fig.suptitle(sample+": DAC Parameter scan per Pixel: "+reg)
     slices = [0, 224, 448, 480, 512]
@@ -143,9 +185,10 @@ for f in files:
      verticalalignment='top',
      transform = ax[4].transAxes)
     
-    
-    
-    
     plt.savefig(os.path.join(basepath,"pixogram_"+reg+".png"))
+    
+    
+    
+    
     
 
