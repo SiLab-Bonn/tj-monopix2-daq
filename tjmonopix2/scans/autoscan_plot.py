@@ -133,7 +133,19 @@ for f in files:
                 ax.plot(xvalues, pxg[col,:], '-+', linewidth=0.5, color=colors[i], alpha=0.5)
     
     ax.grid()
+    ax.set_ylabel("Injected hits")
     
+    ax.text(0.9, -0.15, commit,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax.transAxes)
+     
+    ax.text(0.1, -0.15, register_text, size=6,
+     horizontalalignment='center',
+     verticalalignment='top',
+     transform = ax.transAxes)
+    
+    ax.set_xlabel(reg + " / LSBs")
     plt.tight_layout()
     
     
