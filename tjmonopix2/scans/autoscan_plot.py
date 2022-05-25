@@ -12,6 +12,7 @@ basepath="output_data"
 
 commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation
 
+lsb_to_electrons = 230e-18/1.6022e-19 * 1.8/256  # electrons/LSB
 
 with open('autoscan.yaml', 'r') as file:
     register_config = yaml.safe_load(file)
@@ -95,6 +96,14 @@ for f in files:
     
     ax[0].text(x=defaults[reg], y=0.3, s="default value", rotation=90, size=8, color='green',horizontalalignment='right',)
     
+    
+    if reg == 'VH':
+        VL = df['VL'][0]
+        functions=(lambda x: (x-VL)*lsb_to_electrons, lambda x: (x-VL)*lsb_to_electrons) 
+        secax = ax[0].secondary_xaxis(location='top', functions=functions)
+        secax.set_xlabel('injected charge / electrons')
+    
+    plt.tight_layout()
     plt.savefig(os.path.join(basepath,"hiteff_"+reg+".png"))
     
     #print(df)
