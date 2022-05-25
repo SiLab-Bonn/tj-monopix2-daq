@@ -1,11 +1,7 @@
 #! /usr/bin/env python
 # load binary lib/pyeudaq.so
-import ctypes
-import time
-
-
 import numpy as np
-#import tables as tb
+# import tables as tb
 from tqdm import tqdm
 import yaml
 import threading
@@ -39,7 +35,7 @@ scan_configuration = {
 
     # Trigger configuration
     'bench': {'TLU': {
-        'TRIGGER_MODE': 2, # for AIDA-TLU  v1E with DUTMaskMode 'EUDET' a value of '2' is needed
+        'TRIGGER_MODE': 2,  # for AIDA-TLU  v1E with DUTMaskMode 'EUDET' a value of '2' is needed
         # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple
         # handshake (2), TLU data handshake (3)
         'TRIGGER_SELECT': 0,  # Selecting trigger input: HitOR (1), disabled (0)
@@ -59,12 +55,12 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
     def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
         super().__init__(daq_conf, bench_config, scan_config, scan_config_per_chip, suffix)
         self.last_readout_data = None
-        self.last_trigger = None
+        self.last_trigger = 0
 
     def __del__(self):
         pass
-        #print('destructor')
-        #self.close()
+        # print('destructor')
+        # self.close()
 
     def _configure(self, callback=None, **_):
         super(EudaqScan, self)._configure(**_)
@@ -81,22 +77,21 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
         raw_data = data_tuple[0]
 
-        print('handling data raw:')
-        print(raw_data)
 
         if np.any(self.last_readout_data):  # no last readout data for first readout
             actual_data = np.concatenate((self.last_readout_data, raw_data))
         else:
             actual_data = raw_data
 
-        trg_idx = np.where(actual_data & au.TRIGGER_HEADER > 0)[0]
-
-        print('trg idx ', trg_idx)
+        trg_idx = np.where(np.bitwise_and(actual_data, au.TRIGGER_HEADER) > 0)[0]
 
         trigger_data = np.split(actual_data, trg_idx)
 
-        print('trigger_data ', trigger_data)
-        print(trigger_data)
+        if trigger_data[0].size == 0:
+            # if the first word is already a trigger word delete it,
+            # this is nonsense with 'real' data, but useful when using
+            # internal-triggers of TLU (without hits at the chip) to test stuff
+            del trigger_data[0]
 
         # Send data of each trigger
         for dat in trigger_data[:-1]:
@@ -104,7 +99,10 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             # Split can return empty data, thus do not return send empty data
             # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
             if np.any(dat):
-                trigger = dat[0] & au.TRG_MASK
+
+                # remove header to extract actual triggerNmb
+                trigger = np.bitwise_and(dat[0], au.TRG_MASK)
+
                 if self.last_trigger > 0 and trigger != self.last_trigger + 1:  # Trigger number jump
                     if (self.last_trigger + 1) == (
                             trigger >> 1):  # Measured trigger number is exactly shifted by 1 bit, due to glitch
@@ -113,7 +111,7 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                         self.log.warning('Expected != Measured trigger number: %d != %d', self.last_trigger + 1,
                                          trigger)
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
-                self.callback(dat)
+                self.callback(dat[1:])  # don't send 1st word, is trigger number, got already processed
 
         self.last_readout_data = trigger_data[-1]
 
@@ -144,7 +142,7 @@ class Monopix2Producer(pyeudaq.Producer):
         print('New instance of Monopix2Producer')
 
     def DoInitialise(self):
-        self.check_availability()
+        # self.check_availability()
 
         board_ip = self.GetInitItem("BOARD_IP")
         testbench_file = self.GetInitItem("TESTBENCH_FILE")
@@ -256,11 +254,9 @@ class Monopix2Producer(pyeudaq.Producer):
     def build_event(self, data):
         last_trigger = self.scan.get_last_trigger()
         if data.size > 0:
-            print('trying to send event')
-            print('data = ', data)
             ev = pyeudaq.Event("RawEvent", "Monopix2RawEvent")
             if last_trigger:
-                print('trigger = ', last_trigger)
+                #print('trigger = ', last_trigger)
                 ev.SetTriggerN(last_trigger)
             else:
                 ev.SetTag("No Trigger Number", "1")
@@ -268,6 +264,7 @@ class Monopix2Producer(pyeudaq.Producer):
             block = bytes(data)
             ev.AddBlock(0, block)
             self.SendEvent(ev)
+            print(f'sending event with block size = {len(block)} and trigger# = {last_trigger}')
         else:
             print('trying to send empty data in event or no trigger available')
 
