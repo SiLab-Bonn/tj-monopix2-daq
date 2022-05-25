@@ -34,15 +34,18 @@ scan_configuration = {
     'trigger_delay': 57,  # trigger delay in units of 25 ns (BCs)
     'trigger_length': 32,  # length of trigger command (amount of consecutive BCs are read out)
     'veto_length': 210,
-    # length of TLU veto in units of 25 ns (BCs). This vetos new triggers while not all data is revieved. Should be adjusted for longer trigger length.
+    # length of TLU veto in units of 25 ns (BCs). This vetos new triggers while not all data is revieved.
+    # Should be adjusted for longer trigger length.
 
     # Trigger configuration
     'bench': {'TLU': {
-        'TRIGGER_MODE': 3,
-        # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
+        'TRIGGER_MODE': 2, # for AIDA-TLU  v1E with DUTMaskMode 'EUDET' a value of '2' is needed
+        # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple
+        # handshake (2), TLU data handshake (3)
         'TRIGGER_SELECT': 0,  # Selecting trigger input: HitOR (1), disabled (0)
         'TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES': 20
-        # TLU trigger minimum length in TLU clock cycles. Change default here in order to ignore glitches from buggy original TLU FW.
+        # TLU trigger minimum length in TLU clock cycles. Change default here in order to ignore glitches from buggy
+        # original TLU FW.
     }
     }
 }
@@ -62,7 +65,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         pass
         #print('destructor')
         #self.close()
-
 
     def _configure(self, callback=None, **_):
         super(EudaqScan, self)._configure(**_)
@@ -112,8 +114,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                                          trigger)
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
                 self.callback(dat)
-                print('we did get data, callback = ')
-                print(self.callback)
 
         self.last_readout_data = trigger_data[-1]
 
@@ -223,6 +223,8 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.scan.stop_scan.set()
         self.thread_scan.join()
+
+        self.scan.analyze()
 
     def DoReset(self):
         print('DoReset')
