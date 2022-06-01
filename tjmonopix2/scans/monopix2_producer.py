@@ -147,6 +147,24 @@ class Monopix2Producer(pyeudaq.Producer):
         board_ip = self.GetInitItem("BOARD_IP")
         testbench_file = self.GetInitItem("TESTBENCH_FILE")
         bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
+        
+        tmp = self.GetInitItem("START_ROW")
+        if tmp:
+            scan_configuration['start_row'] = int(tmp)
+
+        tmp = self.GetInitItem("STOP_ROW")
+        if tmp:
+            scan_configuration['stop_row'] = int(tmp)
+
+        tmp = self.GetInitItem("START_COLUMN")
+        if tmp:
+            scan_configuration['start_column'] = int(tmp)
+
+        tmp = self.GetInitItem("STOP_COLUMN")
+        if tmp:
+            scan_configuration['stop_column'] = int(tmp)
+
+        print(scan_configuration)
 
         bdaq_conf = None
         if bdaq_conf_file:
@@ -167,9 +185,12 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.init()
 
     def DoConfigure(self):
-        self.scan.configure()
+
         self.scan.callback = self.build_event
         self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS") == '1'
+
+        self.scan.configure()
+
 
         if self.en_sim_hits:
             print('we simulate')
@@ -228,7 +249,8 @@ class Monopix2Producer(pyeudaq.Producer):
         print('DoReset')
 
         if self.en_sim_hits:
-            self.reset_registers()
+            #self.reset_registers()
+            pass
 
         self.is_running = 0
         if self.scan:
