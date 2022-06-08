@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import yaml
 
 
-
+auto_type="autoscan"
 sample="W8R3"
 basepath="output_data"
 
@@ -14,7 +14,7 @@ commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # get
 
 lsb_to_electrons = 230e-18/1.6022e-19 * 1.8/256  # electrons/LSB
 
-with open('autoscan.yaml', 'r') as file:
+with open(auto_type+'.yaml', 'r') as file:
     register_config = yaml.safe_load(file)
 
 
@@ -43,7 +43,7 @@ defaults = {'IBIAS': 50,
             'VCASC': 228,
             'IRAM': 50,}
 
-files = glob.glob(os.path.join(basepath,'autoscan_*.dat'))
+files = glob.glob(os.path.join(basepath, auto_type+'_*.dat'))
 for f in files:
     reg = re.findall("_.*_(.*?)\.", f)[0]  # extract register name (precisely: part between second '_' and '.')
     print('autoscan: ', reg)
@@ -104,7 +104,7 @@ for f in files:
         secax.set_xlabel('injected charge / electrons')
     
     plt.tight_layout()
-    plt.savefig(os.path.join(basepath,"hiteff_"+reg+".png"))
+    plt.savefig(os.path.join(basepath,auto_type+"_hiteff_"+reg+".png"))
     
     #print(df)
     

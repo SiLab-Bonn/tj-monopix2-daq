@@ -4,6 +4,7 @@ import os, glob, re
 import pandas as pd
 import matplotlib.pyplot as plt
 import yaml
+plt.style.use('seaborn-colorblind')
 
 
 auto_type="autosource"
@@ -69,7 +70,6 @@ for f in files:
     df.plot(ax=ax[0], x=reg, y=ys, style='-+')
     
     
-    ax[0].hlines(y=1, xmin=min(df[reg]), xmax=max(df[reg]), colors='red')
     ax[0].vlines(x=defaults[reg], ymin=0, ymax=1, colors='green')
     ax[0].grid()
     
