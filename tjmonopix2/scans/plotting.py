@@ -98,7 +98,7 @@ def plotTot(dir_path, hist_tot):
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files that already exist")
 parser.add_argument("-l", "--last", type=int, default=0, metavar="N", help="Only process the last N files")
-parser.add_argument("--clim", nargs=2, type=float, metavar=["MIN","MAX"], default=[0,5], help="Colorbar limits, default (0,5)")
+parser.add_argument("--clim", nargs=2, type=float, metavar=("MIN","MAX"), default=[0,5], help="Colorbar limits, default (0,5)")
 args = parser.parse_args()
 
 hist_occ_files = glob.glob(path + '/analoge_hist_occ*.npy')
