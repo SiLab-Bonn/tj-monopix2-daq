@@ -6,7 +6,6 @@
 #
 
 import time
-from math import ceil
 
 from tqdm import tqdm
 
@@ -61,7 +60,7 @@ class SourceScan(ScanBase):
                 time.sleep(sleep_time)
                 last_time = now
                 now = time.time()
-                pbar.update(int(ceil(now - last_time)))
+                pbar.update(int(round(now - last_time)))
         pbar.close()
 
         ret = {}
