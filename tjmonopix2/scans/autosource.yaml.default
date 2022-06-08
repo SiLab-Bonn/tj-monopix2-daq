@@ -1,0 +1,93 @@
+
+enable_default: True
+comment: "Source #6 (Sr90, 1 mCi)"
+scan_seconds: 10
+
+register-overrides:
+    ITHR: 30
+    IBIAS: 60
+    ICASN: 8
+    VCASP: 40
+    VRESET: 100
+    VCASC: 150
+    VL: 30
+    VH: 62
+
+1d-scans:
+
+  - register: VCASP
+    enabled: True
+    min: 0
+    max: 160
+    step: 5
+
+  - register: IDB
+    enabled: True
+    min: 80
+    max: 256
+    step: 5
+
+  - register: IBIAS
+    min: 20
+    max: 256
+    step: 10
+
+  - register: VCASC
+    min: 0
+    max: 250
+    step: 20
+
+  - register: ITHR
+    min: 5
+    max: 70
+    step: 5
+
+  - register: VRESET
+    min: 40
+    max: 115
+    step: 5
+
+  - register: ICASN
+    min: 8
+    max: 18
+    step: 1
+
+  - register: ITUNE
+    enabled: True
+    min: 40
+    max: 80
+    step: 5
+
+
+
+
+
+
+
+
+
+  - register: VCLIP
+    enabled: False
+    min: 120
+    max: 256
+    step: 20
+
+
+  - register: ICOMP
+    enabled: False
+    min: 120
+    max: 256
+    step: 20
+
+
+  - register: IDEL
+    enabled: False
+    min: 120
+    max: 256
+    step: 20
+
+  - register: IRAM
+    enabled: False
+    min: 120
+    max: 256
+    step: 20
