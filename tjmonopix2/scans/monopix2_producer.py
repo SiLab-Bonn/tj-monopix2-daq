@@ -96,7 +96,8 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             del trigger_data[0]
 
         # Send data of each trigger
-        for dat in trigger_data[:-1]:
+        for dat in trigger_data[:-1]:  # not processing last trigger, there might be some hits coming up,
+            # belonging to this triggerNmb, in next readout
             glitch_detected = False
             # Split can return empty data, thus do not return send empty data
             # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
@@ -196,6 +197,23 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.scan.configure()
 
+        self.scan.chip.registers["VL"].write(30)
+        self.scan.chip.registers["VH"].write(150)
+        self.scan.chip.registers["ITHR"].write(30)
+        self.scan.chip.registers["IBIAS"].write(60)
+        self.scan.chip.registers["VCASP"].write(40)
+        self.scan.chip.registers["ICASN"].write(8)
+        self.scan.chip.registers["VRESET"].write(142)
+
+        self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+
+        self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
+
+        self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
+
+        self.scan.chip.masks.apply_disable_mask()
+        self.scan.chip.masks.update(force=True)
+
         if self.en_sim_hits:
             print('we simulate')
 
@@ -208,28 +226,20 @@ class Monopix2Producer(pyeudaq.Producer):
             # this way we definitely should get hits, data might be trash, yes,
             # but at least something we can investigate event building with
 
-            self.scan.chip.registers["VL"].write(30)
-            self.scan.chip.registers["VH"].write(150)
 
-            self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+            # self.scan.chip.registers["ITHR"].write(20)
+            # self.scan.chip.registers["IBIAS"].write(200)
+            # self.scan.chip.registers["VCASP"].write(40)
+            # self.scan.chip.registers["ICASN"].write(8)
+            # self.scan.chip.registers["VRESET"].write(125)
+            # self.scan.chip.registers["ITHR"].write(30)
+            # self.scan.chip.registers["IBIAS"].write(60)
+            # self.scan.chip.registers["ICASN"].write(12)
+            # self.scan.chip.registers["VCASP"].write(40)
+            # self.scan.chip.registers["VRESET"].write(100)
+            # self.scan.chip.registers["VCASC"].write(150)
 
-            self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
-            self.scan.chip.registers["ITHR"].write(20)
-            self.scan.chip.registers["IBIAS"].write(200)
-            self.scan.chip.registers["VCASP"].write(40)
-            self.scan.chip.registers["ICASN"].write(8)
-            self.scan.chip.registers["VRESET"].write(125)
-
-            start_column = 0
-            stop_column = 512
-            start_row = 0
-            stop_row = 512
-
-            self.scan.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
-
-            self.scan.chip.masks.apply_disable_mask()
-            self.scan.chip.masks.update(force=True)
 
     def DoStartRun(self):
         print('DoStartRun')
