@@ -8,6 +8,7 @@ import threading
 import signal
 import os
 import time
+import argparse
 
 import pyeudaq
 
@@ -56,6 +57,7 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         super().__init__(daq_conf, bench_config, scan_config, scan_config_per_chip, suffix)
         self.last_readout_data = None
         self.last_trigger = 0
+        self.bdaq_recording = True
 
     def __del__(self):
         pass
@@ -72,8 +74,8 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         Called on every readout (a few Hz)
         Sends data per event by checking for the trigger word that comes first.
         '''
-
-        super(EudaqScan, self).handle_data(data_tuple, receiver)
+        if self.bdaq_recording:
+            super(EudaqScan, self).handle_data(data_tuple, receiver)
 
         raw_data = data_tuple[0]
 
@@ -111,7 +113,7 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                         self.log.warning('Expected != Measured trigger number: %d != %d', self.last_trigger + 1,
                                          trigger)
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
-                self.callback(dat[1:])  # don't send 1st word, is trigger number, got already processed
+                self.callback(dat)
 
         self.last_readout_data = trigger_data[-1]
 
@@ -164,8 +166,6 @@ class Monopix2Producer(pyeudaq.Producer):
         if tmp:
             scan_configuration['stop_column'] = int(tmp)
 
-        print(scan_configuration)
-
         bdaq_conf = None
         if bdaq_conf_file:
             with open(bdaq_conf_file) as f:
@@ -188,9 +188,13 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.scan.callback = self.build_event
         self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS") == '1'
+        tmp = self.GetConfigItem("ENABLE_BDAQ_RECORD")
+        if tmp == '1':
+            self.scan.bdaq_recording = True
+        else:
+            self.scan.bdaq_recording = False
 
         self.scan.configure()
-
 
         if self.en_sim_hits:
             print('we simulate')
@@ -309,7 +313,23 @@ class Monopix2Producer(pyeudaq.Producer):
 
 
 if __name__ == "__main__":
-    producer = Monopix2Producer("monopix2", "tcp://localhost:44000")
+    # Parse program arguments
+    description = "Start EUDAQ producer for Monopix2"
+    parser = argparse.ArgumentParser(prog='monopix2_producer',
+                                     description=description,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-r', metavar='address',
+                        help='Destination address',
+                        default='tcp://localhost:44000',
+                        nargs='?')
+
+    args = parser.parse_args()
+    print(args)
+    print(args.r)
+
+    print('runctrl', args.r)
+
+    producer = Monopix2Producer("monopix2", args.r)
     print("connecting to runcontrol in localhost:44000", )
     producer.Connect()
     time.sleep(2)
