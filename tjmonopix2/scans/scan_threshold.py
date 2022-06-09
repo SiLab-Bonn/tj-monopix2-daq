@@ -6,8 +6,7 @@
 #
 
 from tjmonopix2.analysis import analysis
-from tjmonopix2.scans.shift_and_inject import (get_scan_loop_mask_steps,
-                                               shift_and_inject)
+from tjmonopix2.scans.shift_and_inject import get_scan_loop_mask_steps, shift_and_inject
 from tjmonopix2.system.scan_base import ScanBase
 from tqdm import tqdm
 
@@ -20,8 +19,17 @@ scan_configuration = {
     'n_injections': 100,
     'VCAL_HIGH': 150,
     'VCAL_LOW_start': 140,
-    'VCAL_LOW_stop': 20,
-    'VCAL_LOW_step': -10
+    'VCAL_LOW_stop': 90,
+    'VCAL_LOW_step': -1
+}
+
+register_overrides = {
+    "ITHR": 30,
+    "IBIAS": 60,
+    "ICASN": 8,
+    "VCASP": 40,
+    "VRESET": 100,
+    "VCASC": 150,
 }
 
 
@@ -36,12 +44,8 @@ class ThresholdScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        self.chip.registers["ITHR"].write(30)
-        self.chip.registers["IBIAS"].write(60)
-        self.chip.registers["ICASN"].write(8)
-        self.chip.registers["VCASP"].write(40)
-        self.chip.registers["VRESET"].write(100)
-        self.chip.registers["VCASC"].write(150)
+        for r in self.register_overrides:
+            self.chip.registers[r].write(self.register_overrides[r])
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
@@ -71,5 +75,5 @@ class ThresholdScan(ScanBase):
 
 
 if __name__ == "__main__":
-    with ThresholdScan(scan_config=scan_configuration) as scan:
+    with ThresholdScan(scan_config=scan_configuration, register_overrides=register_overrides) as scan:
         scan.start()
