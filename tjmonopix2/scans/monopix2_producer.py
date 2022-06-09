@@ -78,45 +78,19 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             super(EudaqScan, self).handle_data(data_tuple, receiver)
 
         raw_data = data_tuple[0]
-
-
         if np.any(self.last_readout_data):  # no last readout data for first readout
-            actual_data = np.concatenate((self.last_readout_data, raw_data))
+            data = np.concatenate((self.last_readout_data, raw_data))
         else:
-            actual_data = raw_data
+            data = raw_data
 
-        trg_idx = np.where(np.bitwise_and(actual_data, au.TRIGGER_HEADER) > 0)[0]
+        sof = np.where(np.bitwise_and(data, 0x7FC0000) == 0b110111100000000000000000000)[0]
 
-        trigger_data = np.split(actual_data, trg_idx)
-
-        if trigger_data[0].size == 0:
-            # if the first word is already a trigger word delete it,
-            # this is nonsense with 'real' data, but useful when using
-            # internal-triggers of TLU (without hits at the chip) to test stuff
-            del trigger_data[0]
-
-        # Send data of each trigger
-        for dat in trigger_data[:-1]:  # not processing last trigger, there might be some hits coming up,
-            # belonging to this triggerNmb, in next readout
-            glitch_detected = False
-            # Split can return empty data, thus do not return send empty data
-            # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
-            if np.any(dat):
-
-                # remove header to extract actual triggerNmb
-                trigger = np.bitwise_and(dat[0], au.TRG_MASK)
-
-                if self.last_trigger > 0 and trigger != self.last_trigger + 1:  # Trigger number jump
-                    if (self.last_trigger + 1) == (
-                            trigger >> 1):  # Measured trigger number is exactly shifted by 1 bit, due to glitch
-                        glitch_detected = True
-                    else:
-                        self.log.warning('Expected != Measured trigger number: %d != %d', self.last_trigger + 1,
-                                         trigger)
-                self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
-                self.callback(dat)
-
-        self.last_readout_data = trigger_data[-1]
+        packed_data = np.split(data, sof)
+        print('sof ', sof)
+        print('pack ', packed_data)
+        for dat in packed_data[:-1]:
+            self.callback(dat)
+        self.last_readout_data = packed_data[-1]
 
     def _scan(self, start_column=0, stop_column=400, scan_timeout=10, max_triggers=False, min_spec_occupancy=False,
               fraction=0.99, use_tdc=False, **_):
@@ -204,6 +178,13 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.chip.registers["VCASP"].write(40)
         self.scan.chip.registers["ICASN"].write(8)
         self.scan.chip.registers["VRESET"].write(142)
+
+        self.scan.chip.registers["CMOS_TX_EN_CONF"].write(1)
+
+        # Enable HITOR on all columns, no rows
+        for i in range(512 // 16):
+            self.scan.chip._write_register(18 + i, 0xffff)
+            self.scan.chip._write_register(50 + i, 0xffff)
 
         self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
