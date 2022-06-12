@@ -1,6 +1,7 @@
 import os
 import argparse
 import glob
+from math import sqrt
 import tables as tb
 import numpy as np
 from tqdm import tqdm
@@ -8,8 +9,10 @@ from tqdm import tqdm
 CLS_DTYPE = np.dtype([
     ("timestamp", "i8"),
     ("n_pixels", "i4"),
-    ("mean_col", "f4"),
-    ("mean_row", "f4"),
+    ("mean_col", "f4"),  # ToT-weighted mean of the columns
+    ("std_col", "f4"),  # Sample standard deviation of the columns
+    ("mean_row", "f4"),  # Same as above, but with the rows
+    ("std_row", "f4"),  # Same as above, but with the rows
     ("sum_tot", "i4")])
 
 path = os.path.dirname(__file__)
@@ -44,10 +47,12 @@ for ifp in input_files:
 
         # Clusterize
         first = True
-        for row in tqdm(in_file.root.Dut.iterrows(), unit="hits", total=in_file.root.Dut.nrows):
+        for row in tqdm(in_file.root.Dut.iterrows(), unit="hits", total=in_file.root.Dut.nrows, unit_scale=True):
             if first or row["timestamp"] != cls_table.row["timestamp"]:
                 # Write cluster
                 if not first:
+                    cls_table.row["std_col"] = sqrt(var_col)
+                    cls_table.row["std_row"] = sqrt(var_row)
                     cls_table.row.append()
                 first = False
                 # Reset cluster info
@@ -55,14 +60,32 @@ for ifp in input_files:
                 cls_table.row["n_pixels"] = 0
                 cls_table.row["mean_col"] = 0
                 cls_table.row["mean_row"] = 0
+                cls_table.row["std_row"] = 0
                 cls_table.row["sum_tot"] = 0
+                var_col, var_row = 0, 0
             # Update cluster info
             cls_table.row["n_pixels"] += 1
+            # sum of ToT, which is also needed in the weighted means
             tot = (row["te"] - row["le"]) & 0x7f
+            sum_tot_prev = cls_table.row["sum_tot"]
             cls_table.row["sum_tot"] += tot
-            if cls_table.row["sum_tot"]:
-                cls_table.row["mean_col"] += tot * (row["col"] - cls_table.row["mean_col"]) / cls_table.row["sum_tot"]
-                cls_table.row["mean_row"] += tot * (row["row"] - cls_table.row["mean_row"]) / cls_table.row["sum_tot"]
+            # (weighted) mean col and row https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+            if tot and cls_table.row["sum_tot"]:
+                mean_col_prev = cls_table.row["mean_col"]
+                mean_row_prev = cls_table.row["mean_row"]
+                cls_table.row["mean_col"] += \
+                    tot * (row["col"] - cls_table.row["mean_col"]) / cls_table.row["sum_tot"]
+                cls_table.row["mean_row"] += \
+                    tot * (row["row"] - cls_table.row["mean_row"]) / cls_table.row["sum_tot"]
+                if sum_tot_prev:
+                    var_col += tot * (row["col"] - mean_col_prev)**2 / cls_table.row["sum_tot"] \
+                        - cls_table.row["std_col"] / sum_tot_prev
+                    var_row += tot * (row["row"] - mean_row_prev)**2 / cls_table.row["sum_tot"] \
+                        - cls_table.row["std_row"] / sum_tot_prev
+        # Write last cluster
         if cls_table.row["n_pixels"]:
+            cls_table.row["std_col"] = sqrt(var_col)
+            cls_table.row["std_row"] = sqrt(var_row)
             cls_table.row.append()
+        # Save data to disk
         cls_table.flush()
