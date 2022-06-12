@@ -46,16 +46,16 @@ def plotTot(dir_path, hist_tot):
 
     fig, ax= plt.subplots()
 
-    col , row = 100,100
+    #col , row = 100,100
     bins = np.linspace(1,127,128)
-    heights = tot[col][row][0]
+    heights = np.sum(tot[480:], axis=(0,1,2))
     #print("bins shape", bins.shape, "heights shape", heights.shape)
     mean = np.dot(bins,heights)/(np.sum(heights))
 
-    ax.plot(tot[col][row][0])
+    ax.plot(heights)
     ax.set_xlabel('tot values uncalibrated')
     ax.set_ylabel("count")
-    plt.figtext(0.5,0.85,"pixel {},{} mean tot={:.1f}".format(col,row,mean))
+    # plt.figtext(0.5,0.85,"pixel {},{} mean tot={:.1f}".format(col,row,mean))
     #plt.show()
     plt.savefig(os.path.join(dir_path, basename+".png"))
 
@@ -99,7 +99,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--overwrite", action="store_true", help="Overwrite files that already exist")
 parser.add_argument("-l", "--last", type=int, default=0, metavar="N", help="Only process the last N files")
 parser.add_argument("--clim", nargs=2, type=float, metavar=("MIN","MAX"), default=[0,5], help="Colorbar limits, default (0,5)")
+parser.add_argument("-d", "--directory", default=path, help=f"Directory with the npy files (default {path}).")
 args = parser.parse_args()
+path = args.directory
 
 hist_occ_files = glob.glob(path + '/analoge_hist_occ*.npy')
 hist_occ_files.sort()
