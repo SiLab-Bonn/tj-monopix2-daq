@@ -70,12 +70,8 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         self.last_readout_data = np.array([], dtype=np.uint32)
 
     def handle_data(self, data_tuple, receiver=None):
-        '''
-        Called on every readout (a few Hz)
-        Sends data per event by checking for the trigger word that comes first.
-        '''
-        if self.bdaq_recording:
-            super(EudaqScan, self).handle_data(data_tuple, receiver)
+
+        super(EudaqScan, self).handle_date(data_tuple, receiver=None)
 
         raw_data = data_tuple[0]
         if np.any(self.last_readout_data):  # no last readout data for first readout
@@ -84,13 +80,10 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             data = raw_data
 
         sof = np.where(np.bitwise_and(data, 0x7FC0000) == 0b110111100000000000000000000)[0]
-
-        packed_data = np.split(data, sof)
-        print('sof ', sof)
-        print('pack ', packed_data)
-        for dat in packed_data[:-1]:
-            self.callback(dat)
-        self.last_readout_data = packed_data[-1]
+        split = np.split(data,sof)
+        for dat in split[0:-1]:
+            self.callback[dat]
+        self.last_readout_data = split[-1]
 
     def _scan(self, start_column=0, stop_column=400, scan_timeout=10, max_triggers=False, min_spec_occupancy=False,
               fraction=0.99, use_tdc=False, **_):
@@ -117,6 +110,120 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
+
+    def DoInitialise(self):
+        # self.check_availability()
+
+        board_ip = self.GetInitItem("BOARD_IP")
+        testbench_file = self.GetInitItem("TESTBENCH_FILE")
+        bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
+        
+        self.board_ip = board_ip
+        self.testbench_file = testbench_file
+        self.bdaq_conf_file = bdaq_conf_file
+
+        self.START_ROW = self.GetInitItem("START_ROW")
+        self.STOP_ROW = self.GetInitItem("STOP_ROW")
+        self.START_COLUMN = self.GetInitItem("START_COLUMN")
+        self.STOP_COLUMN = self.GetInitItem("STOP_ROW")
+
+    def DoConfigure(self):
+        print('DoConfigure')
+        self.en_sim_hits = self.GetConfigItem("SIMULATE_HITS") == '1'
+        self.ENABLE_BDAQ_RECORD = self.GetConfigItem("ENABLE_BDAQ_RECORD")
+
+    def DoStartRun(self):
+        print('DoStartRun')
+        if self.START_ROW:
+            scan_configuration['start_row'] = int(self.START_ROW)
+        if self.STOP_ROW:
+            scan_configuration['stop_row'] = int(self.STOP_ROW)
+        if self.START_COLUMN:
+            scan_configuration['start_column'] = int(self.START_COLUMN)
+        if self.STOP_COLUMN:
+            scan_configuration['stop_column'] = int(self.STOP_COLUMN)
+
+        bdaq_conf = None
+        if self.bdaq_conf_file:
+            with open(self.bdaq_conf_file) as f:
+                bdaq_conf = yaml.full_load(f)
+
+            if self.board_ip:
+                # override values for more comfortable usage with eudaq
+                bdaq_conf['transfer_layer'][0]['init']['ip'] = self.board_ip
+
+        bench_conf = None
+        if self.testbench_file:
+            with open(self.testbench_file) as f:
+                bench_conf = yaml.full_load(f)
+
+        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
+        self.scan.init()
+        ######################################
+
+        self.scan.callback = self.build_event
+
+        if self.ENABLE_BDAQ_RECORD == '1':
+            self.scan.bdaq_recording = True
+        else:
+            self.scan.bdaq_recording = False
+
+        self.scan.configure()
+
+        self.scan.chip.registers["VL"].write(30)
+        self.scan.chip.registers["VH"].write(150)
+        self.scan.chip.registers["ITHR"].write(30)
+        self.scan.chip.registers["IBIAS"].write(60)
+        self.scan.chip.registers["VCASP"].write(40)
+        self.scan.chip.registers["ICASN"].write(8)
+        self.scan.chip.registers["VRESET"].write(95)
+
+        self.scan.chip.registers["CMOS_TX_EN_CONF"].write(1)
+
+        # Enable HITOR on all columns, no rows
+        for i in range(512 // 16):
+            self.scan.chip._write_register(18 + i, 0xffff)
+            self.scan.chip._write_register(50 + i, 0xffff)
+
+        self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+
+        self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
+
+        self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
+
+        self.scan.chip.masks.apply_disable_mask()
+        self.scan.chip.masks.update(force=True)
+
+        if self.en_sim_hits:
+            print('we simulate')
+
+            for reg in self.sim_reg_names:
+                self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
+
+            # the following lines are basically a copy of the register configuration,
+            # which is performed in "scan_analog.py"
+            # the values are chosen so the pixel already fire from noise alone
+            # this way we definitely should get hits, data might be trash, yes,
+            # but at least something we can investigate event building with
+
+
+            # self.scan.chip.registers["ITHR"].write(20)
+            # self.scan.chip.registers["IBIAS"].write(200)
+            # self.scan.chip.registers["VCASP"].write(40)
+            # self.scan.chip.registers["ICASN"].write(8)
+            # self.scan.chip.registers["VRESET"].write(125)
+            # self.scan.chip.registers["ITHR"].write(30)
+            # self.scan.chip.registers["IBIAS"].write(60)
+            # self.scan.chip.registers["ICASN"].write(12)
+            # self.scan.chip.registers["VCASP"].write(40)
+            # self.scan.chip.registers["VRESET"].write(100)
+            # self.scan.chip.registers["VCASC"].write(150)
+        ######################################
+
+        self.is_running = 1
+        self.thread_scan = threading.Thread(target=self.scan.scan)
+        self.thread_scan.start()
+    '''
 
     def DoInitialise(self):
         # self.check_availability()
@@ -179,13 +286,6 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.chip.registers["ICASN"].write(8)
         self.scan.chip.registers["VRESET"].write(142)
 
-        self.scan.chip.registers["CMOS_TX_EN_CONF"].write(1)
-
-        # Enable HITOR on all columns, no rows
-        for i in range(512 // 16):
-            self.scan.chip._write_register(18 + i, 0xffff)
-            self.scan.chip._write_register(50 + i, 0xffff)
-
         self.scan.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
@@ -227,7 +327,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.is_running = 1
         self.thread_scan = threading.Thread(target=self.scan.scan)
         self.thread_scan.start()
-
+    '''
     def DoStopRun(self):
         print('DoStopRun')
         self.is_running = 0
