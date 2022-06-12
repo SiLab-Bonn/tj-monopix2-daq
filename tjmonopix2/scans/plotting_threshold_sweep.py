@@ -4,6 +4,10 @@ import matplotlib as ml
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import os
+from tqdm import tqdm
+
+start_row = 482
+end_row=483
 
 path = "threshold_sweep"
 file_list=['20220609_183251_threshold_scan',
@@ -26,9 +30,9 @@ def fit_s_curve(i,j, color=None,label=None):
     ydata=arr[i,j]
     p0 = [max(ydata)-min(ydata), xdata[min([(i, abs(ydata[i] - ((max(ydata) + min(ydata)) / 2))) for i in range(len(ydata))], key=lambda x: x[1])[0]] ,1,min(ydata)] # this is an mandatory initial guess
     popt, pcov = curve_fit(sigmoid, xdata, ydata,p0, method='dogbox')
-    y = sigmoid(x, *popt)
+    y = sigmoid(xdata, *popt)
     plt.plot(xdata,ydata, 'o', c=color)
-    plt.plot(x,y, c=color)
+    plt.plot(xdata,y, c=color)
 
     plt.xlabel("Charge injected in e-")
     plt.ylabel("#hits")
@@ -36,8 +40,6 @@ def fit_s_curve(i,j, color=None,label=None):
 def gaus(x,a,x0,sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))
     
-
-a=482
 
 fig, (ax, cbar_ax) = plt.subplots(nrows=2, figsize=(10, 6), gridspec_kw={'height_ratios': [5, 1]})
 cmap = plt.cm.viridis
@@ -63,7 +65,7 @@ s_curve_k = np.zeros(shape=(512, 512,len(file_list)))
 s_curve_L = np.zeros(shape=(512, 512,len(file_list)))
 s_curve_b = np.zeros(shape=(512, 512,len(file_list)))
 
-for k, file in enumerate(file_list):
+for k, file in enumerate(tdqm(file_list)):
     h5file = tb.open_file(os.path.join(path,file+'_interpreted.h5'), mode="r", title='configuration_in')
     cfg = {str(a, encoding="utf8"): int(b) for a, b in h5file.root.configuration_in.scan.scan_config[:]}
     vh = cfg["VCAL_HIGH"]
@@ -106,7 +108,7 @@ list_gauss_sigma=[]
 for i in range(len(file_list)):
     plt.figure()
     
-    flatt= s_curve_x0[a:a+1,:,i].flatten(order='C')
+    flatt= s_curve_x0[start_row:end_row,:,i].flatten(order='C')
 
     n, bins, patches = plt.hist(flatt, bins=100)
     bins_centered=(bins[:-1] + bins[1:])/2
