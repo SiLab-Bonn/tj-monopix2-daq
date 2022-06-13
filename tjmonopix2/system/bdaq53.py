@@ -197,6 +197,12 @@ class BDAQ53(Dut):
         self['tlu_veto'].set_delay(veto_length)
         self['tlu_veto'].set_repeat(1)
 
+    def configure_cmd_loop_start_pulse(self, width=8, delay=140):
+        self['pulser_cmd_start_loop'].set_en(True)
+        self['pulser_cmd_start_loop'].set_width(width)
+        self['pulser_cmd_start_loop'].set_delay(delay)
+        self['pulser_cmd_start_loop'].set_repeat(1)
+
     def reset_fifo(self):
         self['FIFO']['RESET'] = 0
 
