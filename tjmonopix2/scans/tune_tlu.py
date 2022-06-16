@@ -46,7 +46,7 @@ scan_configuration = {
 
     # Trigger configuration
     'bench': {'TLU': {
-        'TRIGGER_MODE': 2,      # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
+        'TRIGGER_MODE': 3,      # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
         'TRIGGER_SELECT': 0,     # Selecting trigger input: HitOR (1), disabled (0)
         'TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES': 5
     }
