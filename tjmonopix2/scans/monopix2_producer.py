@@ -36,7 +36,7 @@ scan_configuration = {
 
     # Trigger configuration
     'bench': {'TLU': {
-        'TRIGGER_MODE': 2,
+        'TRIGGER_MODE': 3,
         # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple
         # handshake (2), TLU data handshake (3)
         'TRIGGER_SELECT': 0,  # Selecting trigger input: HitOR (1), disabled (0)
@@ -58,6 +58,7 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         self.last_readout_data = None
         self.last_trigger = 0
         self.bdaq_recording = True
+        self.ovflw_cnt = 0
 
     def __del__(self):
         pass
@@ -75,21 +76,39 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             super(EudaqScan, self).handle_data(data_tuple, receiver=None)
 
         raw_data = data_tuple[0]
-        if np.any(self.last_readout_data):  # no last readout data for first readout
-            data = np.concatenate((self.last_readout_data, raw_data))
-        else:
-            data = raw_data
 
-        sof = np.where(np.bitwise_and(data, 0x7FC0000) == 0x6F00000)[0]
-        # look for SoF's in the current data
-        # SOF is indicated as bit 27 - bit 18 set to 0x1bc
-        frames = np.split(data, sof)
-        for dat in frames[0:-1]:
-            # sending full frames with multiple data and possibly also multiple trigger words to callback function
-            self.callback[dat]
-        self.last_readout_data = frames[-1]
-        # frame might not be finished during this readout,
-        # buffer last frame for next readout
+        if np.any(self.last_readout_data):  # no last readout data for first readout
+            actual_data = np.concatenate((self.last_readout_data, raw_data))
+        else:
+            actual_data = raw_data
+
+        trg_idx = np.where(actual_data & au.TRIGGER_HEADER > 0)[0]
+        trigger_data = np.split(actual_data, trg_idx)
+
+        # Send data of each trigger
+        for dat in trigger_data[:-1]:
+            glitch_detected = False
+            # Split can return empty data, thus do not return send empty data
+            # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
+            if np.any(dat):
+                trigger = dat[0] & au.TRG_MASK
+
+                if trigger == 0 and self.last_trigger > 32760:
+                    print('looks like an ovrFlw')
+                    self.ovflw_cnt += 1
+                prev_trg = self.last_trigger
+                if self.last_trigger > 0 and trigger != self.last_trigger + 1:    # Trigger number jump
+                    if (self.last_trigger + 1) == (trigger >> 1):  # Measured trigger number is exactly shifted by 1 bit, due to glitch
+                        glitch_detected = True
+                    else:
+                        self.log.warning('Expected != Measured trigger number: %d != %d', self.last_trigger + 1, trigger)
+                self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
+
+                # print('sending event with trgNmb = ', self.last_trigger)
+                self.callback(dat)
+
+
+        self.last_readout_data = trigger_data[-1]
 
     def _scan(self, start_column=0, stop_column=400, scan_timeout=10, max_triggers=False, min_spec_occupancy=False,
               fraction=0.99, use_tdc=False, **_):
@@ -100,6 +119,9 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     def get_last_trigger(self):
         return self.last_trigger
+
+    def get_trg_ovflw(self):
+        return self.ovflw_cnt
 
 
 class Monopix2Producer(pyeudaq.Producer):
@@ -162,13 +184,9 @@ class Monopix2Producer(pyeudaq.Producer):
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
 
-        print('register config = ', self.reg_config)
-
     def DoStartRun(self):
-        print('DoStartRun')
 
         self._init()
-
         self._configure()
 
         self.is_running = 1
@@ -182,7 +200,12 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.stop_scan.set()
         self.thread_scan.join()
 
+        self._reset_registers()
+
         self.scan.analyze()
+        self.scan.close()
+        del self.scan
+        self.scan = None  # let garbage collector destroy old scan object
 
     def DoReset(self):
         print('DoReset')
@@ -212,26 +235,24 @@ class Monopix2Producer(pyeudaq.Producer):
             self.scan.close()
             del self.scan
 
-    def build_event(self, data):
-        n_trigger = np.count_nonzero(data, np.logical_and(data, au.TRIGGER_HEADER) > 0)
-        print(f'sending frame with {n_trigger} triggers')
+    def _build_event(self, data):
         last_trigger = self.scan.get_last_trigger()
         if data.size > 0:
             ev = pyeudaq.Event('RawEvent', 'Monopix2RawEvent')
             if last_trigger:
-                #print('trigger = ', last_trigger)
                 ev.SetTriggerN(last_trigger)
             else:
-                ev.SetTag('No Trigger Number', '1')
+                ev.SetTag('NoTrg', '1')
 
             block = bytes(data)
             ev.AddBlock(0, block)
+            ev.SetTag("trgOvflw", str(self.scan.get_trg_ovflw()))
             self.SendEvent(ev)
-            print(f'sending event with block size = {len(block)} and trigger# = {last_trigger}')
+            # print(f'sending event with block size = {len(block)} and trigger# = {last_trigger}')
         else:
             print('trying to send empty data in event')
 
-    def reset_registers(self):
+    def _reset_registers(self):
         # we want to reset the registers to the default values when closing
         # they might have been set to different values.
         # calling scan.init() on a chip with already set registers might result in a high current on the 1V8 line
@@ -241,7 +262,7 @@ class Monopix2Producer(pyeudaq.Producer):
                 self.scan.chip.registers[reg].write(val)
 
     def _configure(self):
-        self.scan.callback = self.build_event
+        self.scan.callback = self._build_event
 
         if self.en_bdaq_recording:
             self.scan.bdaq_recording = True
@@ -253,8 +274,8 @@ class Monopix2Producer(pyeudaq.Producer):
         # set up configured values for the monopix2 registers
         for reg in self.reg_config.keys():
             reg_val = self.reg_config[reg]
+            self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
             if reg_val:
-                print(f'setting reg {reg} to {reg_val}')
                 self.scan.chip.registers[reg].write(int(reg_val))
 
         self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
