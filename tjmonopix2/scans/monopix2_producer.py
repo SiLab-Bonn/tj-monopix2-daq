@@ -202,10 +202,11 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self._reset_registers()
 
-        self.scan.analyze()
+        # self.scan.analyze()
         self.scan.close()
-        del self.scan
-        self.scan = None  # let garbage collector destroy old scan object
+        self.scan = None  # creating new scan object every time when starting, otherwise some internals are not set up
+        # properly (when  _init_hardware of ScanBase is not called) and basil tcp connection fails
+        # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
 
     def DoReset(self):
         print('DoReset')
@@ -217,14 +218,13 @@ class Monopix2Producer(pyeudaq.Producer):
         if self.thread_scan and self.is_running:
             self.thread_scan.join()
 
-            self.scan = None
             self.thread_scan = None
+            self.scan = None
 
     def RunLoop(self):
         print('Start of RunLoop in Monopix2Producer')
-        trigger_n = 0
         while self.is_running:
-            # doing nothing special here, different thread is handling FIFO read out and sending data to 'build_event'
+            # doing nothing special here, different thread is handling FIFO read out and sending data to datacollector
             time.sleep(1)
 
         print('End of RunLoop in Monopix2Producer')
@@ -307,8 +307,9 @@ class Monopix2Producer(pyeudaq.Producer):
         if self.testbench_file:
             with open(self.testbench_file) as f:
                 bench_conf = yaml.full_load(f)
+        if not self.scan:  # there might already be a scan object from a previous run
+            self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
 
-        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
         self.scan.init()
 
 
