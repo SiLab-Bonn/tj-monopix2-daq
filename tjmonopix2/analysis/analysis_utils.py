@@ -423,3 +423,36 @@ def fit_scurves_multithread(scurves, scan_params, n_injections=None, invert_x=Fa
     sig2D = np.reshape(sig, (512, 512))
     chi2ndf2D = np.reshape(chi2ndf, (512, 512))
     return thr2D, sig2D, chi2ndf2D
+
+def range_of_parameter(meta_data):
+    ''' Calculate the raw data word indeces of each scan parameter
+    '''
+    _, index = np.unique(meta_data['scan_param_id'], return_index=True)
+    expected_values = np.arange(np.max(meta_data['scan_param_id']) + 1)
+
+    # Check for scan parameter IDs with no data
+    sel = np.isin(expected_values, meta_data['scan_param_id'])
+    if not np.all(sel):
+        logger.warning('No words for scan parameter IDs: %s', str(expected_values[~sel]))
+
+    start = meta_data[index]['index_start']
+    stop = np.append(start[:-1] + np.diff(start), meta_data[-1]['index_stop'])
+
+    return np.column_stack((expected_values[sel], start, stop))
+
+
+def words_of_parameter(data, meta_data):
+    ''' Yield all raw data words of a scan parameter
+
+        Warning:
+        --------
+            This function can lead to high RAM usage, since no chunking is used.
+
+        Returns:
+        --------
+            Tuple: (scan parameter ID, data)
+    '''
+
+    par_range = range_of_parameter(meta_data)
+    for scan_par_id, start, stop in par_range:
+        yield scan_par_id, data[start:stop]
