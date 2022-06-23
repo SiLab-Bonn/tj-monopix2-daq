@@ -29,7 +29,11 @@ def calculate_mean_tot_map(hist_tot):
 
 
 def plot_pixmap_generic(map_data, props, basename, output_dir):
+    margin = 1.0
     fig, ax = plt.subplots()
+    map_data = map_data.astype(float)
+    if props.get('clim', None):
+        map_data[map_data > props['clim']*margin] = float('nan')
     image = plt.imshow(np.transpose(map_data))
 
     ax.set_xlabel('column')
@@ -37,7 +41,8 @@ def plot_pixmap_generic(map_data, props, basename, output_dir):
 
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
-    # plt.clim(*args.clim)
+    if props.get('clim', None):
+        plt.clim(0, props['clim']*margin)
 
     plt.title(props.get('title', ''))
 
@@ -103,6 +108,8 @@ def plot_from_file(path_h5, output_dir):
         'output-name': 'occ',
         'scan_id': run_config['scan_id'],
     }
+    if run_config['scan_id'] == 'analog_scan':
+        prop_occ['clim'] = int(scan_config['n_injections'])
     plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
 
     prop_tot = {
