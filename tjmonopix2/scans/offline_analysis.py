@@ -32,7 +32,7 @@ def plot_pixmap_generic(map_data, props, basename, output_dir):
     run_config = props['run_config']
     scan_config = props['scan_config']
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
     if props.get('clim', None):
         map_data[map_data > props['clim']] = float('nan')
     image = plt.imshow(np.transpose(map_data), aspect='auto', interpolation='none')
