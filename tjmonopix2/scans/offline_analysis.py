@@ -29,11 +29,9 @@ def calculate_mean_tot_map(hist_tot):
 
 
 def plot_pixmap_generic(map_data, props, basename, output_dir):
-    margin = 1.0
     fig, ax = plt.subplots()
-    map_data = map_data.astype(float)
     if props.get('clim', None):
-        map_data[map_data > props['clim']*margin] = float('nan')
+        map_data[map_data > props['clim']] = float('nan')
     image = plt.imshow(np.transpose(map_data))
 
     ax.set_xlabel('column')
@@ -41,8 +39,8 @@ def plot_pixmap_generic(map_data, props, basename, output_dir):
 
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
-    if props.get('clim', None):
-        plt.clim(0, props['clim']*margin)
+    #if props.get('clim', None):
+    #    plt.clim(0, props['clim']*margin)
 
     plt.title(props.get('title', ''))
 
@@ -78,21 +76,19 @@ def prepare_output_directory(path_h5, force=True):
     return output_dir
 
 
-def plot_from_file(path_h5, output_dir):
+def plot_from_file(path_h5, output_dir, clim):
     if output_dir is None:
         return
     basename = path.basename(output_dir)
     try:
         h5file = tb.open_file(path_h5, mode="r", title='configuration_in')
 
-        hist_occ = np.asarray(h5file.root.HistOcc)[:, :, 0]
-        hist_tot = np.asarray(h5file.root.HistTot)
+        hist_occ = np.asarray(h5file.root.HistOcc)[:, :, 0].astype(float)
+        hist_tot = np.asarray(h5file.root.HistTot).astype(float)
         avg_tot = calculate_mean_tot_map(hist_tot)
 
         scan_config = table_to_dict(h5file.root.configuration_in.scan.scan_config)
         run_config = table_to_dict(h5file.root.configuration_in.scan.run_config)
-        print(run_config)
-        print(scan_config)
 
         enable_mask = h5file.root.configuration_in.chip.masks.enable
         registers = h5file.root.configuration_in.chip.registers
@@ -108,9 +104,19 @@ def plot_from_file(path_h5, output_dir):
         'output-name': 'occ',
         'scan_id': run_config['scan_id'],
     }
-    if run_config['scan_id'] == 'analog_scan':
-        prop_occ['clim'] = int(scan_config['n_injections'])
+    if clim == 'auto':
+        print("auto clim")
+        if run_config['scan_id'] == 'analog_scan':
+            prop_occ['clim'] = int(scan_config['n_injections'])
+        else:
+            clim = np.median(hist_occ[hist_occ > 0]) * np.std(hist_occ[hist_occ > 0]) * 2
+    elif clim != 'off':
+        prop_occ['clim'] = int(clim)
+    else:
+        print("no clim")
     plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
+
+
 
     prop_tot = {
         'colorbar_label': 'Mean ToT / 25ns',
@@ -127,6 +133,7 @@ parser.add_argument('-i', action='store_true', default=None, help='interpret h5 
 parser.add_argument('-I', action='store_true', default=None, help='always re-interpret h5 files')
 parser.add_argument('-p', action='store_true', default=None, help='plot data from interpreted h5 files')
 parser.add_argument('-P', action='store_true', default=None, help='force replot of interpreted h5 files')
+parser.add_argument('--clim', default='auto', help='limits of the colorbar for the hitmaps, either a number, auto (number of injections or by median), or off')
 args = parser.parse_args()
 
 # looks for uninterpreted files or reinterprates everything with -I
@@ -149,7 +156,7 @@ if args.p or args.P:
         output_dir = prepare_output_directory(file, force=args.P)
         if file:
             print("Plotting: " + path.basename(file))
-            plot_from_file(file, output_dir)
+            plot_from_file(file, output_dir, args.clim)
 
 
 exit()
