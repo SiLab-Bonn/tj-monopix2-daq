@@ -29,28 +29,32 @@ def calculate_mean_tot_map(hist_tot):
 
 
 def plot_pixmap_generic(map_data, props, basename, output_dir):
+    run_config = props['run_config']
+    scan_config = props['scan_config']
+
     fig, ax = plt.subplots()
     if props.get('clim', None):
         map_data[map_data > props['clim']] = float('nan')
-    image = plt.imshow(np.transpose(map_data))
+    image = plt.imshow(np.transpose(map_data), aspect='auto', interpolation='none')
 
     ax.set_xlabel('column')
     ax.set_ylabel('row')
 
+    ax.set_xlim((float(scan_config['start_column'])-0.5, float(scan_config['stop_column'])-0.5))
+    ax.set_ylim((float(scan_config['stop_row']), float(scan_config['start_row'])-1))
+
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
-    #if props.get('clim', None):
-    #    plt.clim(0, props['clim']*margin)
 
-    plt.title(props.get('title', ''))
+    plt.title(run_config['chip_sn'] + ': ' + props.get('title', ''))
 
-    plt.text(0, -0.1, "Scan id: "+props['scan_id'],
+    plt.text(0, -0.1, "Scan id: "+run_config['scan_id'],
                horizontalalignment='center',
                verticalalignment='top',
                transform=ax.transAxes)
 
     # plt.show()
-    plt.savefig(os.path.join(output_dir, basename+ "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
+    plt.savefig(os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
 
 
 def table_to_dict(table_item, key_name='attribute', value_name='value'):
@@ -100,29 +104,26 @@ def plot_from_file(path_h5, output_dir, clim):
 
     prop_occ = {
         'colorbar_label': 'Occupancy',
-        'title': run_config['chip_sn']+': Occupancy map',
+        'title': 'Occupancy map',
         'output-name': 'occ',
-        'scan_id': run_config['scan_id'],
+        'run_config': run_config,
+        'scan_config': scan_config,
     }
     if clim == 'auto':
-        print("auto clim")
         if run_config['scan_id'] == 'analog_scan':
             prop_occ['clim'] = int(scan_config['n_injections'])
         else:
             clim = np.median(hist_occ[hist_occ > 0]) * np.std(hist_occ[hist_occ > 0]) * 2
     elif clim != 'off':
         prop_occ['clim'] = int(clim)
-    else:
-        print("no clim")
     plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
-
-
 
     prop_tot = {
         'colorbar_label': 'Mean ToT / 25ns',
-        'title': run_config['chip_sn']+': ToT map',
+        'title': 'average ToT map',
         'output-name': 'tot',
-        'scan_id': run_config['scan_id'],
+        'run_config': run_config,
+        'scan_config': scan_config,
     }
     plot_pixmap_generic(avg_tot, prop_tot, basename, output_dir)
 
