@@ -41,9 +41,20 @@ def plot_pixmap_generic(map_data, props, basename, output_dir):
 
     plt.title(props.get('title', ''))
 
+    plt.text(0, -0.1, "Scan id: "+props['scan_id'],
+               horizontalalignment='center',
+               verticalalignment='top',
+               transform=ax.transAxes)
+
     # plt.show()
     plt.savefig(os.path.join(output_dir, basename+ "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
 
+
+def table_to_dict(table_item, key_name='attribute', value_name='value'):
+    ret = {}
+    for row in table_item.iterrows():
+        ret[row[key_name].decode('UTF-8')] = row[value_name].decode('UTF-8')
+    return ret
 
 # Create a directory with the same name as the h5 file and return the path to it
 # if it exists it returns None (if force is false) or empties it and returns it's path (if torce is true)
@@ -73,6 +84,11 @@ def plot_from_file(path_h5, output_dir):
         hist_tot = np.asarray(h5file.root.HistTot)
         avg_tot = calculate_mean_tot_map(hist_tot)
 
+        scan_config = table_to_dict(h5file.root.configuration_in.scan.scan_config)
+        run_config = table_to_dict(h5file.root.configuration_in.scan.run_config)
+        print(run_config)
+        print(scan_config)
+
         enable_mask = h5file.root.configuration_in.chip.masks.enable
         registers = h5file.root.configuration_in.chip.registers
     except NoSuchNodeError:
@@ -83,15 +99,17 @@ def plot_from_file(path_h5, output_dir):
 
     prop_occ = {
         'colorbar_label': 'Occupancy',
-        'title': 'Occupancy map',
+        'title': run_config['chip_sn']+': Occupancy map',
         'output-name': 'occ',
+        'scan_id': run_config['scan_id'],
     }
     plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
 
     prop_tot = {
         'colorbar_label': 'Mean ToT / 25ns',
-        'title': 'ToT map',
+        'title': run_config['chip_sn']+': ToT map',
         'output-name': 'tot',
+        'scan_id': run_config['scan_id'],
     }
     plot_pixmap_generic(avg_tot, prop_tot, basename, output_dir)
 
