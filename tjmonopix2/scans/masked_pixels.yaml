@@ -1,0 +1,36 @@
+masked_pixels:
+  - col: 490
+    row: 0
+
+  - col: 490
+    row: 10
+
+  - col: 491
+    row: 20
+
+  - col: 492
+    row: 30
+
+  - col: 493
+    row: 40
+
+  - col: 490
+    row: 50
+
+  - col: 491
+    row: 60
+
+  - col: 492
+    row: 70
+
+  - col: 493
+    row: 80
+
+  - col: 490
+    row: 90
+
+  - col: 480
+    row: 100
+
+  - col: 479
+    row: 110

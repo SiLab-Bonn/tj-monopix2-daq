@@ -30,7 +30,7 @@ scan_configuration = {
     'trigger_latency': 100,  # latency of trigger in units of 25 ns (BCs)
     'trigger_delay': 57,  # trigger delay in units of 25 ns (BCs)
     'trigger_length': 32,  # length of trigger command (amount of consecutive BCs are read out)
-    'veto_length': 210,
+    'veto_length': 400,
     # length of TLU veto in units of 25 ns (BCs). This vetos new triggers while not all data is received.
     # Should be adjusted for longer trigger length.
 
@@ -90,23 +90,34 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
             glitch_detected = False
             # Split can return empty data, thus do not return send empty data
             # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
+
             if np.any(dat):
                 trigger = dat[0] & au.TRG_MASK
 
-                if trigger == 0 and self.last_trigger > 32760:
-                    print('looks like an ovrFlw')
-                    self.ovflw_cnt += 1
+                if np.bitwise_and(dat[0], au.TRIGGER_HEADER) == 0:
+                    # this might happen the very first time we get data
+                    # if there is trash data in the FIFO (which does not even start with a trigger word)
+                    # we would interpret this trash 'normal' data word as a trigger word
+                    # skip this stuff
+                    continue
+
                 prev_trg = self.last_trigger
                 if self.last_trigger > 0 and trigger != self.last_trigger + 1:    # Trigger number jump
-                    if (self.last_trigger + 1) == (trigger >> 1):  # Measured trigger number is exactly shifted by 1 bit, due to glitch
+                    if (self.last_trigger + 1) == (trigger >> 1):
+                        # Measured trigger number is exactly shifted by 1 bit, due to glitch
                         glitch_detected = True
                     else:
-                        self.log.warning('Expected != Measured trigger number: %d != %d', self.last_trigger + 1, trigger)
+                        self.log.warning('Expected != Measured trigger number: %d != %d',
+                                         self.last_trigger + 1, trigger)
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
+
+                if self.last_trigger < 100 and prev_trg > 32760:  # trigger number overflow
+                    # arbitrary choice of borders, in case we missed triggers do not use a '=='
+                    print('looks like an ovrFlw')
+                    self.ovflw_cnt += 1
 
                 # print('sending event with trgNmb = ', self.last_trigger)
                 self.callback(dat)
-
 
         self.last_readout_data = trigger_data[-1]
 
@@ -125,7 +136,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
 
 class Monopix2Producer(pyeudaq.Producer):
-    sim_reg_names = ["VL", "VH", "SEL_PULSE_EXT_CONF", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET"]
 
     def __init__(self, name, runctrl):
         pyeudaq.Producer.__init__(self, name, runctrl)
@@ -139,6 +149,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.thread_scan = None
         self.reg_config = {}
         self.init_register_vals = {}
+        self.masked_pixels_file = None
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -148,23 +159,6 @@ class Monopix2Producer(pyeudaq.Producer):
         self.board_ip = self.GetInitItem("BOARD_IP")
         self.testbench_file = self.GetInitItem("TESTBENCH_FILE")
         self.bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
-
-        # overriding default values from scan config with EUDAQ config
-        tmp = self.GetInitItem('START_ROW')
-        if tmp:
-            scan_configuration['start_row'] = int(tmp)
-
-        tmp = self.GetInitItem('STOP_ROW')
-        if tmp:
-            scan_configuration['stop_row'] = int(tmp)
-
-        tmp = self.GetInitItem('START_COLUMN')
-        if tmp:
-            scan_configuration['start_column'] = int(tmp)
-
-        tmp = self.GetInitItem('STOP_ROW')
-        if tmp:
-            scan_configuration['stop_column'] = int(tmp)
 
     def DoConfigure(self):
         # EUDAQ config only available during DoConfigure, store to variables
@@ -180,9 +174,28 @@ class Monopix2Producer(pyeudaq.Producer):
             else:
                 self.en_hitor = False
 
-        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET']
+            self.masked_pixels_file = self.GetConfigItem('MASKED_PIXELS_FILE')
+
+        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'IDB']
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
+
+        # overriding default values from scan config with EUDAQ config
+        tmp = self.GetConfigItem('START_ROW')
+        if tmp:
+            scan_configuration['start_row'] = int(tmp)
+
+        tmp = self.GetConfigItem('STOP_ROW')
+        if tmp:
+            scan_configuration['stop_row'] = int(tmp)
+
+        tmp = self.GetConfigItem('START_COLUMN')
+        if tmp:
+            scan_configuration['start_column'] = int(tmp)
+
+        tmp = self.GetConfigItem('STOP_COLUMN')
+        if tmp:
+            scan_configuration['stop_column'] = int(tmp)
 
     def DoStartRun(self):
 
@@ -233,7 +246,8 @@ class Monopix2Producer(pyeudaq.Producer):
         print('terminating')
         if self.scan:
             self.scan.close()
-            del self.scan
+            self.scan = None
+
 
     def _build_event(self, data):
         last_trigger = self.scan.get_last_trigger()
@@ -278,16 +292,28 @@ class Monopix2Producer(pyeudaq.Producer):
             if reg_val:
                 self.scan.chip.registers[reg].write(int(reg_val))
 
-        self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
-        # Enable HITOR on all columns, no rows
-        for i in range(512 // 16):
-            self.scan.chip._write_register(18 + i, 0xffff)
-            self.scan.chip._write_register(50 + i, 0xffff)
+        if self.en_hitor:
+            self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
+
+            for i in range(512 // 16):
+                #self.scan.chip._write_register(18 + i, 0xffff)
+                self.scan.chip._write_register(50 + i, 0xffff)
+            self.scan.chip._write_register(18 + 30, 0xffff)  # cols 480 to 495
+            #self.scan.chip._write_register(18 + 31, 0xffff)  # cols 497 to 512
 
         self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
+
+        if self.masked_pixels_file:
+            with open(self.masked_pixels_file) as f:
+                masked_pixels = yaml.full_load(f)
+
+            for i in range(0, len(masked_pixels['masked_pixels'])):
+                row = masked_pixels['masked_pixels'][i]['row']
+                col = masked_pixels['masked_pixels'][i]['col']
+                self.scan.chip.masks['tdac'][col, row] = 0
 
         self.scan.chip.masks.apply_disable_mask()
         self.scan.chip.masks.update(force=True)
@@ -307,9 +333,8 @@ class Monopix2Producer(pyeudaq.Producer):
         if self.testbench_file:
             with open(self.testbench_file) as f:
                 bench_conf = yaml.full_load(f)
-        if not self.scan:  # there might already be a scan object from a previous run
-            self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
 
+        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
         self.scan.init()
 
 
@@ -327,7 +352,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     producer = Monopix2Producer('monopix2', args.r)
-    print('connecting to runcontrol in localhost:44000', )
+    print('connecting to runcontrol in ', args.r)
     producer.Connect()
     time.sleep(2)
     while producer.IsConnected():
