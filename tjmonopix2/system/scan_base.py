@@ -202,6 +202,7 @@ class ScanBase(object):
             scan_config_per_chip = deepcopy(scan_config_per_chip)
 
         self.errors_occured = False
+        self.dont_make_interpreted = False
 
         # Configuration parameters
         self.daq_conf_par = daq_conf
@@ -1023,10 +1024,11 @@ class ScanBase(object):
             pass
         # Reopen interpreted file to append final config after analysis
         if not self.errors_occured:
-            with tb.open_file(self.output_filename + '_interpreted.h5', 'a') as h5_file:
-                node = h5_file.create_group(h5_file.root, 'configuration_out', 'Configuration after scan analysis')
-                self._write_config_h5(h5_file, node)
-                self._store_scan_par_values(h5_file)
+            if not self.dont_make_interpreted:
+                with tb.open_file(self.output_filename + '_interpreted.h5', 'a') as h5_file:
+                    node = h5_file.create_group(h5_file.root, 'configuration_out', 'Configuration after scan analysis')
+                    self._write_config_h5(h5_file, node)
+                    self._store_scan_par_values(h5_file)
 
     def _on_exception(self):
         ''' Called when exception occurs in main process '''

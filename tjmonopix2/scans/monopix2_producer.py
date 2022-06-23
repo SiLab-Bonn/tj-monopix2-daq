@@ -335,6 +335,7 @@ class Monopix2Producer(pyeudaq.Producer):
                 bench_conf = yaml.full_load(f)
 
         self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
+        self.scan.dont_make_interpreted = True
         self.scan.init()
 
 
