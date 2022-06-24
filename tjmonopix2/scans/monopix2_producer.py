@@ -150,6 +150,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.reg_config = {}
         self.init_register_vals = {}
         self.masked_pixels_file = None
+        self.wait_for_fpga = True
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -176,6 +177,8 @@ class Monopix2Producer(pyeudaq.Producer):
 
             self.masked_pixels_file = self.GetConfigItem('MASKED_PIXELS_FILE')
 
+            self.wait_for_fpga = self.GetConfigItem('WAIT_FOR_FPGA') == '1'
+
         configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'IDB']
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
@@ -198,6 +201,15 @@ class Monopix2Producer(pyeudaq.Producer):
             scan_configuration['stop_column'] = int(tmp)
 
     def DoStartRun(self):
+
+        if self.wait_for_fpga:
+            # in commbinatin with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
+            # via network, otherwise init and config will fail
+            # time until FPGA board is reachable from the moment the PS start can vary
+            max_retries = 5
+            for i in range(1, max_retries):
+                if os.system(f'ping -c 1 {self.board_ip}') == 0:
+                    break
 
         self._init()
         self._configure()
