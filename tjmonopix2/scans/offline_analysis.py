@@ -41,21 +41,48 @@ def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
     ax.set_xlabel('column')
     ax.set_ylabel('row')
 
-    ax.set_xlim((float(scan_config['start_column'])-0.5, float(scan_config['stop_column'])-0.5))
-    ax.set_ylim((float(scan_config['stop_row'])-0.5, float(scan_config['start_row'])-0.5))
+    ax.set_xlim((float(scan_config['start_column']) - 0.5, float(scan_config['stop_column']) - 0.5))
+    ax.set_ylim((float(scan_config['stop_row']) - 0.5, float(scan_config['start_row']) - 0.5))
 
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
 
     plt.title(run_config['chip_sn'] + ': ' + props.get('title', ''))
 
-    plt.text(0, -0.1, "Scan id: "+run_config['scan_id'],
-               horizontalalignment='center',
-               verticalalignment='top',
-               transform=ax.transAxes)
+    masked_str = "\nnoisy pixels: {}".format(np.sum(mask_out, axis=(0, 1)))
+    plt.text(0, -0.1, "Scan id: " + run_config['scan_id'] + masked_str,
+             horizontalalignment='center',
+             verticalalignment='top',
+             transform=ax.transAxes)
 
     # plt.show()
-    plt.savefig(os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
+
+
+def plot_tot_histograms(hist_tot, mask_out, props, basename, output_dir):
+    run_config = props['run_config']
+    scan_config = props['scan_config']
+
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+    hist_tot[mask_out, :] = 0
+    bins = np.linspace(1, 127, 128)
+    boundaries = [0, 224, 448, 480, 512]
+    labs = ['Normal FE', 'Normal casc. FE', 'HV casc. FE', 'HV FE']
+
+    for i in range(4):
+        hist = np.sum(hist_tot[boundaries[i]:boundaries[i+1], :, :], axis=(0, 1, 2))
+        ax.plot(bins, hist, label=labs[i])
+
+    plt.xlabel('ToT / 25ns')
+    plt.ylabel('Occurances')
+    plt.title(run_config['chip_sn'] + ': ToT Histogram')
+    plt.legend()
+    plt.tight_layout()
+    plt.grid()
+    plt.savefig(
+        os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
 
 
 def export_mask_yaml(basepath, noisy_pixels, occ, clim, measurement):
@@ -73,11 +100,13 @@ def export_mask_yaml(basepath, noisy_pixels, occ, clim, measurement):
     with open(path.join(basepath, 'masked_pixels.py'), 'w') as outfile:
         yaml.dump(output, outfile, default_flow_style=False, sort_keys=False)
 
+
 def table_to_dict(table_item, key_name='attribute', value_name='value'):
     ret = {}
     for row in table_item.iterrows():
         ret[row[key_name].decode('UTF-8')] = row[value_name].decode('UTF-8')
     return ret
+
 
 # Create a directory with the same name as the h5 file and return the path to it
 # if it exists it returns None (if force is false) or empties it and returns it's path (if torce is true)
@@ -121,7 +150,7 @@ def plot_from_file(path_h5, output_dir, clim):
 
     selector = np.zeros(hist_occ.shape, dtype=bool)
     selector[int(scan_config['start_column']):int(scan_config['stop_column']),
-             int(scan_config['start_row']):int(scan_config['stop_row'])] = True
+    int(scan_config['start_row']):int(scan_config['stop_row'])] = True
 
     if clim == 'auto':
         if run_config['scan_id'] == 'analog_scan':
@@ -153,7 +182,14 @@ def plot_from_file(path_h5, output_dir, clim):
     }
     plot_pixmap_generic(avg_tot, noisy_pixels, prop_tot, basename, output_dir)
 
+    prop_tothist = {
+        'run_config': run_config,
+        'scan_config': scan_config,
+    }
+    plot_tot_histograms(hist_tot, noisy_pixels, prop_tothist, basename, output_dir)
     export_mask_yaml(output_dir, noisy_pixels, hist_occ_original, clim, basename)
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', default='./output_data/module_0/chip_0', help='directory to find h5 files')
@@ -172,13 +208,13 @@ if args.i or args.I:
     for file in glob.glob(os.path.join(args.d, "*.h5")):
         if file.endswith('_interpreted.h5'):
             continue  # this is an interpreted file
-        file_interpreted = file.rsplit(".h5")[0]+"_interpreted.h5"
+        file_interpreted = file.rsplit(".h5")[0] + "_interpreted.h5"
         if path.isfile(file_interpreted):
             if args.I:
                 os.remove(file_interpreted)
             else:
                 continue
-        print('Analyzing file: '+path.basename(file))
+        print('Analyzing file: ' + path.basename(file))
         with analysis.Analysis(raw_data_file=file) as a:
             a.analyze_data()
 
@@ -190,15 +226,11 @@ if args.collect_plots:
 if args.p or args.P:
     for file in glob.glob(os.path.join(args.d, "*_interpreted.h5")):
         output_dir = prepare_output_directory(file, force=args.P)
-        if file:
+        if output_dir:
             print("Plotting: " + path.basename(file))
             plot_from_file(file, output_dir, args.clim)
             if args.collect_plots:
-                for file in glob.glob(os.path.join(output_dir, "*.png")):
-                    shutil.copy(file, path.join(collect_dir, path.basename(file)))
-
-
+                for file2 in glob.glob(os.path.join(output_dir, "*.png")):
+                    shutil.copy(file2, path.join(collect_dir, path.basename(file2)))
 
 exit()
-
-
