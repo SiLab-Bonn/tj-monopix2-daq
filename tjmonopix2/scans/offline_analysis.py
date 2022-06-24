@@ -29,13 +29,12 @@ def calculate_mean_tot_map(hist_tot):
     return mean_tot
 
 
-def plot_pixmap_generic(map_data, props, basename, output_dir):
+def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
     run_config = props['run_config']
     scan_config = props['scan_config']
 
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-    if props.get('clim', None):
-        map_data[map_data > props['clim']] = float('nan')
+    map_data[mask_out] = float('nan')
     image = plt.imshow(np.transpose(map_data), aspect='auto', interpolation='none')
 
     ax.set_xlabel('column')
@@ -103,6 +102,18 @@ def plot_from_file(path_h5, output_dir, clim):
     finally:
         h5file.close()
 
+    if clim == 'auto':
+        if run_config['scan_id'] == 'analog_scan':
+            clim = int(scan_config['n_injections'])
+        else:
+            clim = np.median(hist_occ[hist_occ > 0]) * np.std(hist_occ[hist_occ > 0]) * 2
+    elif clim != 'off':
+        clim = int(clim)
+    else:
+        clim = None
+    if clim:
+        noisy_pixels = hist_occ > clim
+
     prop_occ = {
         'colorbar_label': 'Occupancy',
         'title': 'Occupancy map',
@@ -110,14 +121,7 @@ def plot_from_file(path_h5, output_dir, clim):
         'run_config': run_config,
         'scan_config': scan_config,
     }
-    if clim == 'auto':
-        if run_config['scan_id'] == 'analog_scan':
-            prop_occ['clim'] = int(scan_config['n_injections'])
-        else:
-            clim = np.median(hist_occ[hist_occ > 0]) * np.std(hist_occ[hist_occ > 0]) * 2
-    elif clim != 'off':
-        prop_occ['clim'] = int(clim)
-    plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
+    plot_pixmap_generic(hist_occ, noisy_pixels, prop_occ, basename, output_dir)
 
     prop_tot = {
         'colorbar_label': 'Mean ToT / 25ns',
@@ -126,7 +130,7 @@ def plot_from_file(path_h5, output_dir, clim):
         'run_config': run_config,
         'scan_config': scan_config,
     }
-    plot_pixmap_generic(avg_tot, prop_tot, basename, output_dir)
+    plot_pixmap_generic(avg_tot, noisy_pixels, prop_tot, basename, output_dir)
 
 
 parser = argparse.ArgumentParser()
