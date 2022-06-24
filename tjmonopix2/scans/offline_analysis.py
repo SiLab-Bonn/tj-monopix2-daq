@@ -1,6 +1,7 @@
 import glob
 import os
 import os.path as path
+import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,7 +42,7 @@ def plot_pixmap_generic(map_data, props, basename, output_dir):
     ax.set_ylabel('row')
 
     ax.set_xlim((float(scan_config['start_column'])-0.5, float(scan_config['stop_column'])-0.5))
-    ax.set_ylim((float(scan_config['stop_row']), float(scan_config['start_row'])-1))
+    ax.set_ylim((float(scan_config['stop_row'])-0.5, float(scan_config['start_row'])-0.5))
 
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
@@ -134,7 +135,10 @@ parser.add_argument('-i', action='store_true', default=None, help='interpret h5 
 parser.add_argument('-I', action='store_true', default=None, help='always re-interpret h5 files')
 parser.add_argument('-p', action='store_true', default=None, help='plot data from interpreted h5 files')
 parser.add_argument('-P', action='store_true', default=None, help='force replot of interpreted h5 files')
-parser.add_argument('--clim', default='auto', help='limits of the colorbar for the hitmaps, either a number, auto (number of injections or by median), or off')
+parser.add_argument('--clim', default='auto', help='limits of the colorbar for the hitmaps, either a number, auto ('
+                                                   'number of injections or by median), or off')
+parser.add_argument('--collect-plots', action='store_true', default=None, help='copy all plots to a single "plots" '
+                                                                               'directory')
 args = parser.parse_args()
 
 # looks for uninterpreted files or reinterprates everything with -I
@@ -152,12 +156,21 @@ if args.i or args.I:
         with analysis.Analysis(raw_data_file=file) as a:
             a.analyze_data()
 
+collect_dir = os.path.join(args.d, "plots")
+if args.collect_plots:
+    if not path.isdir(collect_dir):
+        os.mkdir(collect_dir)
+
 if args.p or args.P:
     for file in glob.glob(os.path.join(args.d, "*_interpreted.h5")):
         output_dir = prepare_output_directory(file, force=args.P)
         if file:
             print("Plotting: " + path.basename(file))
             plot_from_file(file, output_dir, args.clim)
+            if args.collect_plots:
+                for file in glob.glob(os.path.join(output_dir, "*.png")):
+                    shutil.copy(file, path.join(collect_dir, path.basename(file)))
+
 
 
 exit()
