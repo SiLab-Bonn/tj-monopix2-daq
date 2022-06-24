@@ -1,6 +1,8 @@
 import glob
 import os
+import yaml
 import os.path as path
+import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,30 +30,48 @@ def calculate_mean_tot_map(hist_tot):
     return mean_tot
 
 
-def plot_pixmap_generic(map_data, props, basename, output_dir):
-    fig, ax = plt.subplots()
-    if props.get('clim', None):
-        map_data[map_data > props['clim']] = float('nan')
-    image = plt.imshow(np.transpose(map_data))
+def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
+    run_config = props['run_config']
+    scan_config = props['scan_config']
+
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+    map_data[mask_out] = float('nan')
+    image = plt.imshow(np.transpose(map_data), aspect='auto', interpolation='none')
 
     ax.set_xlabel('column')
     ax.set_ylabel('row')
 
+    ax.set_xlim((float(scan_config['start_column'])-0.5, float(scan_config['stop_column'])-0.5))
+    ax.set_ylim((float(scan_config['stop_row'])-0.5, float(scan_config['start_row'])-0.5))
+
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
-    #if props.get('clim', None):
-    #    plt.clim(0, props['clim']*margin)
 
-    plt.title(props.get('title', ''))
+    plt.title(run_config['chip_sn'] + ': ' + props.get('title', ''))
 
-    plt.text(0, -0.1, "Scan id: "+props['scan_id'],
+    plt.text(0, -0.1, "Scan id: "+run_config['scan_id'],
                horizontalalignment='center',
                verticalalignment='top',
                transform=ax.transAxes)
 
     # plt.show()
-    plt.savefig(os.path.join(output_dir, basename+ "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
+    plt.savefig(os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
 
+
+def export_mask_yaml(basepath, noisy_pixels, occ, clim, measurement):
+    masked_pixels = []
+    for row in range(512):
+        for col in range(512):
+            if noisy_pixels[col, row]:
+                masked_pixels.append({'row': row, 'col': col, 'hits': float(occ[col, row])})
+    output = {'measurement': measurement,
+              'median_hits': float(np.median(occ[occ > 0])),
+              'std_hits': float(np.std(occ[occ > 0])),
+              'cutoff': float(clim),
+              'masked_pixels': masked_pixels,
+              }
+    with open(path.join(basepath, 'masked_pixels.py'), 'w') as outfile:
+        yaml.dump(output, outfile, default_flow_style=False, sort_keys=False)
 
 def table_to_dict(table_item, key_name='attribute', value_name='value'):
     ret = {}
@@ -84,6 +104,7 @@ def plot_from_file(path_h5, output_dir, clim):
         h5file = tb.open_file(path_h5, mode="r", title='configuration_in')
 
         hist_occ = np.asarray(h5file.root.HistOcc)[:, :, 0].astype(float)
+        hist_occ_original = hist_occ.copy()
         hist_tot = np.asarray(h5file.root.HistTot).astype(float)
         avg_tot = calculate_mean_tot_map(hist_tot)
 
@@ -98,34 +119,41 @@ def plot_from_file(path_h5, output_dir, clim):
     finally:
         h5file.close()
 
+    selector = np.zeros(hist_occ.shape, dtype=bool)
+    selector[int(scan_config['start_column']):int(scan_config['stop_column']),
+             int(scan_config['start_row']):int(scan_config['stop_row'])] = True
+
+    if clim == 'auto':
+        if run_config['scan_id'] == 'analog_scan':
+            clim = int(scan_config['n_injections'])
+        else:
+            clim = np.median(hist_occ[selector]) + (np.std(hist_occ[selector]) + 5) * 3
+    elif clim != 'off':
+        clim = int(clim)
+    else:
+        clim = None
+    if clim:
+        noisy_pixels = hist_occ > clim
+
     prop_occ = {
         'colorbar_label': 'Occupancy',
-        'title': run_config['chip_sn']+': Occupancy map',
+        'title': 'Occupancy map',
         'output-name': 'occ',
-        'scan_id': run_config['scan_id'],
+        'run_config': run_config,
+        'scan_config': scan_config,
     }
-    if clim == 'auto':
-        print("auto clim")
-        if run_config['scan_id'] == 'analog_scan':
-            prop_occ['clim'] = int(scan_config['n_injections'])
-        else:
-            clim = np.median(hist_occ[hist_occ > 0]) * np.std(hist_occ[hist_occ > 0]) * 2
-    elif clim != 'off':
-        prop_occ['clim'] = int(clim)
-    else:
-        print("no clim")
-    plot_pixmap_generic(hist_occ, prop_occ, basename, output_dir)
-
-
+    plot_pixmap_generic(hist_occ, noisy_pixels, prop_occ, basename, output_dir)
 
     prop_tot = {
         'colorbar_label': 'Mean ToT / 25ns',
-        'title': run_config['chip_sn']+': ToT map',
+        'title': 'average ToT map',
         'output-name': 'tot',
-        'scan_id': run_config['scan_id'],
+        'run_config': run_config,
+        'scan_config': scan_config,
     }
-    plot_pixmap_generic(avg_tot, prop_tot, basename, output_dir)
+    plot_pixmap_generic(avg_tot, noisy_pixels, prop_tot, basename, output_dir)
 
+    export_mask_yaml(output_dir, noisy_pixels, hist_occ_original, clim, basename)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', default='./output_data/module_0/chip_0', help='directory to find h5 files')
@@ -133,7 +161,10 @@ parser.add_argument('-i', action='store_true', default=None, help='interpret h5 
 parser.add_argument('-I', action='store_true', default=None, help='always re-interpret h5 files')
 parser.add_argument('-p', action='store_true', default=None, help='plot data from interpreted h5 files')
 parser.add_argument('-P', action='store_true', default=None, help='force replot of interpreted h5 files')
-parser.add_argument('--clim', default='auto', help='limits of the colorbar for the hitmaps, either a number, auto (number of injections or by median), or off')
+parser.add_argument('--clim', default='auto', help='limits of the colorbar for the hitmaps, either a number, auto ('
+                                                   'number of injections or by median), or off')
+parser.add_argument('--collect-plots', action='store_true', default=None, help='copy all plots to a single "plots" '
+                                                                               'directory')
 args = parser.parse_args()
 
 # looks for uninterpreted files or reinterprates everything with -I
@@ -151,12 +182,21 @@ if args.i or args.I:
         with analysis.Analysis(raw_data_file=file) as a:
             a.analyze_data()
 
+collect_dir = os.path.join(args.d, "plots")
+if args.collect_plots:
+    if not path.isdir(collect_dir):
+        os.mkdir(collect_dir)
+
 if args.p or args.P:
     for file in glob.glob(os.path.join(args.d, "*_interpreted.h5")):
         output_dir = prepare_output_directory(file, force=args.P)
         if file:
             print("Plotting: " + path.basename(file))
             plot_from_file(file, output_dir, args.clim)
+            if args.collect_plots:
+                for file in glob.glob(os.path.join(output_dir, "*.png")):
+                    shutil.copy(file, path.join(collect_dir, path.basename(file)))
+
 
 
 exit()
