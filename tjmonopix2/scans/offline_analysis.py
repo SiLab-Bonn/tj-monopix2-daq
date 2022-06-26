@@ -185,6 +185,7 @@ def plot_from_file(path_h5, output_dir, clim):
     prop_tothist = {
         'run_config': run_config,
         'scan_config': scan_config,
+        'output-name': 'hist_tot',
     }
     plot_tot_histograms(hist_tot, noisy_pixels, prop_tothist, basename, output_dir)
     export_mask_yaml(output_dir, noisy_pixels, hist_occ_original, clim, basename)
