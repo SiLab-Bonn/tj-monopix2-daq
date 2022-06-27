@@ -97,7 +97,7 @@ def export_mask_yaml(basepath, noisy_pixels, occ, clim, measurement):
               'cutoff': float(clim),
               'masked_pixels': masked_pixels,
               }
-    with open(path.join(basepath, 'masked_pixels.py'), 'w') as outfile:
+    with open(path.join(basepath, 'masked_pixels.yaml'), 'w') as outfile:
         yaml.dump(output, outfile, default_flow_style=False, sort_keys=False)
 
 
