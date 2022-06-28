@@ -33,6 +33,7 @@ def calculate_mean_tot_map(hist_tot):
 def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
     run_config = props['run_config']
     scan_config = props['scan_config']
+    show_area_only = props.get('show_area_only', True)
 
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
     map_data[mask_out] = float('nan')
@@ -40,9 +41,10 @@ def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
 
     ax.set_xlabel('column')
     ax.set_ylabel('row')
-
-    ax.set_xlim((float(scan_config['start_column']) - 0.5, float(scan_config['stop_column']) - 0.5))
-    ax.set_ylim((float(scan_config['stop_row']) - 0.5, float(scan_config['start_row']) - 0.5))
+    
+    if show_area_only:
+        ax.set_xlim((float(scan_config['start_column']) - 0.5, float(scan_config['stop_column']) - 0.5))
+        ax.set_ylim((float(scan_config['stop_row']) - 0.5, float(scan_config['start_row']) - 0.5))
 
     cbar = plt.colorbar(image)
     cbar.set_label(props.get('colorbar_label', ''))
@@ -170,7 +172,11 @@ def plot_from_file(path_h5, output_dir, clim):
         'output-name': 'occ',
         'run_config': run_config,
         'scan_config': scan_config,
+        'show_area_only': True,
     }
+    plot_pixmap_generic(hist_occ, noisy_pixels, prop_occ, basename, output_dir)
+    prop_occ['show_area_only'] = False
+    prop_occ['output-name'] = 'occ-full'
     plot_pixmap_generic(hist_occ, noisy_pixels, prop_occ, basename, output_dir)
 
     prop_tot = {
