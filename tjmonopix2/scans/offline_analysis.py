@@ -37,7 +37,7 @@ def plot_pixmap_generic(map_data, mask_out, props, basename, output_dir):
 
     fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
     map_data[mask_out] = float('nan')
-    image = plt.imshow(np.transpose(map_data), aspect='auto', interpolation='none')
+    image = plt.imshow(np.transpose(map_data), origin='lower', aspect='auto', interpolation='none')
 
     ax.set_xlabel('column')
     ax.set_ylabel('row')
