@@ -124,6 +124,7 @@ class ChipContainer:
 
     def __init__(self, name, chip_settings, chip_conf, module_settings, output_filename, output_dir, log_fh, scan_config, suffix=''):
         self.name = name
+        
         self.chip_settings = chip_settings  # chip settings from testbench; not to be confused with self.chip_settings['chip_config_file']
         self.module_settings = module_settings  # module configuration of this chip from testbench
         self.chip_conf = chip_conf  # configuration object for chip
@@ -159,7 +160,7 @@ class ScanBase(object):
 
     is_parallel_scan = False  # Parallel readout of ExtTrigger-type scans etc.; must be overridden in the derived classes if needed
 
-    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
+    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix='', register_overrides={}):
         '''
             Initializer.
 
@@ -216,7 +217,8 @@ class ScanBase(object):
         self._log_handlers_per_scan = []  # FIXME: all log handlers of all chips
         self.hardware_initialized = False
         self.initialized = False
-
+        self.register_overrides = register_overrides
+        
         self.daq = None  # readout system, defined during scan init if not existing
 
         # Needed for parallel scans where several readout threads change the chip handles
@@ -730,7 +732,7 @@ class ScanBase(object):
 
         # Detect modules defined in testbench by the definition of a module serial number
         module_cfgs = self.get_module_cfgs()
-        print('saz something')
+        #print('saz something')
         for mod_name, mod_cfg in module_cfgs.items():
             for k, v in mod_cfg.items():
                 # Detect chips defined in testbench by the definition of a chip serial number
@@ -747,17 +749,17 @@ class ScanBase(object):
                     module_settings.pop(k)
                     module_settings['name'] = mod_name
                     # Set chip config file name
-                    print('saz something 2')
+                    #print('saz something 2')
                     with self._logging_through_handlers():
                         chip_settings = v
                         if not chip_settings['chip_config_file']:  # take chip cfg from latest scan
-                            print('..................... Use last scan.......................')
+                            #print('..................... Use last scan.......................')
                             chip_settings['chip_config_file'] = utils.get_latest_config_node_from_files(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to yaml
-                                print('..................... Use yaml......................')
+                                #print('..................... Use yaml......................')
                                 chip_settings['chip_config_file'] = utils.get_latest_chip_configuration_file(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to std. config
-                                print('..................... Use our default config yaml .......................')
+                                #print('..................... Use our default config yaml .......................')
                                 std_cfg = DEFAULT_CONFIG_FILE
                                 self.log.warning("No explicit configuration supplied for chip {0}. Using '{1}'!".format(chip_settings['chip_sn'], std_cfg))
                                 chip_settings['chip_config_file'] = std_cfg

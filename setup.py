@@ -11,7 +11,7 @@ author = 'Christian Bespin, Toko Hirono'
 author_email = ''
 
 # Requirements
-install_requires = ['basil-daq>=3.0.0', 'coloredlogs', 'numba', 'numpy', 'matplotlib', 'tables', 'tqdm', 'scipy']
+install_requires = ['basil-daq>=3.0.0', 'coloredlogs', 'numba', 'numpy', 'matplotlib', 'tables', 'tqdm', 'scipy', 'zmq', 'online-monitor']
 
 setup(
     name='tjmonopix2',
