@@ -158,7 +158,7 @@ class readh5():
         except Exception:
             logging.warning('no registers')
         for x in registers.iterrows():
-            dictionary[x['register']] = x['value']
+            dictionary[x['register'].decode("utf-8") ] = x['value'].decode("utf-8") 
         return dictionary
 
     def readuse_pixel(self):
@@ -177,7 +177,7 @@ class readh5():
         except Exception:
             logging.warning('no registers')
         for x in registers.iterrows():
-            dictionary[x['attribute']] = x['value']
+            dictionary[x['attribute'].decode("utf-8") ] = x['value'].decode("utf-8") 
         return dictionary
 
     def readinjection(self):
@@ -220,21 +220,21 @@ class readh5():
 
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_in.chip.scan_config
+            registers = self.h5file.root.configuration_in.scan.scan_config
         except Exception:
             logging.warning('no scan_config')
         for x in registers.iterrows():
-            dictionary[x['attribute']] = x['value']
+            dictionary[x['attribute'].decode("utf-8")] = x['value'].decode("utf-8")
         return dictionary
 
     def readrun_config(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_in.chip.run_config
+            registers = self.h5file.root.configuration_in.scan.run_config
         except Exception:
             logging.warning('no run_config')
         for x in registers.iterrows():
-            dictionary[x['attribute']] = x['value']
+            dictionary[x['attribute'].decode("utf-8")] = x['value'].decode("utf-8")
         return dictionary
 
     def readanalysis(self):
