@@ -57,9 +57,9 @@ class elog():
     def __init__(
             self,
             output_data,
-            run_number,
             category,
             configID,
+            run_number=0,
             type='Run',
             postMessageOfReport=False,
             attachments=[],
@@ -111,8 +111,7 @@ class elog():
 
         self.file_text = ''  # Placeholder in case we want to write something in the report
         self.attachments = attachments  # Option to use shutil to validate path
-
-        self.run_number = run_number
+        
 
         self.output_data = output_data
         #self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
@@ -135,6 +134,11 @@ class elog():
         self.stop_column_str = scan_config['stop_column']
         self.device = settings['chip_sn']
         self.registers = registers
+
+        if run_number!=0:
+            self.run_number = run_number
+        else:    
+            self.run_number = self.raw_dir_file.split("_")[1][3:]
 
         
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
