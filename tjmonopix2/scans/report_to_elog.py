@@ -115,12 +115,12 @@ class elog():
         self.run_number = run_number
 
         self.output_data = output_data
-        self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
+        #self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
         if self.output_data.endswith('/'):
             self.output_data = self.output_data[:-1]
 
         raw_dir_files = sorted(glob.glob(self.output_data+'/*.raw'))
-        h5_dir_files = sorted(glob.glob(self.output_data+'/module_0/chip_0/*scan.h5'))
+        h5_dir_files = sorted(glob.glob(self.output_data+'/output_data/module_0/chip_0/*scan.h5'))
 
         self.raw_dir_file = raw_dir_files[-1].split("/")[-1]
         h5_dir_file = h5_dir_files[-1].split("/")[-1]
@@ -133,7 +133,6 @@ class elog():
         self.stop_column = int(scan_config['stop_column'])
         self.start_column_str = scan_config['start_column']
         self.stop_column_str = scan_config['stop_column']
-        self.get_frontends()
         self.device = settings['chip_sn']
         self.registers = registers
 
