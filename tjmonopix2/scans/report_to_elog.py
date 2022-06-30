@@ -121,7 +121,8 @@ class elog():
         raw_dir_files = sorted(glob.glob(self.output_data+'/*.raw'))
         h5_dir_files = sorted(glob.glob(self.output_data+'/output_data/module_0/chip_0/*scan.h5'))
 
-        self.raw_dir_file = raw_dir_files[-1].split("/")[-1]
+        only_date = [(i,file[-16:]) for i,file in enumerate(raw_dir_files)]
+        self.raw_dir_file = raw_dir_files[max(only_date,key=lambda item:item[1])[0]].split("/")[-1]
         h5_dir_file = h5_dir_files[-1].split("/")[-1]
         self.h5_dir_file = h5_dir_file
         h5_dir_file_path = h5_dir_files[-1]
@@ -154,7 +155,7 @@ class elog():
         starttime_second = h5_dir_file[13:15]
 
         start = datetime.datetime.strptime('{}/{}/{} {}:{} CET'.format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute), "%Y/%m/%d %H:%M CET")
-        self.starttime = start.strftime("%Y/%m/%d %H:%M")
+        self.starttime = start.strftime("%Y/%m/%d %H:%M CET")
         print('starttime', self.starttime)
         #self.starttime = "{0}/{1}/{2} {3}:{4}:{5} CET".format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute, starttime_second)
 
