@@ -31,7 +31,7 @@ scan_configuration = {
     'trigger_latency': 100,  # latency of trigger in units of 25 ns (BCs)
     'trigger_delay': 57,  # trigger delay in units of 25 ns (BCs)
     'trigger_length': 32,  # length of trigger command (amount of consecutive BCs are read out)
-    'veto_length': 400,
+    'veto_length': 50000,
     # length of TLU veto in units of 25 ns (BCs). This vetos new triggers while not all data is received.
     # Should be adjusted for longer trigger length.
 
@@ -212,20 +212,27 @@ class Monopix2Producer(pyeudaq.Producer):
         self.elog_output_path = self.GetConfigItem('ELOG_OUTPUT_PATH')
         self.elog_category = self.GetConfigItem('ELOG_CATEGORY')
 
-    def DoStartRun(self):
+        time.sleep(5)
 
-        #if self.wait_for_fpga:
+    def DoStartRun(self):
+        if self.wait_for_fpga:
             # in commbination with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
             # via network, otherwise init and config will fail
             # time until FPGA board is reachable from the moment the PS start can vary
 
-            # max_retries = 20
-            # for i in range(1, max_retries):
-            #     out = os.system(f'fping -c1 -t200 {self.board_ip}')
-            #         print('ping success')
-            #         break
-            #     else:
-            #         print('ping failed')
+            max_retries = 10
+            for i in range(1, max_retries):
+                print("Ping: ", f'fping -c1 -t200 {self.board_ip}')
+                out = os.system(f'fping -c1 -t200 {self.board_ip}')
+                print("Out:", out)
+                if out == 0:
+                    print('ping success')
+                    break
+                else:
+                    print('ping failed')
+            print("Start after")
+            time.sleep(3)
+            print("Start now")
 
         self._init()
         self._configure()
@@ -250,7 +257,8 @@ class Monopix2Producer(pyeudaq.Producer):
         # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
         try:
             self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
-        except Exception:
+        except Exception as e:
+            print('{}'.format(e))
             print('elog error')
 
     def DoReset(self):
@@ -318,11 +326,12 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.configure()
 
         # set up configured values for the monopix2 registers
-        for reg in self.reg_config.keys():
+        for reg in self.reg_config.keys():            
             reg_val = self.reg_config[reg]
+            reg_val = reg_val.replace(',', '.')
             self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
             if reg_val:
-                self.scan.chip.registers[reg].write(int(reg_val))
+                self.scan.chip.registers[reg].write(int(float(reg_val)))
 
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
