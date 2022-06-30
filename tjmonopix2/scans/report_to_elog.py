@@ -153,7 +153,7 @@ class elog():
         starttime_minute = h5_dir_file[11:13]
         starttime_second = h5_dir_file[13:15]
 
-        start = datetime.datetime.strptime('{}/{}/{} {}:{}'.format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute), "%Y/%m/%d %H:%M")
+        start = datetime.datetime.strptime('{}/{}/{} {}:{}'.format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute), "%Y/%m/%d %H:%M CET")
         self.starttime = start.strftime("%Y/%m/%d %H:%M")
         print('starttime', self.starttime)
         #self.starttime = "{0}/{1}/{2} {3}:{4}:{5} CET".format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute, starttime_second)
@@ -262,7 +262,7 @@ class elog():
             'Category': self.category,
             'Start': self.starttime,
             'Stop': self.endtime,
-            'Run%20no': self.run_number,
+            'Run_no': self.run_number,
             'ConfigID': self.configID,
             'Device': self.device
         }
