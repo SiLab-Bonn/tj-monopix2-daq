@@ -15,6 +15,7 @@ import pyeudaq
 from tjmonopix2.system import logger
 from tjmonopix2.scans import scan_ext_trigger
 from tjmonopix2.analysis import analysis_utils as au
+from report_to_elog import elog
 
 scan_configuration = {
     'start_column': 0,
@@ -151,6 +152,11 @@ class Monopix2Producer(pyeudaq.Producer):
         self.init_register_vals = {}
         self.masked_pixels_file = None
         self.wait_for_fpga = True
+        self.elog_success = False
+        self.elog_configID = 0
+        self.elog_output_path = ''
+        self.elog_category = ''
+        self.run_number = 0
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -160,6 +166,8 @@ class Monopix2Producer(pyeudaq.Producer):
         self.board_ip = self.GetInitItem("BOARD_IP")
         self.testbench_file = self.GetInitItem("TESTBENCH_FILE")
         self.bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
+
+        print('run nmb ', self.GetRunNumber())
 
     def DoConfigure(self):
         # EUDAQ config only available during DoConfigure, store to variables
@@ -200,16 +208,24 @@ class Monopix2Producer(pyeudaq.Producer):
         if tmp:
             scan_configuration['stop_column'] = int(tmp)
 
+        self.elog_configID = self.GetConfigItem('CONFIG_ID')
+        self.elog_output_path = self.GetConfigItem('ELOG_OUTPUT_PATH')
+        self.elog_category = self.GetConfigItem('ELOG_CATEGORY')
+
     def DoStartRun(self):
 
-        if self.wait_for_fpga:
-            # in commbinatin with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
+        #if self.wait_for_fpga:
+            # in commbination with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
             # via network, otherwise init and config will fail
             # time until FPGA board is reachable from the moment the PS start can vary
-            max_retries = 5
-            for i in range(1, max_retries):
-                if os.system(f'ping -c 1 {self.board_ip}') == 0:
-                    break
+
+            # max_retries = 20
+            # for i in range(1, max_retries):
+            #     out = os.system(f'fping -c1 -t200 {self.board_ip}')
+            #         print('ping success')
+            #         break
+            #     else:
+            #         print('ping failed')
 
         self._init()
         self._configure()
@@ -232,6 +248,10 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan = None  # creating new scan object every time when starting, otherwise some internals are not set up
         # properly (when  _init_hardware of ScanBase is not called) and basil tcp connection fails
         # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
+        try:
+            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
+        except Exception:
+            print('elog error')
 
     def DoReset(self):
         print('DoReset')
