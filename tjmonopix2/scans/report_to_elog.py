@@ -166,7 +166,7 @@ class elog():
 
         if conf_folder.endswith('/'):
             conf_folder = conf_folder[:-1]
-        conf_file_path = conf_folder+'/config_run_'+run_number+'.txt'
+        conf_file_path = str(conf_folder)+'/config_run_'+str(run_number)+'.txt'
         self.attachments.append(conf_file_path)
 
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
@@ -294,8 +294,8 @@ class elog():
             'Run_no': self.run_number,
             'ConfigID': self.configID,
             'Device': self.device,
-            'RegName': self.RegName,
-            'RegVal': self.RegVal
+            'RegName': self.regName,
+            'RegVal': self.regVal
         }
         self.text_template(data)
         files = [
