@@ -161,6 +161,8 @@ class elog():
         else:
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
+        print('raw_dir_file', raw_dir_file)
+        print('run_number', run_number)
         if conf_folder == '':
             conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
 
