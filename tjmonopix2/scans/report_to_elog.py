@@ -318,11 +318,12 @@ class elog():
             return
         else:
             for elog in failed_elogs:
+                resp = None
                 elog_request = pickle.load(open(elog, "rb"))
                 with requests.Session() as s:
                     s.auth = elog_request.auth
                     tries = 6
-                    sleep = 5
+                    sleep = 0.5
                     for t in range(tries):
                         try:
                             s.request("GET", elog_request.url)
@@ -339,9 +340,10 @@ class elog():
                             logging.error(traceback.format_exc())
                             print('(Reupload) Error: Skipping rest of upload')
                             break
-                if resp.ok:
-                    print("Reupload of elog successful. Removing pickle file.")
-                    os.remove(elog)
+                if resp: 
+                    if resp.ok:
+                        print("Reupload of elog successful. Removing pickle file.")
+                        os.remove(elog)
 
     def uploadToElog(self):
         """
@@ -354,14 +356,15 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        time.sleep(1)
+        # time.sleep(1)
         self.uploadFailedElogs()
         requestToElog = self.buildRequest()
         if isinstance(requestToElog, requests.Request):
+            resp = None
             with requests.Session() as s:
                 s.auth = requestToElog.auth
                 tries = 6
-                sleep = 5
+                sleep = 0.5
                 for t in range(tries):
                     try:
                         s.request("GET", requestToElog.url)
@@ -380,23 +383,32 @@ class elog():
                         print('Error: Try {}/{}, sleep {}s and try again...'.format(t, tries, sleep))
                         time.sleep(sleep)
                         continue
-            if resp.ok:
-                print("Elog Entry successfully transmitted to:")
-                print("{}".format(requestToElog.url))
-                print('Attachments uploaded:')
-                for attachment in self.attachments:
-                    print(attachment)
-                if self.postMessageOfReport:
-                    print('Post message to rocket chat')
-                    self.rocketChat()
-            else:
-                print("Error during transmitting Elog.")
-                print('Reason: {}'.format(resp.reason))
+            if resp: 
+                if resp.ok:
+                    print("Elog Entry successfully transmitted to:")
+                    print("{}".format(requestToElog.url))
+                    print('Attachments uploaded:')
+                    for attachment in self.attachments:
+                        print(attachment)
+                    if self.postMessageOfReport:
+                        print('Post message to rocket chat')
+                        self.rocketChat()
+                else:
+                    print("Error during transmitting Elog.")
+                    print('Reason: {}'.format(resp.reason))
+                    print('Saving request object in '+self.failedElogPath)
+                    os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
+                    with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
+                        pickle.dump(requestToElog, pickle_file)
+                    return False
+            else:   # resp is None
+                print("Error during transmitting Elog (None).")
                 print('Saving request object in '+self.failedElogPath)
                 os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
                 with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
                     pickle.dump(requestToElog, pickle_file)
                 return False
+
             return True
         else:
             print('No valid instance of requests.Request')
