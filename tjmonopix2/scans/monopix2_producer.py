@@ -157,6 +157,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.elog_output_path = ''
         self.elog_category = ''
         self.run_number = 0
+        self.current_scan_register = ''
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -256,7 +257,7 @@ class Monopix2Producer(pyeudaq.Producer):
         # properly (when  _init_hardware of ScanBase is not called) and basil tcp connection fails
         # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
         try:
-            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
+            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,self.current_scan_register,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
         except Exception as e:
             print('{}'.format(e))
             print('elog error')
@@ -328,6 +329,8 @@ class Monopix2Producer(pyeudaq.Producer):
         # set up configured values for the monopix2 registers
         for reg in self.reg_config.keys():            
             reg_val = self.reg_config[reg]
+            if ',' in reg_val:
+                self.current_scan_register = reg
             reg_val = reg_val.replace(',', '.')
             self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
             if reg_val:

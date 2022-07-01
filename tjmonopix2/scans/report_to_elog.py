@@ -6,10 +6,6 @@
 #
 # See git log for contributors and copyright holders.
 # This file is licensed under MIT licence, see LICENSE.md.
-from os import stat_result
-import sys
-sys.path.append('/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans')
-
 import getpass
 import time
 import traceback
@@ -21,6 +17,10 @@ import logging
 import glob
 from read_h5 import readh5
 import json
+import pickle
+import os
+import sys
+sys.path.append('/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans')
 
 
 class elog():
@@ -53,12 +53,26 @@ class elog():
     -------
     goReporter.py : Calls this class, member functions.
     """
+    types = ['Run',
+             'ConfigID',
+             'General',
+             'TJ-Scan',
+             'Analysis'
+             ]
+    category = ['Beam',
+                'Scan',
+                'Test',
+                'other'
+                ]
 
     def __init__(
             self,
             output_data,
             category,
             configID,
+            scanned_register,
+            comment_in_conf='',
+            conf_folder='',
             run_number=0,
             type='Run',
             postMessageOfReport=False,
@@ -103,31 +117,32 @@ class elog():
 
         self.endtime = datetime.datetime.now(pytz.timezone('Europe/Berlin')).strftime("%Y/%m/%d %H:%M CET")  # Time of upload/End of run
         # Figure out endtime
-        #start = datetime.datetime.strptime('{}/{}/{} 00:00'.format(year, month, day), "%Y/%m/%d %H:%M")
-        #timedelta_day = datetime.timedelta(days=1)
-        #timedelta_minute = datetime.timedelta(minutes=1)
-        #start = start+timedelta_day-timedelta_minute
-        #self.endtime = start.strftime("%Y/%m/%d %H:%M")
+        # start = datetime.datetime.strptime('{}/{}/{} 00:00'.format(year, month, day), "%Y/%m/%d %H:%M")
+        # timedelta_day = datetime.timedelta(days=1)
+        # timedelta_minute = datetime.timedelta(minutes=1)
+        # start = start+timedelta_day-timedelta_minute
+        # self.endtime = start.strftime("%Y/%m/%d %H:%M")
 
         self.file_text = ''  # Placeholder in case we want to write something in the report
         self.attachments = attachments  # Option to use shutil to validate path
-        
+        self.failedElogPath = './failed_elog_uploads/'
+        self.comment_in_conf = comment_in_conf
 
         self.output_data = output_data
-        #self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
+        # self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
         if self.output_data.endswith('/'):
             self.output_data = self.output_data[:-1]
 
         raw_dir_files = sorted(glob.glob(self.output_data+'/*.raw'))
         h5_dir_files = sorted(glob.glob(self.output_data+'/output_data/module_0/chip_0/*scan.h5'))
 
-        only_date = [(i,file[-16:]) for i,file in enumerate(raw_dir_files)]
-        self.raw_dir_file = raw_dir_files[max(only_date,key=lambda item:item[1])[0]].split("/")[-1]
+        only_date = [(i, file[-16:]) for i, file in enumerate(raw_dir_files)]
+        self.raw_dir_file = raw_dir_files[max(only_date, key=lambda item:item[1])[0]].split("/")[-1]
         h5_dir_file = h5_dir_files[-1].split("/")[-1]
         self.h5_dir_file = h5_dir_file
         h5_dir_file_path = h5_dir_files[-1]
-        settings,registers,run_config, scan_config = readh5(h5_dir_file_path, ['settings','registers','run_config','scan_config']).run()
-        
+        settings, registers, run_config, scan_config = readh5(h5_dir_file_path, ['settings', 'registers', 'run_config', 'scan_config']).run()
+
         self.scan_id = run_config['scan_id']
         self.start_column = int(scan_config['start_column'])
         self.stop_column = int(scan_config['stop_column'])
@@ -135,13 +150,25 @@ class elog():
         self.stop_column_str = scan_config['stop_column']
         self.device = settings['chip_sn']
         self.registers = registers
+        self.regName = scanned_register
+        if self.regName != '':
+            self.regVal = str(self.registers[self.regName])
+        else:
+            self.regVal = ''
 
-        if run_number!=0:
+        if run_number != 0:
             self.run_number = run_number
-        else:    
+        else:
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
-        
+        if conf_folder == '':
+            conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
+
+        if conf_folder.endswith('/'):
+            conf_folder = conf_folder[:-1]
+        conf_file_path = conf_folder+'/config_run_'+run_number+'.txt'
+        self.attachments.append(conf_file_path)
+
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
             dumpfile_name = dumpfile.name
             json.dump(registers, dumpfile, indent=2)
@@ -152,12 +179,12 @@ class elog():
         starttime_day = h5_dir_file[6:8]
         starttime_hour = h5_dir_file[9:11]
         starttime_minute = h5_dir_file[11:13]
-        starttime_second = h5_dir_file[13:15]
+        # starttime_second = h5_dir_file[13:15]
 
         start = datetime.datetime.strptime('{}/{}/{} {}:{} CET'.format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute), "%Y/%m/%d %H:%M CET")
         self.starttime = start.strftime("%Y/%m/%d %H:%M CET")
-        print('starttime', self.starttime)
-        #self.starttime = "{0}/{1}/{2} {3}:{4}:{5} CET".format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute, starttime_second)
+        # print('starttime', self.starttime)
+        # self.starttime = "{0}/{1}/{2} {3}:{4}:{5} CET".format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute, starttime_second)
 
         self.postMessageOfReport = False
         ''' Ignore b2rc for now
@@ -191,39 +218,40 @@ class elog():
                 self.passwordb2rc = getpass.getpass("Password:")
     '''
     def get_frontends(self):
-        
+
         frontends = ['Normal FE', 'Normal FE Casc', 'HV FE Casc', 'HV FE']
         start = 0
         end = 0
-        if self.start_column <224:
-            start=0
-        elif self.start_column <448 and self.start_column>=224:
-            start=1
-        elif self.start_column <480 and self.start_column>=448:
-            start=2
-        elif self.start_column>=480:
-            start=3
+        if self.start_column < 224:
+            start = 0
+        elif self.start_column < 448 and self.start_column >= 224:
+            start = 1
+        elif self.start_column < 480 and self.start_column >= 448:
+            start = 2
+        elif self.start_column >= 480:
+            start = 3
 
-        if self.stop_column <=224:
-            end=1
-        elif self.stop_column <=448 and self.stop_column>224:
-            end=2
-        elif self.stop_column <=480 and self.stop_column>448:
-            end=3
-        elif self.stop_column>480:
-            end=4
+        if self.stop_column <= 224:
+            end = 1
+        elif self.stop_column <= 448 and self.stop_column > 224:
+            end = 2
+        elif self.stop_column <= 480 and self.stop_column > 448:
+            end = 3
+        elif self.stop_column > 480:
+            end = 4
         return ', '.join(frontends[start:end])
 
     def text_template(self, data):
-        
-        
+
+        self.file_text += self.comment_in_conf
+        self.file_text += ' \n'
         self.file_text += self.scan_id+' with '+self.device
         self.file_text += ' \n'
-        self.file_text += 'Pixels: '+self.start_column_str+':'+self.stop_column_str+' --> Frontends: '+ self.get_frontends()
-        #self.file_text += json.dumps(self.registers, indent=2)
+        self.file_text += 'Pixels: '+self.start_column_str+':'+self.stop_column_str+' --> Frontends: ' + self.get_frontends()
+        # self.file_text += json.dumps(self.registers, indent=2)
         self.file_text += ' \n'
-        #self.file_text += json.dumps(data, indent=2)
-        #self.file_text += ' \n'
+        # self.file_text += json.dumps(data, indent=2)
+        # self.file_text += ' \n'
         self.file_text += str(self.h5_dir_file)
         self.file_text += ' \n'
         self.file_text += str(self.raw_dir_file)
@@ -243,15 +271,15 @@ class elog():
         """
         req_address = "{}://{}:{}/{}".format(self.prefix, self.hostname, self.port, self.logbook)
         auth = requests.auth.HTTPBasicAuth(self.username, self.password)
-        
-        #data = {
+
+        # data = {
         #    'cmd': 'Submit',
         #    'Type': self.type,
         #    'Author': self.author,
         #    'Date': self.endtime,
         #    'Category': self.subject,
         #    'Device': self.device
-        #}
+        # }
 
         print(self.run_number)
         data = {
@@ -265,7 +293,9 @@ class elog():
             'Stop': self.endtime,
             'Run_no': self.run_number,
             'ConfigID': self.configID,
-            'Device': self.device
+            'Device': self.device,
+            'RegName': self.RegName,
+            'RegVal': self.RegVal
         }
         self.text_template(data)
         files = [
@@ -276,6 +306,37 @@ class elog():
                 ('attfile', open(attachment, 'rb'))
             )
         return requests.Request('POST', req_address, auth=auth, data=data, files=files)
+
+    def uploadFailedElogs(self):
+        failed_elogs = sorted(glob.glob(self.failedElogPath+'elog_run*.pkl'))
+        if len(failed_elogs) == 0:
+            return
+        else:
+            for elog in failed_elogs:
+                elog_request = pickle.load(open(elog, "rb"))
+                with requests.Session() as s:
+                    s.auth = elog_request.auth
+                    tries = 6
+                    sleep = 5
+                    for t in range(tries):
+                        try:
+                            s.request("GET", elog_request.url)
+                            prep = s.prepare_request(elog_request)
+                            settings = s.merge_environment_settings(prep.url, {}, None, None, None)
+                            resp = s.send(prep, **settings)
+                            if resp.ok:
+                                break
+                            else:
+                                print('(Reupload) Timeout: Skipping rest of upload')
+                                print('(Reupload) Reason: {}'.format(resp.reason))
+                                break
+                        except Exception as e:
+                            logging.error(traceback.format_exc())
+                            print('(Reupload) Error: Skipping rest of upload')
+                            break
+                if resp.ok:
+                    print("Reupload of elog successful. Removing pickle file.")
+                    os.remove(elog)
 
     def uploadToElog(self):
         """
@@ -288,7 +349,8 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        time.sleep(3)
+        time.sleep(1)
+        self.uploadFailedElogs()
         requestToElog = self.buildRequest()
         if isinstance(requestToElog, requests.Request):
             with requests.Session() as s:
@@ -325,6 +387,10 @@ class elog():
             else:
                 print("Error during transmitting Elog.")
                 print('Reason: {}'.format(resp.reason))
+                print('Saving request object in '+self.failedElogPath)
+                os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
+                with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
+                    pickle.dump(requestToElog, pickle_file)
                 return False
             return True
         else:
