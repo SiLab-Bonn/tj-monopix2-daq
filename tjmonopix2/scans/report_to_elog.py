@@ -161,14 +161,12 @@ class elog():
         else:
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
-        print('raw_dir_file', raw_dir_file)
-        print('run_number', run_number)
         if conf_folder == '':
             conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
 
         if conf_folder.endswith('/'):
             conf_folder = conf_folder[:-1]
-        conf_file_path = str(conf_folder)+'/config_run_'+str(run_number)+'.txt'
+        conf_file_path = str(conf_folder)+'/config_run_'+str(self.run_number)+'.txt'
         self.attachments.append(conf_file_path)
 
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
