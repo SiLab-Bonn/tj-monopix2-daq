@@ -73,7 +73,7 @@ class elog():
             scanned_register,
             comment_in_conf='',
             conf_folder='',
-            run_number=0,
+            run_number='0',
             type='Run',
             postMessageOfReport=False,
             attachments=None,
@@ -129,6 +129,7 @@ class elog():
         else: 
             self.attachments = []
         self.failedElogPath = './failed_elog_uploads/'
+        self.failedElogDict = {}
         self.comment_in_conf = comment_in_conf
 
         self.output_data = output_data
@@ -160,21 +161,21 @@ class elog():
             self.regVal = ''
         print('regs!!!!!!!!!!!!!', scanned_register, self.regName, self.regVal)
 
-        if run_number != 0:
+        if run_number != '0':
             self.run_number = run_number
         else:
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
         if conf_folder == '':
-            conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
-
+            #conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
+            conf_folder = '/home/yannik'
         if conf_folder.endswith('/'):
             conf_folder = conf_folder[:-1]
         conf_file_path = str(conf_folder)+'/config_run_'+str(self.run_number)+'.txt'
         self.attachments.append(conf_file_path)
         print(self.attachments)
 
-        with open('register_dump_for_elog.txt', 'w') as dumpfile:
+        with open(self.failedElogPath+'register_dump_for_elog_run'+self.run_number+'.txt', 'w') as dumpfile:
             dumpfile_name = dumpfile.name
             json.dump(registers, dumpfile, indent=2)
 
@@ -310,40 +311,49 @@ class elog():
             files.append(
                 ('attfile', open(attachment, 'rb'))
             )
+        self.failedElogDict['req_address'] = req_address
+        self.failedElogDict['data'] = data
+        self.failedElogDict['attachments'] = self.attachments
+        self.failedElogDict['Text'] = self.file_text
         return requests.Request('POST', req_address, auth=auth, data=data, files=files)
 
     def uploadFailedElogs(self):
         failed_elogs = sorted(glob.glob(self.failedElogPath+'elog_run*.pkl'))
+        auth = requests.auth.HTTPBasicAuth(self.username, self.password)
+        upload_success = False
+        print(failed_elogs)
         if len(failed_elogs) == 0:
             return
         else:
             for elog in failed_elogs:
-                resp = None
-                elog_request = pickle.load(open(elog, "rb"))
+                print(elog)
+                elog_request_dict = pickle.load(open(elog, "rb"))
+                files=[]
+                loaded_attachments = elog_request_dict['attachments']
+                for attachment in loaded_attachments:
+                    files.append(('attfile', open(attachment, 'rb')))
+                files.append(('Text', elog_request_dict['Text']))
+                elog_request = requests.Request('POST', elog_request_dict['req_address'], auth=auth, data=elog_request_dict['data'], files=files)
                 with requests.Session() as s:
                     s.auth = elog_request.auth
-                    tries = 6
-                    sleep = 0.5
-                    for t in range(tries):
-                        try:
-                            s.request("GET", elog_request.url)
-                            prep = s.prepare_request(elog_request)
-                            settings = s.merge_environment_settings(prep.url, {}, None, None, None)
-                            resp = s.send(prep, **settings)
-                            if resp.ok:
-                                break
-                            else:
-                                print('(Reupload) Timeout: Skipping rest of upload')
-                                print('(Reupload) Reason: {}'.format(resp.reason))
-                                break
-                        except Exception as e:
-                            logging.error(traceback.format_exc())
-                            print('(Reupload) Error: Skipping rest of upload')
+                    try:
+                        s.request("GET", elog_request.url)
+                        prep = s.prepare_request(elog_request)
+                        settings = s.merge_environment_settings(prep.url, {}, None, None, None)
+                        resp = s.send(prep, **settings)
+                        upload_success = resp.ok
+                        if upload_success:
+                            pass
+                        else:
+                            print('(Reupload) Timeout: Skipping rest of upload')
                             break
-                if resp: 
-                    if resp.ok:
-                        print("Reupload of elog successful. Removing pickle file.")
-                        os.remove(elog)
+                    except Exception as e:
+                        logging.error(traceback.format_exc())
+                        print('(Reupload) Error: Skipping rest of upload')
+                        break
+                if upload_success:
+                    print("Reupload of elog successful. Removing pickle file.")
+                    os.remove(elog)
 
     def uploadToElog(self):
         """
@@ -356,9 +366,10 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        # time.sleep(1)
+        #time.sleep(1)
         self.uploadFailedElogs()
         requestToElog = self.buildRequest()
+        upload_success = False
         if isinstance(requestToElog, requests.Request):
             resp = None
             with requests.Session() as s:
@@ -371,7 +382,8 @@ class elog():
                         prep = s.prepare_request(requestToElog)
                         settings = s.merge_environment_settings(prep.url, {}, None, None, None)
                         resp = s.send(prep, **settings)
-                        if resp.ok:
+                        upload_success = resp.ok
+                        if upload_success:
                             break
                         else:
                             print('Timeout: Try {}/{}, sleep {}s and try again...'.format(t, tries, sleep))
@@ -383,30 +395,24 @@ class elog():
                         print('Error: Try {}/{}, sleep {}s and try again...'.format(t, tries, sleep))
                         time.sleep(sleep)
                         continue
-            if resp: 
-                if resp.ok:
-                    print("Elog Entry successfully transmitted to:")
-                    print("{}".format(requestToElog.url))
-                    print('Attachments uploaded:')
-                    for attachment in self.attachments:
-                        print(attachment)
-                    if self.postMessageOfReport:
-                        print('Post message to rocket chat')
-                        self.rocketChat()
-                else:
-                    print("Error during transmitting Elog.")
-                    print('Reason: {}'.format(resp.reason))
-                    print('Saving request object in '+self.failedElogPath)
-                    os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
-                    with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
-                        pickle.dump(requestToElog, pickle_file)
-                    return False
-            else:   # resp is None
-                print("Error during transmitting Elog (None).")
+            if upload_success:
+                print("Elog Entry successfully transmitted to:")
+                print("{}".format(requestToElog.url))
+                print('Attachments uploaded:')
+                for attachment in self.attachments:
+                    print(attachment)
+                if self.postMessageOfReport:
+                    print('Post message to rocket chat')
+                    self.rocketChat()
+            else:
+                print("Error during transmitting Elog.")
                 print('Saving request object in '+self.failedElogPath)
                 os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
-                with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
-                    pickle.dump(requestToElog, pickle_file)
+                #with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
+                pickle_file = open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb')
+                pickle.dump(self.failedElogDict, pickle_file)
+                pickle_file.close()
+                
                 return False
 
             return True
