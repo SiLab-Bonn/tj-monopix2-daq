@@ -72,6 +72,7 @@ class elog():
             category,
             configID,
             scanned_register,
+            comment_in_conf='',
             conf_file='',
             run_number=0,
             type='Run',
@@ -126,6 +127,7 @@ class elog():
         self.file_text = ''  # Placeholder in case we want to write something in the report
         self.attachments = attachments  # Option to use shutil to validate path
         self.failedElogPath = './failed_elog_uploads/'
+        self.comment_in_conf = comment_in_conf
 
         self.output_data = output_data
         #self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
@@ -242,7 +244,8 @@ class elog():
 
     def text_template(self, data):
         
-        
+        self.file_text += self.comment_in_conf
+        self.file_text += ' \n'
         self.file_text += self.scan_id+' with '+self.device
         self.file_text += ' \n'
         self.file_text += 'Pixels: '+self.start_column_str+':'+self.stop_column_str+' --> Frontends: '+ self.get_frontends()
