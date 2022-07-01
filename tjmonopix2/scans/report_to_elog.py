@@ -76,7 +76,7 @@ class elog():
             run_number=0,
             type='Run',
             postMessageOfReport=False,
-            attachments=[],
+            attachments=None,
             username=None,
             password=None,
             credFileElog=None,
@@ -124,7 +124,10 @@ class elog():
         # self.endtime = start.strftime("%Y/%m/%d %H:%M")
 
         self.file_text = ''  # Placeholder in case we want to write something in the report
-        self.attachments = attachments  # Option to use shutil to validate path
+        if attachments is not None:
+            self.attachments = attachments  # Option to use shutil to validate path
+        else: 
+            self.attachments = []
         self.failedElogPath = './failed_elog_uploads/'
         self.comment_in_conf = comment_in_conf
 
