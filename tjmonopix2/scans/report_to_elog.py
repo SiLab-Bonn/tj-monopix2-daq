@@ -21,6 +21,8 @@ import logging
 import glob
 from read_h5 import readh5
 import json
+import pickle
+import os
 
 
 class elog():
@@ -53,12 +55,24 @@ class elog():
     -------
     goReporter.py : Calls this class, member functions.
     """
-
+    types=['Run',
+           'ConfigID',
+           'General',
+           'TJ-Scan',
+           'Analysis'
+          ]
+    category=['Beam',
+              'Scan',
+              'Test',
+              'other'
+             ]
     def __init__(
             self,
             output_data,
             category,
             configID,
+            scanned_register,
+            conf_file='',
             run_number=0,
             type='Run',
             postMessageOfReport=False,
@@ -111,7 +125,7 @@ class elog():
 
         self.file_text = ''  # Placeholder in case we want to write something in the report
         self.attachments = attachments  # Option to use shutil to validate path
-        
+        self.failedElogPath = './failed_elog_uploads/'
 
         self.output_data = output_data
         #self.output_data = '/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans/output_data'
@@ -135,13 +149,25 @@ class elog():
         self.stop_column_str = scan_config['stop_column']
         self.device = settings['chip_sn']
         self.registers = registers
+        self.regName = scanned_register
+        if self.regName!='':
+            self.regVal = str(self.registers[self.regName])
+        else:
+            self.regVal = ''
 
         if run_number!=0:
             self.run_number = run_number
         else:    
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
-        
+        if conf_file=='':
+            conf_file = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
+
+        if conf_folder.endswith('/'):
+            conf_folder = conf_folder[:-1]
+        conf_file_path = conf_folder+'/config_run_'+run_number+'.txt'
+        self.attachments.append(conf_file_path)
+
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
             dumpfile_name = dumpfile.name
             json.dump(registers, dumpfile, indent=2)
@@ -156,7 +182,7 @@ class elog():
 
         start = datetime.datetime.strptime('{}/{}/{} {}:{} CET'.format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute), "%Y/%m/%d %H:%M CET")
         self.starttime = start.strftime("%Y/%m/%d %H:%M CET")
-        print('starttime', self.starttime)
+        #print('starttime', self.starttime)
         #self.starttime = "{0}/{1}/{2} {3}:{4}:{5} CET".format(starttime_year, starttime_month, starttime_day, starttime_hour, starttime_minute, starttime_second)
 
         self.postMessageOfReport = False
@@ -265,7 +291,9 @@ class elog():
             'Stop': self.endtime,
             'Run_no': self.run_number,
             'ConfigID': self.configID,
-            'Device': self.device
+            'Device': self.device,
+            'RegName': self.RegName,
+            'RegVal': self.RegVal
         }
         self.text_template(data)
         files = [
@@ -276,6 +304,37 @@ class elog():
                 ('attfile', open(attachment, 'rb'))
             )
         return requests.Request('POST', req_address, auth=auth, data=data, files=files)
+
+    def uploadFailedElogs(self):
+        failed_elogs = sorted(glob.glob(self.failedElogPath+'elog_run*.pkl'))
+        if len(failed_elogs) == 0:
+            return
+        else:
+            for elog in failed_elogs:
+                elog_request = pickle.load(open(elog,"rb"))
+                with requests.Session() as s:
+                    s.auth = elog_request.auth
+                    tries = 6
+                    sleep = 5
+                    for t in range(tries):
+                        try:
+                            s.request("GET", elog_request.url)
+                            prep = s.prepare_request(elog_request)
+                            settings = s.merge_environment_settings(prep.url, {}, None, None, None)
+                            resp = s.send(prep, **settings)
+                            if resp.ok:
+                                break
+                            else:
+                                print('(Reupload) Timeout: Skipping rest of upload'.format(t, tries, sleep))
+                                print('(Reupload) Reason: {}'.format(resp.reason))
+                                break
+                        except Exception as e:
+                            logging.error(traceback.format_exc())
+                            print('(Reupload) Error: Skipping rest of upload'.format(t, tries, sleep))
+                            break
+                if resp.ok:
+                    print("Reupload of elog successful. Removing pickle file.")
+                    os.remove(elog)
 
     def uploadToElog(self):
         """
@@ -288,7 +347,8 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        time.sleep(3)
+        time.sleep(1)
+        self.uploadFailedElogs()
         requestToElog = self.buildRequest()
         if isinstance(requestToElog, requests.Request):
             with requests.Session() as s:
@@ -325,6 +385,10 @@ class elog():
             else:
                 print("Error during transmitting Elog.")
                 print('Reason: {}'.format(resp.reason))
+                print('Saving request object in '+self.failedElogPath)
+                os.makedirs(os.path.dirname(self.failedElogPath), exist_ok=True)
+                with open(self.failedElogPath+'elog_run'+self.run_number+'.pkl', 'wb') as pickle_file:
+                    pickle.dump(requestToElog, pickle_file)
                 return False
             return True
         else:
