@@ -158,6 +158,7 @@ class elog():
             self.regVal = str(self.registers[self.regName])
         else:
             self.regVal = ''
+        print('regs!!!!!!!!!!!!!', scanned_register, self.regName, self.regVal)
 
         if run_number != 0:
             self.run_number = run_number
@@ -171,6 +172,7 @@ class elog():
             conf_folder = conf_folder[:-1]
         conf_file_path = str(conf_folder)+'/config_run_'+str(self.run_number)+'.txt'
         self.attachments.append(conf_file_path)
+        print(self.attachments)
 
         with open('register_dump_for_elog.txt', 'w') as dumpfile:
             dumpfile_name = dumpfile.name

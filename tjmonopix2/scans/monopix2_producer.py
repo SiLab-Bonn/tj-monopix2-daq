@@ -158,6 +158,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.elog_category = ''
         self.run_number = 0
         self.current_scan_register = ''
+        self.comment_in_conf=''
 
         self.is_running = 0
         print('New instance of Monopix2Producer')
@@ -212,6 +213,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.elog_configID = self.GetConfigItem('CONFIG_ID')
         self.elog_output_path = self.GetConfigItem('ELOG_OUTPUT_PATH')
         self.elog_category = self.GetConfigItem('ELOG_CATEGORY')
+        self.comment_in_conf = self.GetConfigItem('COMMENT_IN_CONF')
 
         time.sleep(5)
 
@@ -257,7 +259,7 @@ class Monopix2Producer(pyeudaq.Producer):
         # properly (when  _init_hardware of ScanBase is not called) and basil tcp connection fails
         # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
         try:
-            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,self.current_scan_register,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
+            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,self.current_scan_register,comment_in_conf=self.comment_in_conf,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
         except Exception as e:
             print('{}'.format(e))
             print('elog error')
@@ -329,12 +331,20 @@ class Monopix2Producer(pyeudaq.Producer):
         # set up configured values for the monopix2 registers
         for reg in self.reg_config.keys():            
             reg_val = self.reg_config[reg]
-            if ',' in reg_val:
-                self.current_scan_register = reg
             reg_val = reg_val.replace(',', '.')
-            self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
             if reg_val:
-                self.scan.chip.registers[reg].write(int(float(reg_val)))
+                reg_val_int = int(float(reg_val))
+                reg_val_float = float(reg_val)
+                
+                if (reg_val_float - reg_val_int) > 0.001:
+                    print('Contains, ', reg_val, ' in ', reg)
+                    self.current_scan_register = reg
+
+                print('After, repl ', reg_val, ' in ', reg)
+                self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
+
+                if reg_val:
+                    self.scan.chip.registers[reg].write(int(float(reg_val)))
 
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
