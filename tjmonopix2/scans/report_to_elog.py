@@ -366,7 +366,7 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        #time.sleep(1)
+        time.sleep(1)
         self.uploadFailedElogs()
         requestToElog = self.buildRequest()
         upload_success = False
