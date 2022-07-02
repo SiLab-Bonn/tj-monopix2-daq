@@ -94,8 +94,11 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         trigger_data = np.split(actual_data, trg_idx)
 
         # Send data of each trigger
-        for dat in trigger_data[:-1]:
+        for i  in range(0, len(trigger_data) - 2):
+            dat = trigger_data[i]
+            print(dat)
             glitch_detected = False
+            error = False
             # Split can return empty data, thus do not return send empty data
             # Otherwise fragile EUDAQ will fail. It is based on very simple event counting only
 
@@ -111,21 +114,45 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
                 prev_trg = self.last_trigger
                 if self.last_trigger > 0 and trigger != self.last_trigger + 1:    # Trigger number jump
+                    error = True
                     if (self.last_trigger + 1) == (trigger >> 1):
                         # Measured trigger number is exactly shifted by 1 bit, due to glitch
                         glitch_detected = True
-                    else:
-                        self.log.warning('Expected != Measured trigger number: %d != %d',
-                                         self.last_trigger + 1, trigger)
+
+
                 self.last_trigger = trigger if not glitch_detected else (trigger >> 1)
+
 
                 if self.last_trigger < 100 and prev_trg > 32760:  # trigger number overflow
                     # arbitrary choice of borders, in case we missed triggers do not use a '=='
                     print('looks like an ovrFlw')
                     self.ovflw_cnt += 1
+                elif error and not glitch_detected:
+                    self.log.warning('Expected != Measured trigger number: %d != %d',
+                                     self.last_trigger + 1, trigger)
 
                 # print('sending event with trgNmb = ', self.last_trigger)
-                self.callback(dat)
+                data_to_send = np.concatenate(trigger_data[i:i + 2])
+
+
+                # The event building works in the following way
+                # Data from FIFO eg:
+                # D D D T0 D D D D T1 D D D D D T2 D D D T3 D D D D
+                #       |<---0--->||<----1---->||<--2-->||<-------... (store for next execution)
+                # D ... data word, Tx ... Trigger word, |<-x->| ... EUDAQ event with trigger number x
+                # investigation of the Chip efficiency in a testbeam setup proved that when doing the event building in
+                # the way scetched above, some pixel hits got assigned with a wrong trigger number. Eg:
+                # D after T2 would actually still belong to T1 (shown by reconstruction with telescope setup)
+                # as an easy workaround we assign all the data to 2 trigger numbers
+                # with the scetch from above this looks like:
+                #  D D D T0 D D D D T1 D D D D D T2 D D D T3 D D D D
+                #        |<----------0---------->|
+                #                   |<--------1--------->|
+                #                                |<---------------------... next execution
+
+
+                print('sending', data_to_send)
+                self.callback(data_to_send)
 
         self.last_readout_data = trigger_data[-1]
 
