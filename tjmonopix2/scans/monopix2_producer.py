@@ -80,6 +80,8 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     def handle_data(self, data_tuple, receiver=None):
 
+        #print('handle data')
+
         if self.bdaq_recording:
             super(EudaqScan, self).handle_data(data_tuple, receiver=None)
 
@@ -96,7 +98,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         # Send data of each trigger
         for i  in range(0, len(trigger_data) - 2):
             dat = trigger_data[i]
-            print(dat)
             glitch_detected = False
             error = False
             # Split can return empty data, thus do not return send empty data
@@ -151,10 +152,12 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
                 #                                |<---------------------... next execution
 
 
-                print('sending', data_to_send)
+                #print('sending', data_to_send)
                 self.callback(data_to_send)
 
-        self.last_readout_data = trigger_data[-1]
+
+        self.last_readout_data = np.concatenate(trigger_data[-2:])
+        #print('last readout =', self.last_readout_data)
 
     def _scan(self, start_column=0, stop_column=400, scan_timeout=10, max_triggers=False, min_spec_occupancy=False,
               fraction=0.99, use_tdc=False, **_):
@@ -202,8 +205,6 @@ class Monopix2Producer(pyeudaq.Producer):
         self.board_ip = self.GetInitItem("BOARD_IP")
         self.testbench_file = self.GetInitItem("TESTBENCH_FILE")
         self.bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
-
-        print('run nmb ', self.GetRunNumber())
 
     def DoConfigure(self):
         # EUDAQ config only available during DoConfigure, store to variables
@@ -284,7 +285,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.stop_scan.set()
         self.thread_scan.join()
 
-        self._reset_registers()
+        # self._reset_registers()
 
         # self.scan.analyze()
         self.scan.close()
@@ -338,7 +339,7 @@ class Monopix2Producer(pyeudaq.Producer):
             ev.AddBlock(0, block)
             ev.SetTag("trgOvflw", str(self.scan.get_trg_ovflw()))
             self.SendEvent(ev)
-            # print(f'sending event with block size = {len(block)} and trigger# = {last_trigger}')
+            #print(f'sending event with size = {len(block)} and trigger# = {last_trigger}')
         else:
             print('trying to send empty data in event')
 

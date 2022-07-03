@@ -163,3 +163,5 @@ results.xml
 *.lpr
 *.str
 webtalk
+
+tjmonopix2/scans/masked_pixels.yaml

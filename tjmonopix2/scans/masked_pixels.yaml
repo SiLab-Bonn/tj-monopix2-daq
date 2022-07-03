@@ -1,36 +1,53 @@
+measurement: 20220628_161820_eudaq_scan
+median_hits: 514.5
+std_hits: 627444.7937461733
+cutoff: 3500.0
 masked_pixels:
-  - col: 490
-    row: 0
-
-  - col: 490
-    row: 10
-
-  - col: 491
-    row: 20
-
-  - col: 492
-    row: 30
-
-  - col: 493
-    row: 40
-
-  - col: 490
-    row: 50
-
-  - col: 491
-    row: 60
-
-  - col: 492
-    row: 70
-
-  - col: 493
-    row: 80
-
-  - col: 490
-    row: 90
-
-  - col: 480
-    row: 100
-
-  - col: 479
-    row: 110
+- row: 16
+  col: 487
+  hits: 4933.0
+- row: 221
+  col: 485
+  hits: 3558.0
+- row: 283
+  col: 483
+  hits: 24364.0
+- row: 317
+  col: 480
+  hits: 33059745.0
+- row: 379
+  col: 483
+  hits: 46184425.0
+- row: 463
+  col: 494
+  hits: 67386.0
+- row: 19
+  col: 491
+  hits: 5960.0
+- row: 105
+  col: 493
+  hits: 2338.0
+- row: 117
+  col: 480
+  hits: 11379.0
+- row: 163
+  col: 487
+  hits: 2722.0
+- row: 173
+  col: 489
+  hits: 64189.0
+- row: 242
+  col: 493
+  hits: 2039.0
+- row: 257
+  col: 481
+  hits: 2872.0
+- row: 352
+  col: 485
+  hits: 920229.0
+- row: 395
+  col: 487
+  hits: 12054.0
+- row: 498
+  col: 486
+  hits: 209917.0
