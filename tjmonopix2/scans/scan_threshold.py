@@ -9,27 +9,30 @@ from tjmonopix2.analysis import analysis
 from tjmonopix2.scans.shift_and_inject import get_scan_loop_mask_steps, shift_and_inject
 from tjmonopix2.system.scan_base import ScanBase
 from tqdm import tqdm
+from plotting_scurves import Plotting
 
 scan_configuration = {
-    'start_column': 480,
-    'stop_column': 512,
+    'start_column': 0,
+    'stop_column': 5,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
     'VCAL_HIGH': 150,
     'VCAL_LOW_start': 140,
-    'VCAL_LOW_stop': 90,
+    'VCAL_LOW_stop': 40,
     'VCAL_LOW_step': -1
 }
 
 register_overrides = {
-    "ITHR": 30,
-    "IBIAS": 60,
-    "ICASN": 8,
-    "VCASP": 40,
-    "VRESET": 100,
-    "VCASC": 150,
+    "ITHR": 64,
+    "IBIAS": 50,
+    "ICASN": 0,
+    "VCASP": 93,
+    "VRESET": 143,
+    "VCASC": 228,
+    "IDB": 100,
+    'ITUNE': 53
 }
 
 
@@ -72,6 +75,10 @@ class ThresholdScan(ScanBase):
     def _analyze(self):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
+
+        if self.configuration['bench']['analysis']['create_pdf']:
+            with Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+                p.create_standard_plots()
 
 
 if __name__ == "__main__":
