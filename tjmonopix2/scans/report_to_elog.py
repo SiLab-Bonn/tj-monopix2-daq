@@ -20,7 +20,7 @@ import json
 import pickle
 import os
 import sys
-sys.path.append('/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans')
+#sys.path.append('/home/yannik/vtx/tj-monopix2-daq/tjmonopix2/scans')
 
 
 class elog():
@@ -167,8 +167,8 @@ class elog():
             self.run_number = self.raw_dir_file.split("_")[1][3:]
 
         if conf_folder == '':
-            #conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
-            conf_folder = '/home/yannik'
+            conf_folder = '/mnt/Disk1/VTX/data_producer_runs/run_folder'
+            #conf_folder = '/home/yannik'
         if conf_folder.endswith('/'):
             conf_folder = conf_folder[:-1]
         conf_file_path = str(conf_folder)+'/config_run_'+str(self.run_number)+'.txt'
@@ -369,7 +369,7 @@ class elog():
         bool
             True when upload successful, False if upload unsuccessful.
         """
-        #time.sleep(1)
+        time.sleep(1)
         self.uploadFailedElogs()
         requestToElog = self.buildRequest()
         upload_success = False

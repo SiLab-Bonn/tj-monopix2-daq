@@ -12,7 +12,7 @@ def parse_args():
              description='Create reports of background analysis')
     add_arg = parser.add_argument
     add_arg('-f', '--file', type=str, default="", help='Path to h5 file')
-    add_arg('-o', '--object', type=str, default="", help='Object name from h5 file like Dut, HistOcc, configuration_out/chip/registers')
+    add_arg('-o', '--object', type=str, default="", help='Object name from h5 file like Dut, HistOcc, configuration_in/chip/registers')
 
     return parser.parse_args()
 
@@ -61,6 +61,7 @@ class readh5():
         self.objectName = []
         self.objectBaseName = []
         self.h5file = None
+        self.configuration = None
 
         if filePath:
             self.filePath = filePath
@@ -77,6 +78,7 @@ class readh5():
 
         try:
             self.h5file = tb.open_file(self.filePath, mode="r", title='DUT')
+            self.configuration = self.h5file.root.configuration_out
         except Exception:
             logging.error('Cannot open h5')
             return
@@ -144,7 +146,7 @@ class readh5():
 
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.chip.module
+            registers = self.configuration.chip.module
         except Exception:
             logging.warning('no registers')
         for x in registers.iterrows():
@@ -154,7 +156,7 @@ class readh5():
     def readregisters(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.chip.registers
+            registers = self.configuration.chip.registers
         except Exception:
             logging.warning('no registers')
         for x in registers.iterrows():
@@ -164,7 +166,7 @@ class readh5():
     def readuse_pixel(self):
         arr = None
         try:
-            arr = np.asarray(self.h5file.root.configuration_out.chip.use_pixel[:])
+            arr = np.asarray(self.configuration.chip.use_pixel[:])
         except Exception:
             logging.warning("no dut")
             return
@@ -173,7 +175,7 @@ class readh5():
     def readsettings(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.chip.settings
+            registers = self.configuration.chip.settings
         except Exception:
             logging.warning('no registers')
         for x in registers.iterrows():
@@ -183,7 +185,7 @@ class readh5():
     def readinjection(self):
         arr = None
         try:
-            arr = np.asarray(self.h5file.root.configuration_out.chip.masks.injection[:])
+            arr = np.asarray(self.configuration.chip.masks.injection[:])
         except Exception:
             logging.warning("no dut")
             return
@@ -192,7 +194,7 @@ class readh5():
     def readenable(self):
         arr = None
         try:
-            arr = np.asarray(self.h5file.root.configuration_out.chip.masks.enable[:])
+            arr = np.asarray(self.configuration.chip.masks.enable[:])
         except Exception:
             logging.warning("no dut")
             return
@@ -201,7 +203,7 @@ class readh5():
     def readtdac(self):
         arr = None
         try:
-            arr = np.asarray(self.h5file.root.configuration_out.chip.masks.tdac[:])
+            arr = np.asarray(self.configuration.chip.masks.tdac[:])
         except Exception:
             logging.warning("no dut")
             return
@@ -210,7 +212,7 @@ class readh5():
     def readscan_params(self):
         arr = None
         try:
-            arr = np.asarray(self.h5file.root.configuration_out.scan.scan_params[:])
+            arr = np.asarray(self.configuration.scan.scan_params[:])
         except Exception:
             logging.warning("no scan_params")
             return
@@ -220,7 +222,7 @@ class readh5():
 
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.scan.scan_config
+            registers = self.configuration.scan.scan_config
         except Exception:
             logging.warning('no scan_config')
         for x in registers.iterrows():
@@ -230,7 +232,7 @@ class readh5():
     def readrun_config(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.scan.run_config
+            registers = self.configuration.scan.run_config
         except Exception:
             logging.warning('no run_config')
         for x in registers.iterrows():
@@ -240,7 +242,7 @@ class readh5():
     def readanalysis(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.bench.analysis
+            registers = self.configuration.bench.analysis
         except Exception:
             logging.warning('no analysis')
         for x in registers.iterrows():
@@ -250,7 +252,7 @@ class readh5():
     def readTDC(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.bench.TDC
+            registers = self.configuration.bench.TDC
         except Exception:
             logging.warning('no TDC')
         for x in registers.iterrows():
@@ -260,7 +262,7 @@ class readh5():
     def readTLU(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.bench.TLU
+            registers = self.configuration.bench.TLU
         except Exception:
             logging.warning('no TLU')
         for x in registers.iterrows():
@@ -270,7 +272,7 @@ class readh5():
     def readgeneral(self):
         dictionary = {}
         try:
-            registers = self.h5file.root.configuration_out.bench.general
+            registers = self.configuration.bench.general
         except Exception:
             logging.warning('no general')
         for x in registers.iterrows():
