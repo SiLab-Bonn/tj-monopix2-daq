@@ -327,7 +327,10 @@ class elog():
         else:
             for elog in failed_elogs:
                 print(elog)
-                elog_request_dict = pickle.load(open(elog, "rb"))
+                try:
+                    elog_request_dict = pickle.load(open(elog, "rb"))
+                except Exception:
+                    continue
                 files=[]
                 loaded_attachments = elog_request_dict['attachments']
                 for attachment in loaded_attachments:
