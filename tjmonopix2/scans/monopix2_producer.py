@@ -258,7 +258,7 @@ class Monopix2Producer(pyeudaq.Producer):
             # via network, otherwise init and config will fail
             # time until FPGA board is reachable from the moment the PS start can vary
 
-            max_retries = 35
+            max_retries = 60
             for i in range(1, max_retries):
                 print("Ping: ", f'fping -c1 -t200 {self.board_ip}')
                 out = os.system(f'fping -c1 -t200 {self.board_ip}')
