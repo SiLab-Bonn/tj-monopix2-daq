@@ -10,7 +10,7 @@ modules:
   module_0: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_0: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W14R12"
+      chip_sn: "W5R18"
       chip_id: 0
       receiver: "rx0"
       chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
