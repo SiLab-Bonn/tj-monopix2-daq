@@ -1012,7 +1012,7 @@ class TJMonoPix2(object):
             {Cal,ChipId[4:0]}-{PulseStartCnfg[5:1]},{PulseStartCnfg[0], PulseStopCnfg[13:10]}}-{{PulseStopCnfg[9:0]} [Cal +DD +DD]
         '''
         indata = self._write_register(146, 0b100, write=False)
-        indata +=self._write_register(146, 0b000, write=False)
+        indata += self._write_register(146, 0b000, write=False)
         indata += [self.CMD_CAL]
         indata += [self.cmd_data_map[self.chip_id]]
         indata += [self.cmd_data_map[(PulseStartCnfg & 0b11_1110) >> 1]]
