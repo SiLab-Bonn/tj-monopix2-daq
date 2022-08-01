@@ -1000,6 +1000,7 @@ class TJMonoPix2(object):
         '''
             Command to send a digital or analog injection to the chip.
             Digital or analog injection is selected globally via the INJECTION_SELECT register.
+            Need to reset BCID counter (register address 146) before injection.
 
             For digital injection, only CAL_edge signal is relevant:
                 - CAL_edge_mode switches between step (0) and pulse (1) mode
@@ -1010,7 +1011,9 @@ class TJMonoPix2(object):
                 - CAL_aux_dly is counted in cycles of the 160MHz clock and sets the delay before the edge of the signal
             {Cal,ChipId[4:0]}-{PulseStartCnfg[5:1]},{PulseStartCnfg[0], PulseStopCnfg[13:10]}}-{{PulseStopCnfg[9:0]} [Cal +DD +DD]
         '''
-        indata = [self.CMD_CAL]
+        indata = self._write_register(146, 0b100, write=False)
+        indata +=self._write_register(146, 0b000, write=False)
+        indata += [self.CMD_CAL]
         indata += [self.cmd_data_map[self.chip_id]]
         indata += [self.cmd_data_map[(PulseStartCnfg & 0b11_1110) >> 1]]
         indata += [self.cmd_data_map[((PulseStartCnfg << 4) & 0b10000) + ((PulseStopCnfg >> 10) & 0b1111)]]
