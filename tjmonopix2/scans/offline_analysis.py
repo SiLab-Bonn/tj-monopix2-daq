@@ -84,7 +84,46 @@ def plot_tot_histograms(hist_tot, mask_out, props, basename, output_dir):
     plt.tight_layout()
     plt.grid()
     plt.savefig(
-        os.path.join(output_dir, basename + "_hitmap_" + props.get('output-name', 'output_name_undefined') + ".png"))
+        os.path.join(output_dir, basename + "_hitmap_hist_tot.png"))
+
+
+
+def plot_occ_histograms(map_data, mask_out, props, basename, output_dir):
+    run_config = props['run_config']
+    scan_config = props['scan_config']
+
+    fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+    map_data[mask_out] = 0
+    
+    boundaries = [0, 224, 448, 480, 512]
+    labs = ['Normal FE', 'Normal casc. FE', 'HV casc. FE', 'HV FE']
+    
+    d = []
+    maxs = []
+    for i in range(4):
+        l = map_data[boundaries[i]:boundaries[i+1], :].reshape(-1)
+        l = l[l != 0]
+        d.append(l)
+        maxs.append(np.amax(l, initial=0))
+    
+    
+    for i in range(4):
+        ax.hist(d[i], rwidth=0.9, label=labs[i], alpha=0.6, edgecolor = "black", bins=20, range=(0, np.amax(maxs)))  # on top of each other
+        
+    #ax.hist(d,  label=labs)  # side by side bars - looks ugly
+
+    plt.xlabel('Number of Hits')
+    plt.ylabel('Number of Pixels')
+    plt.title(run_config['chip_sn'] + ': Hit Histogram')
+    plt.legend()
+    plt.tight_layout()
+    plt.grid()
+    plt.savefig(
+        os.path.join(output_dir, basename + "_hitmap_hist_occ.png"))
+
+
+
+
 
 
 def export_mask_yaml(basepath, noisy_pixels, occ, clim, measurement):
@@ -188,12 +227,12 @@ def plot_from_file(path_h5, output_dir, clim):
     }
     plot_pixmap_generic(avg_tot, noisy_pixels, prop_tot, basename, output_dir)
 
-    prop_tothist = {
+    prop_hist = {
         'run_config': run_config,
         'scan_config': scan_config,
-        'output-name': 'hist_tot',
     }
-    plot_tot_histograms(hist_tot, noisy_pixels, prop_tothist, basename, output_dir)
+    plot_tot_histograms(hist_tot, noisy_pixels, prop_hist, basename, output_dir)
+    plot_occ_histograms(hist_occ, noisy_pixels, prop_hist, basename, output_dir)
     export_mask_yaml(output_dir, noisy_pixels, hist_occ_original, clim, basename)
 
 
