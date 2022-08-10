@@ -146,7 +146,7 @@ class Plotting(object):
         #     self.HistTotCalStd = root.HistTotCalStd[:]
         #     self.TOThist = root.TOThist[:]
 
-        # if self.run_config['scan_id'] in ['hitor_calibration', 'hitor_calibration_ptot']:
+        # if self.run_config['scan_id'] in ['hitor_calibration']:
         #     self.HistTdc = root.hist_2d_tdc_vcal[:]
         #     self.HistTotCalMean = root.hist_tot_mean[:]
         #     self.HistTotCalStd = root.hist_tot_std[:]
@@ -165,10 +165,6 @@ class Plotting(object):
         #     self.ThresholdShiftMap = root.ThresholdShiftMap[:]
         #     self.NoiseShiftMap = root.NoiseShiftMap[:]
         #     self.Cuts = au.ConfigDict(in_file.root.Cuts[:])
-
-        # if self.use_ptot:
-        #     self.HistPToT = root.HistPToT[:]
-        #     self.HistPToA = root.HistPToA[:]
 
         try:
             self.Cluster = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
@@ -658,7 +654,6 @@ class Plotting(object):
         for flavor in DACS.keys():
             dac_dict[flavor] = OrderedDict()
             for reg, value in self.registers.items():
-                # if self.chip_type.lower() in ['rd53a', 'itkpixv1']:
                 if any(reg.startswith(dac) for dac in DACS[flavor]):
                     dac_dict[flavor][reg] = value
         tb_list = []
