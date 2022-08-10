@@ -37,6 +37,14 @@ OVERTEXT_COLOR = '#07529a'
 
 SCURVE_CHI2_UPPER_LIMIT = 50
 
+DACS = {'TJMONOPIX2': ['IBIAS', 'ITHR',
+                        'ICASN', 'IDB',
+                        'ITUNE', 'ICOMP',
+                        'IDEL', 'IRAM',
+                        'VRESET', 'VCASP',
+                        'VCASC', 'VCLIP',]
+        }
+
 
 class Plotting(object):
     def __init__(self, analyzed_data_file, pdf_file=None, level='preliminary', mask_noisy_pixels=False, internal=False, save_single_pdf=False, save_png=False):
@@ -647,88 +655,46 @@ class Plotting(object):
             if key in run_conf_trg_tdc:
                 scan_config_trg_tdc_dict[key] = value
 
-        # for flavor in DACS.keys():
-        #     dac_dict[flavor] = OrderedDict()
-        #     for reg, value in self.registers.items():
-        #         if self.chip_type.lower() in ['rd53a', 'itkpixv1']:
-        #             if any(reg.startswith(dac) for dac in DACS[flavor]):
-        #                 dac_dict[flavor][reg] = value
-        # tb_list = []
-        # for i in range(max(len(scan_config_dict), len(dac_dict['SYNC']), len(dac_dict['LIN']), len(dac_dict['DIFF']), len(dac_dict['ITKPIXV1']), len(scan_config_dict))):
-        #     try:
-        #         key1 = list(scan_config_dict.keys())[i]
-        #         value1 = scan_config_dict[key1]
-        #     except IndexError:
-        #         key1 = ''
-        #         value1 = ''
-        #     try:
-        #         key2 = list(dac_dict['SYNC'].keys())[i]
-        #         value2 = dac_dict['SYNC'][key2]
-        #     except IndexError:
-        #         key2 = ''
-        #         value2 = ''
-        #     try:
-        #         key3 = list(dac_dict['LIN'].keys())[i]
-        #         value3 = dac_dict['LIN'][key3]
-        #     except IndexError:
-        #         key3 = ''
-        #         value3 = ''
-        #     if self.chip_type.lower() == 'rd53a':
-        #         try:
-        #             key4 = list(dac_dict['DIFF'].keys())[i]
-        #             value4 = dac_dict['DIFF'][key4]
-        #         except IndexError:
-        #             key4 = ''
-        #             value4 = ''
-        #     elif self.chip_type.lower() == 'itkpixv1':
-        #         try:
-        #             key4 = list(dac_dict['ITKPIXV1'].keys())[i]
-        #             value4 = dac_dict['ITKPIXV1'][key4]
-        #         except IndexError:
-        #             key4 = ''
-        #             value4 = ''
-        #     try:
-        #         key5 = list(scan_config_dict.keys())[i]
-        #         value5 = scan_config_dict[key5]
-        #     except IndexError:
-        #         key5 = ''
-        #         value5 = ''
+        for flavor in DACS.keys():
+            dac_dict[flavor] = OrderedDict()
+            for reg, value in self.registers.items():
+                # if self.chip_type.lower() in ['rd53a', 'itkpixv1']:
+                if any(reg.startswith(dac) for dac in DACS[flavor]):
+                    dac_dict[flavor][reg] = value
+        tb_list = []
+        for i in range(max(len(scan_config_dict), len(dac_dict['TJMONOPIX2']), len(scan_config_dict))):
+            try:
+                key1 = list(scan_config_dict.keys())[i]
+                value1 = scan_config_dict[key1]
+            except IndexError:
+                key1 = ''
+                value1 = ''
+            try:
+                key2 = list(dac_dict['TJMONOPIX2'].keys())[i]
+                value2 = dac_dict['TJMONOPIX2'][key2]
+            except IndexError:
+                key2 = ''
+                value2 = ''
 
-        #     if scan_config_trg_tdc_dict:
-        #         tb_list.append([key1, value1, '', key2, value2, '', key3, value3, '', key4, value4, '', key5, value5])
-        #     elif self.chip_type.lower() == 'itkpixv1':
-        #         tb_list.append([key1, value1, '', key4, value4])
-        #     else:
-        #         tb_list.append([key1, value1, '', key2, value2, '', key3, value3, '', key4, value4])
+            tb_list.append([key1, value1, '', key2, value2, ''])
 
-        # if self.chip_type.lower() == 'rd53a':
-        #     if scan_config_trg_tdc_dict:
-        #         widths = [0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10]
-        #         labels = ['Scan config', 'Value', '', 'SYNC config', 'Value', '', 'LIN config', 'Value', '', 'DIFF config', 'Value', '', 'Trg/TDC config', 'Value']
-        #     else:
-        #         widths = [0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10]
-        #         labels = ['Scan config', 'Value', '', 'SYNC config', 'Value', '', 'LIN config', 'Value', '', 'DIFF config', 'Value']
-        # else:
-        #     if scan_config_trg_tdc_dict:
-        #         widths = [0.18, 0.10, 0.03, 0.18, 0.10, 0.03, 0.18, 0.10]
-        #         labels = ['Scan config', 'Value', '', 'ITkPixV1 config', 'Value', '', 'Trg/TDC config', 'Value']
-        #     else:
-        #         widths = [0.18, 0.10, 0.03, 0.18, 0.10]
-        #         labels = ['Scan config', 'Value', '', 'ITkPixV1 config', 'Value']
-        # table = ax.table(cellText=tb_list, colWidths=widths, colLabels=labels, cellLoc='left', loc='center')
-        # table.scale(0.8, 0.8)
-        # table.auto_set_font_size(False)
+        widths = [0.18, 0.10, 0.03, 0.18, 0.10, 0.03]
+        labels = ['Scan config', 'Value', '', 'TJ-Monopix2 config', 'Value', '']
 
-        # for key, cell in table.get_celld().items():
-        #     cell.set_fontsize(3.5)
-        #     row, col = key
-        #     if row == 0:
-        #         cell.set_color('#ffb300')
-        #         cell.set_fontsize(5)
-        #     if col in [2, 5, 8, 11]:
-        #         cell.set_color('white')
-        #     if col in [1, 4, 7, 10, 13]:
-        #         cell._loc = 'center'
+        table = ax.table(cellText=tb_list, colWidths=widths, colLabels=labels, cellLoc='left', loc='center')
+        table.scale(0.8, 0.8)
+        table.auto_set_font_size(False)
+
+        for key, cell in table.get_celld().items():
+            cell.set_fontsize(3.5)
+            row, col = key
+            if row == 0:
+                cell.set_color('#ffb300')
+                cell.set_fontsize(5)
+            if col in [2, 5]:
+                cell.set_color('white')
+            if col in [1, 4, 7, 10, 13]:
+                cell._loc = 'center'
 
         self._save_plots(fig, suffix='parameter_page')
 
