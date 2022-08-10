@@ -38,13 +38,13 @@ class TDACTuning(ScanBase):
         '''
         Parameters
         ----------
-        start_column : int [0:400]
+        start_column : int [0:512]
             First column to scan
-        stop_column : int [0:400]
+        stop_column : int [0:512]
             Column to stop the scan. This column is excluded from the scan.
-        start_row : int [0:192]
+        start_row : int [0:512]
             First row to scan
-        stop_row : int [0:192]
+        stop_row : int [0:512]
             Row to stop the scan. This row is excluded from the scan.
 
         VCAL_LOW : int
