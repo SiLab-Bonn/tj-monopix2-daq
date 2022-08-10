@@ -203,21 +203,21 @@ class Analysis(object):
             #                                               complevel=5,
             #                                               fletcher32=False))
 
-            # if scan_id in ['threshold_scan']:
-            #     n_injections = self.scan_config['n_injections']
-            #     hist_scurve = hist_occ.reshape((self.rows * self.columns, -1))
+            if scan_id in ['threshold_scan']:
+                n_injections = self.scan_config['n_injections']
+                hist_scurve = hist_occ.reshape((self.rows * self.columns, -1))
 
-            #     if scan_id in ['threshold_scan']:
-            #         scan_params = [v - self.scan_config['VCAL_MED'] for v in range(self.scan_config['VCAL_HIGH_start'],
-            #                                                                        self.scan_config['VCAL_HIGH_stop'], self.scan_config['VCAL_HIGH_step'])]
-            #         self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False, rows=self.rows)
-            #     elif scan_id == 'autorange_threshold_scan':
-            #         scan_params = self.get_scan_param_values(scan_parameter='vcal_high') - self.get_scan_param_values(scan_parameter='vcal_med')
-            #         self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False, rows=self.rows)
+                if scan_id in ['threshold_scan']:
+                    scan_params = [self.scan_config['VCAL_HIGH'] - v for v in range(self.scan_config['VCAL_LOW_start'],
+                                                                                   self.scan_config['VCAL_LOW_stop'], self.scan_config['VCAL_LOW_step'])]
+                    self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False)
+                elif scan_id == 'autorange_threshold_scan':
+                    scan_params = self.get_scan_param_values(scan_parameter='vcal_high') - self.get_scan_param_values(scan_parameter='vcal_med')
+                    self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False)
 
-            #     out_file.create_carray(out_file.root, name='ThresholdMap', title='Threshold Map', obj=self.threshold_map,
-            #                            filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
-            #     out_file.create_carray(out_file.root, name='NoiseMap', title='Noise Map', obj=self.noise_map,
-            #                            filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
-            #     out_file.create_carray(out_file.root, name='Chi2Map', title='Chi2 / ndf Map', obj=self.chi2_map,
-            #                            filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
+                out_file.create_carray(out_file.root, name='ThresholdMap', title='Threshold Map', obj=self.threshold_map,
+                                       filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
+                out_file.create_carray(out_file.root, name='NoiseMap', title='Noise Map', obj=self.noise_map,
+                                       filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
+                out_file.create_carray(out_file.root, name='Chi2Map', title='Chi2 / ndf Map', obj=self.chi2_map,
+                                       filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))

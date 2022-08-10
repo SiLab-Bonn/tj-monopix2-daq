@@ -50,6 +50,10 @@ class AnalogScan(ScanBase):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
+        if self.configuration['bench']['analysis']['create_pdf']:
+            with plotting.Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+                p.create_standard_plots()
+
 
 if __name__ == "__main__":
     with AnalogScan(scan_config=scan_configuration) as scan:
