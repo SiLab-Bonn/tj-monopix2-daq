@@ -13,15 +13,15 @@ from plotting_scurves import Plotting
 
 scan_configuration = {
     'start_column': 225,
-    'stop_column': 230,
+    'stop_column': 226,
     'start_row': 0,
-    'stop_row': 5,
+    'stop_row': 1,
 
     'n_injections': 100,
-    'VCAL_HIGH': 140,
-    'VCAL_LOW_start': 130,
-    'VCAL_LOW_stop': 10,
-    'VCAL_LOW_step': -1
+    'VCAL_HIGH': 240,
+    'VCAL_LOW_start': 240,
+    'VCAL_LOW_stop': 239,
+    'VCAL_LOW_step': -10
 }
 
 register_overrides = {
@@ -33,8 +33,10 @@ register_overrides = {
     "VCASC": 228,
     "IDB": 100,
     'ITUNE': 53,
-    # 'MON_EN_VH': 1,
-    # 'MON_EN_VL': 1,
+    'MON_EN_VH': 0,
+    'MON_EN_VL': 0,
+    'OVR_EN_VH': 0,
+    'OVR_EN_VL': 0,
 }
 
 
