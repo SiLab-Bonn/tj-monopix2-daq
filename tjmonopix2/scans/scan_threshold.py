@@ -18,9 +18,9 @@ scan_configuration = {
     'stop_row': 5,
 
     'n_injections': 100,
-    'VCAL_HIGH': 150,
-    'VCAL_LOW_start': 140,
-    'VCAL_LOW_stop': 40,
+    'VCAL_HIGH': 140,
+    'VCAL_LOW_start': 130,
+    'VCAL_LOW_stop': 10,
     'VCAL_LOW_step': -1
 }
 
@@ -32,7 +32,9 @@ register_overrides = {
     'VCASP': 93,
     "VCASC": 228,
     "IDB": 100,
-    'ITUNE': 53
+    'ITUNE': 53,
+    # 'MON_EN_VH': 1,
+    # 'MON_EN_VL': 1,
 }
 
 
@@ -76,9 +78,9 @@ class ThresholdScan(ScanBase):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
-        if self.configuration['bench']['analysis']['create_pdf']:
-            with Plotting(analyzed_data_file=a.analyzed_data_file) as p:
-                p.create_standard_plots()
+        # if self.configuration['bench']['analysis']['create_pdf']:
+        #     with Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+        #         p.create_standard_plots()
 
 
 if __name__ == "__main__":
