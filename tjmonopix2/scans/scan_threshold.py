@@ -12,10 +12,10 @@ from tqdm import tqdm
 from plotting_scurves import Plotting
 
 scan_configuration = {
-    'start_column': 0,
-    'stop_column': 5,
+    'start_column': 225,
+    'stop_column': 230,
     'start_row': 0,
-    'stop_row': 512,
+    'stop_row': 5,
 
     'n_injections': 100,
     'VCAL_HIGH': 150,
@@ -25,11 +25,11 @@ scan_configuration = {
 }
 
 register_overrides = {
-    "ITHR": 64,
-    "IBIAS": 50,
-    "ICASN": 0,
-    "VCASP": 93,
-    "VRESET": 143,
+    'ITHR': 64,
+    'IBIAS': 50,
+    'VRESET': 143,
+    'ICASN': 0,
+    'VCASP': 93,
     "VCASC": 228,
     "IDB": 100,
     'ITUNE': 53

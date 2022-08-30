@@ -21,7 +21,11 @@ scan_configuration = {
 
 register_overrides = {
     'scan_time' : 60,  # seconds
-    'ITHR': 50,
+    'ITHR': 64,
+    'IBIAS': 50,
+    'VRESET': 143,
+    'ICASN': 0,
+    'VCASP': 93,
 }
 
 registers = ['IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VH', 'VL', 'VCLIP', 'VCASC', 'IRAM']
