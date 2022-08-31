@@ -22,16 +22,17 @@ scan_configuration = {
 }
 
 register_overrides = {
-    'n_injections' : 50,
+    'n_injections' : 20000,
     "CMOS_TX_EN_CONF": 1,
-    'VL': 30,
-    'VH': 150,
-    'ITHR': 30,
-    'IBIAS': 60,
-    'VCASC': 150,
-    'ICASN': 8,
-    'VCASP': 40,
-    'VRESET': 100
+    'VL': 1,
+    'VH': 170,
+    'ITHR': 64,
+    'IBIAS': 50,
+    'VRESET': 143,
+    'ICASN': 0,
+    'VCASP': 93,
+    'VCASC': 228,  # Default
+    'IDB': 100
 }
 
 registers = ['IBIAS', 'ICASN', 'IDB', 'ITUNE', 'ITHR', 'ICOMP', 'IDEL', 'VRESET', 'VCASP', 'VH', 'VL', 'VCLIP', 'VCASC', 'IRAM']
@@ -55,10 +56,10 @@ class AnalogScan(ScanBase):
                 self.chip.registers[r].write(self.register_overrides[r])
             #print("Write: ", r, " to ", self.register_overrides[r])
 
-        # Enable HITOR on all columns, no rows
+        # Enable HITOR on all columns, some rows
         for i in range(512//16):
             self.chip._write_register(18+i, 0xffff)
-            self.chip._write_register(50+i, 0)
+            self.chip._write_register(50+i, 0xffff)
 
         # Enable injection on last column, rows 0 and 509 (at the same time)
         for i in range(512//16):
@@ -69,8 +70,10 @@ class AnalogScan(ScanBase):
         # scan.chip._write_register(114+31, ~5)  # Last row + row 509
         scan.chip._write_register(114+31, ~4)
 
-        # Enable analog monitoring on HVFE
-        self.chip.registers["EN_PULSE_ANAMON_R"].write(1)
+        # # Enable analog monitoring on HVFE
+        # self.chip.registers["EN_PULSE_ANAMON_R"].write(1)
+        # Enable analog monitoring on Normal FE
+        self.chip.registers["EN_PULSE_ANAMON_L"].write(1)
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
