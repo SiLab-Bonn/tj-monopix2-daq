@@ -56,10 +56,7 @@ class AnalogScan(ScanBase):
                 self.chip.registers[r].write(self.register_overrides[r])
             #print("Write: ", r, " to ", self.register_overrides[r])
 
-        # Enable HITOR on all columns, some rows
-        for i in range(512//16):
-            self.chip._write_register(18+i, 0xffff)
-            self.chip._write_register(50+i, 0xffff)
+        # Enable hitor is under
 
         # Enable injection on last column, rows 0 and 509 (at the same time)
         for i in range(512//16):
@@ -81,21 +78,11 @@ class AnalogScan(ScanBase):
         n_injections=self.register_overrides.get("n_injections", 50)
 
         with self.readout(scan_param_id=0):
-            # Enable HITOR only on the first 16 rows, and inject once
-            self.chip._write_register(50+0, 0xffff)  # First row
-            self.chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=1, latency=1400)
-
-            # Wait, enable HITOR only on the last 16 rows, and inject once
-            time.sleep(0.5)
-            self.chip._write_register(50+0, 0)  # First row
-            self.chip._write_register(50+31, 0xffff)  # Last row
-            self.chip.inject(PulseStartCnfg=1, PulseStopCnfg=65,
-                             repetitions=1, latency=1400)
-
-        # pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
-        # with self.readout(scan_param_id=0):
-        #     shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=0)
-        # pbar.close()
+            # Enable HITOR on all columns, all rows
+            for i in range(512//16):
+                self.chip._write_register(18+i, 0xffff)
+                self.chip._write_register(50+i, 0xffff)
+            self.chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=n_injections, latency=1400)
 
         ret = {}
         for r in registers:
@@ -109,8 +96,8 @@ class AnalogScan(ScanBase):
         self.hist_tot = 0
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
-            self.hist_occ = a.hist_occ
-            self.hist_tot = a.hist_tot
+            # self.hist_occ = a.hist_occ
+            # self.hist_tot = a.hist_tot
 
 
 if __name__ == "__main__":
