@@ -49,23 +49,19 @@ class AnalogScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
-
         for r in self.register_overrides:
             if r != 'n_injections':
                 self.chip.registers[r].write(self.register_overrides[r])
             #print("Write: ", r, " to ", self.register_overrides[r])
 
-        # Enable hitor is under
+        # Enable hitor is in _scan()
 
-        # Enable injection on last column, rows 0 and 509 (at the same time)
+        # Enable injection (active high) only on row 509 (the analog pixel) and no column (no matrix pixel)
         for i in range(512//16):
-            scan.chip._write_register(82+i, ~0)
-            scan.chip._write_register(114+i, ~0)
-        scan.chip._write_register(82+31, ~1)  # Last column
-        scan.chip._write_register(114+0, ~1)  # First row
-        # scan.chip._write_register(114+31, ~5)  # Last row + row 509
-        scan.chip._write_register(114+31, ~4)
+            scan.chip._write_register(82+i, 0xffff)
+            scan.chip._write_register(114+i, 0xffff)
+        # scan.chip._write_register(82, 0xffff)
+        # scan.chip._write_register(114+31, 8192)
 
         # # Enable analog monitoring on HVFE
         # self.chip.registers["EN_PULSE_ANAMON_R"].write(1)
@@ -78,7 +74,9 @@ class AnalogScan(ScanBase):
         n_injections=self.register_overrides.get("n_injections", 50)
 
         with self.readout(scan_param_id=0):
-            # Enable HITOR on all columns, all rows
+            # Enable HITOR general output (active low)
+            self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+            # Enable HITOR (active high) on all columns, all rows
             for i in range(512//16):
                 self.chip._write_register(18+i, 0xffff)
                 self.chip._write_register(50+i, 0xffff)
