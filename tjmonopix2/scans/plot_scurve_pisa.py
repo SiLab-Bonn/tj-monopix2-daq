@@ -13,7 +13,7 @@ from plot_utils_pisa import *
 
 
 def main(input_file, overwrite=False):
-    output_file = os.path.splitext(input_file)[0] + ".pdf"
+    output_file = os.path.splitext(input_file)[0] + "_scurve.pdf"
     if os.path.isfile(output_file) and not overwrite:
         return
     print("Plotting", input_file)
