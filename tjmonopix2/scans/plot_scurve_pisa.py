@@ -74,7 +74,6 @@ def main(input_file, overwrite=False):
         plt.hist2d(occupancy_charges.reshape(-1), occupancy.reshape(-1),
                    bins=[charge_dac_bins, 150], range=[charge_dac_range, [0, 1.5]],
                    rasterized=True)  # Necessary for quick save and view in PDF
-        del occupancy_charges
         plt.title("S-Curve")
         plt.xlabel("Injected charge [DAC]")
         plt.ylabel("Occupancy")
@@ -91,6 +90,49 @@ def main(input_file, overwrite=False):
         plt.ylabel("ToT [25 ns]")
         cb = plt.colorbar()
         cb.set_label("Hits / bin")
+        pdf.savefig(); plt.clf()
+
+        # Compute the threshold for each pixel as the weighted average
+        # of the injected charge, where the weights are given by the
+        # occupancy such that occu = 0.5 has weight 1, occu = 0,1 have
+        # weight 0, and anything in between is linearly interpolated
+        # Assuming the shape is an erf, this estimator is consistent
+        w = np.maximum(0, 0.5 - np.abs(occupancy - 0.5))
+        threshold_DAC = np.average(occupancy_charges, axis=2, weights=w)
+        plt.hist(threshold_DAC.reshape(-1), bins=charge_dac_bins, range=charge_dac_range)
+        plt.title("Threshold distribution")
+        plt.xlabel("Threshold [DAC]")
+        plt.ylabel("Pixels / bin")
+        plt.grid(axis='y')
+        pdf.savefig(); plt.clf()
+
+        plt.pcolormesh(occupancy_edges[0], occupancy_edges[1], threshold_DAC.transpose(),
+                       rasterized=True)  # Necessary for quick save and view in PDF
+        plt.title("Threshold map")
+        plt.xlabel("Column")
+        plt.ylabel("Row")
+        cb = plt.colorbar()
+        cb.set_label("Threshold [DAC]")
+        pdf.savefig(); plt.clf()
+
+        # Compute the noise (the width of the up-slope of the s-curve)
+        # as a variance with the weights above
+        noise_DAC = np.sqrt(np.average((occupancy_charges - np.expand_dims(threshold_DAC, -1))**2, axis=2, weights=w))
+        m = int(np.ceil(noise_DAC.max())) + 1
+        plt.hist(noise_DAC.reshape(-1), bins=m, range=[0, m])
+        plt.title("Noise (width of s-curve slope) distribution")
+        plt.xlabel("Noise [DAC]")
+        plt.ylabel("Pixels / bin")
+        plt.grid(axis='y')
+        pdf.savefig(); plt.clf()
+
+        plt.pcolormesh(occupancy_edges[0], occupancy_edges[1], noise_DAC.transpose(),
+                       rasterized=True)  # Necessary for quick save and view in PDF
+        plt.title("Noise (width of s-curve slope) map")
+        plt.xlabel("Column")
+        plt.ylabel("Row")
+        cb = plt.colorbar()
+        cb.set_label("Noise [DAC]")
         pdf.savefig(); plt.clf()
 
         plt.close()
