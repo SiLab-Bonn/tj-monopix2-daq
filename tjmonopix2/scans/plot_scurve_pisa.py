@@ -48,12 +48,13 @@ def main(input_file, overwrite=False):
         del scan_params
         charge_dac = vh - vl
         n_injections = int(cfg["configuration_in.scan.scan_config.n_injections"])
+        the_vh = int(cfg["configuration_in.scan.scan_config.VCAL_HIGH"])
+        start_vl = int(cfg["configuration_in.scan.scan_config.VCAL_LOW_start"])
+        stop_vl = int(cfg["configuration_in.scan.scan_config.VCAL_LOW_stop"])
+        step_vl = int(cfg["configuration_in.scan.scan_config.VCAL_LOW_step"])
         charge_dac_values = [
-            int(cfg["configuration_in.scan.scan_config.VCAL_HIGH"]) - x
-            for x in range(
-                int(cfg["configuration_in.scan.scan_config.VCAL_LOW_start"]),
-                int(cfg["configuration_in.scan.scan_config.VCAL_LOW_stop"]),
-                int(cfg["configuration_in.scan.scan_config.VCAL_LOW_step"]))]
+            the_vh - x for x in range(start_vl, stop_vl, step_vl)]
+        subtitle = f"VH = {the_vh}, VL = {start_vl}..{stop_vl} (step {step_vl})"
         charge_dac_bins = len(charge_dac_values)
         charge_dac_range = [min(charge_dac_values) - 0.5, max(charge_dac_values) + 0.5]
         # Count hits per pixel per injected charge value
@@ -73,8 +74,10 @@ def main(input_file, overwrite=False):
         occupancy_charges = np.tile(occupancy_charges, (col_n, row_n, 1))
         plt.hist2d(occupancy_charges.reshape(-1), occupancy.reshape(-1),
                    bins=[charge_dac_bins, 150], range=[charge_dac_range, [0, 1.5]],
-                   rasterized=True)  # Necessary for quick save and view in PDF
-        plt.title("S-Curve")
+                   cmin=1, rasterized=True)  # Necessary for quick save and view in PDF
+        plt.title(subtitle)
+        plt.suptitle(subtitle)
+        plt.suptitle("S-Curve")
         plt.xlabel("Injected charge [DAC]")
         plt.ylabel("Occupancy")
         cb = plt.colorbar()
@@ -84,8 +87,9 @@ def main(input_file, overwrite=False):
         m = 32 if tot.max() <= 32 else 128
         plt.hist2d(charge_dac, tot, bins=[charge_dac_bins, m],
                    range=[charge_dac_range, [-0.5, m + 0.5]],
-                   rasterized=True)  # Necessary for quick save and view in PDF
-        plt.title("ToT curve")
+                   cmin=1, rasterized=True)  # Necessary for quick save and view in PDF
+        plt.title(subtitle)
+        plt.suptitle("ToT curve")
         plt.xlabel("Injected charge [DAC]")
         plt.ylabel("ToT [25 ns]")
         cb = plt.colorbar()
@@ -100,7 +104,8 @@ def main(input_file, overwrite=False):
         w = np.maximum(0, 0.5 - np.abs(occupancy - 0.5))
         threshold_DAC = np.average(occupancy_charges, axis=2, weights=w)
         plt.hist(threshold_DAC.reshape(-1), bins=charge_dac_bins, range=charge_dac_range)
-        plt.title("Threshold distribution")
+        plt.title(subtitle)
+        plt.suptitle("Threshold distribution")
         plt.xlabel("Threshold [DAC]")
         plt.ylabel("Pixels / bin")
         plt.grid(axis='y')
@@ -108,7 +113,8 @@ def main(input_file, overwrite=False):
 
         plt.pcolormesh(occupancy_edges[0], occupancy_edges[1], threshold_DAC.transpose(),
                        rasterized=True)  # Necessary for quick save and view in PDF
-        plt.title("Threshold map")
+        plt.title(subtitle)
+        plt.suptitle("Threshold map")
         plt.xlabel("Column")
         plt.ylabel("Row")
         cb = plt.colorbar()
@@ -120,7 +126,8 @@ def main(input_file, overwrite=False):
         noise_DAC = np.sqrt(np.average((occupancy_charges - np.expand_dims(threshold_DAC, -1))**2, axis=2, weights=w))
         m = int(np.ceil(noise_DAC.max(initial=0, where=np.isfinite(noise_DAC)))) + 1
         plt.hist(noise_DAC.reshape(-1), bins=min(2*m, 100), range=[0, m])
-        plt.title("Noise (width of s-curve slope) distribution")
+        plt.title(subtitle)
+        plt.suptitle("Noise (width of s-curve slope) distribution")
         plt.xlabel("Noise [DAC]")
         plt.ylabel("Pixels / bin")
         plt.grid(axis='y')
@@ -128,7 +135,8 @@ def main(input_file, overwrite=False):
 
         plt.pcolormesh(occupancy_edges[0], occupancy_edges[1], noise_DAC.transpose(),
                        rasterized=True)  # Necessary for quick save and view in PDF
-        plt.title("Noise (width of s-curve slope) map")
+        plt.title(subtitle)
+        plt.suptitle("Noise (width of s-curve slope) map")
         plt.xlabel("Column")
         plt.ylabel("Row")
         cb = plt.colorbar()
