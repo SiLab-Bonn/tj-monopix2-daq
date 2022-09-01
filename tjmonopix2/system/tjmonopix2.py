@@ -674,7 +674,7 @@ class TJMonoPix2(object):
 
         self.daq['VDDA_DAC'].set_voltage(VDDA_DAC, unit='V')
         self.daq['VDDA'].set_voltage(VDDA, unit='V')
-        
+
         self.daq['VDDA_DAC'].set_enable(True)
         self.daq['VDDA'].set_enable(True)
 
@@ -726,10 +726,10 @@ class TJMonoPix2(object):
         elif len(hit_data_leterow) == len(hit_data_col) + 1:
             hit_data_leterow = hit_data_leterow[:-1]
         elif len(hit_data_leterow) + 1 == len(hit_data_col):
-            hit_data_col = hit_data_col[1:] 
+            hit_data_col = hit_data_col[1:]
         else:
             print("ERROR:interpret_direct_hit:brokendata",len(hit_data_leterow),len(hit_data_col))
-            return 
+            return
         hit = np.empty(hit_data_leterow.shape[0], dtype=hit_dtype)
 
         hit['row'] = (hit_data_leterow & 0x1FF)
@@ -751,9 +751,9 @@ class TJMonoPix2(object):
         hit_te1 = raw_data[(raw_data & 0xFF000000) == 0x66000000] & 0xFFFFFF
         hit_te2 = raw_data[(raw_data & 0xFF000000) == 0x67000000] & 0xFFFFFF
         hit = np.empty(len(hit_le0), dtype=hit_dtype)
-        hit['le'] = hit_le0 | (hit_le1 << 24) | (hit_le2 << 48) 
+        hit['le'] = hit_le0 | (hit_le1 << 24) | (hit_le2 << 48)
         #print(len(hit_le0),hit_le0, hit_le0 | (hit_le1 << 24) | (hit_le2 << 48), hit['le'])
-        hit['te'] = hit_te0 | (hit_te1 << 24) | (hit_te2 << 48) 
+        hit['te'] = hit_te0 | (hit_te1 << 24) | (hit_te2 << 48)
         return hit
 
     def interpret_no8b10b(self, raw_data):
@@ -834,7 +834,7 @@ class TJMonoPix2(object):
                     print("interpret_data: incomplete data")
                     break
                 hit[h_i]['token_id'] = token_id
-                hit[h_i]['le'] = (rx_data[idx+1] & 0xFE) >> 1 
+                hit[h_i]['le'] = (rx_data[idx+1] & 0xFE) >> 1
                 hit[h_i]['te'] = (rx_data[idx+1] & 0x01) << 6 | ((rx_data[idx+2] & 0xFC) >> 2)
                 hit[h_i]['row'] = ((rx_data[idx+2] & 0x1) << 8) | (rx_data[idx+3] & 0xFF)
                 hit[h_i]['col'] = ((rx_data[idx] & 0xFF) << 1) + ((rx_data[idx+2] & 0x2) >> 1)
@@ -863,7 +863,7 @@ class TJMonoPix2(object):
         for i in range(len(temp)):
             temp[i] = self.daq["NTC"].get_temperature("C")
         return np.average(temp[temp != float("nan")])
-  
+
     # COMMAND DECODER
     def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False):
         '''
@@ -990,7 +990,7 @@ class TJMonoPix2(object):
         else:
             raise RuntimeError('Timeout while waiting for register response.')
 
-    def write_cal(self, PulseStartCnfg=1, PulseStopCnfg=10, write=True):
+    def write_cal(self, PulseStartCnfg=1, PulseStopCnfg=512, write=True):
         '''
             Command to send a digital or analog injection to the chip.
             Digital or analog injection is selected globally via the INJECTION_SELECT register.
@@ -1016,7 +1016,7 @@ class TJMonoPix2(object):
 
         return indata
 
-    def inject(self, PulseStartCnfg=1, PulseStopCnfg=10, repetitions=1, latency=400, write=True):
+    def inject(self, PulseStartCnfg=1, PulseStopCnfg=512, repetitions=1, latency=400, write=True):
         indata = self.write_sync(write=False) * 4
         indata += self.write_cal(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStopCnfg, write=False)  # Injection
         indata += self.write_sync(write=False) * latency
