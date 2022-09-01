@@ -118,8 +118,8 @@ def main(input_file, overwrite=False):
         # Compute the noise (the width of the up-slope of the s-curve)
         # as a variance with the weights above
         noise_DAC = np.sqrt(np.average((occupancy_charges - np.expand_dims(threshold_DAC, -1))**2, axis=2, weights=w))
-        m = int(np.ceil(noise_DAC.max())) + 1
-        plt.hist(noise_DAC.reshape(-1), bins=m, range=[0, m])
+        m = int(np.ceil(noise_DAC.max(initial=0, where=np.isfinite(noise_DAC)))) + 1
+        plt.hist(noise_DAC.reshape(-1), bins=min(2*m, 100), range=[0, m])
         plt.title("Noise (width of s-curve slope) distribution")
         plt.xlabel("Noise [DAC]")
         plt.ylabel("Pixels / bin")
