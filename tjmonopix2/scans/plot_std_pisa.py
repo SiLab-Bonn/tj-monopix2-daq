@@ -3,6 +3,7 @@
 import argparse
 import glob
 import os
+import traceback
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,10 +12,12 @@ from tqdm import tqdm
 from plot_utils_pisa import *
 
 
-def main(input_file):
-    print("Plotting", input_file)
+def main(input_file, overwrite=False):
     output_file = os.path.splitext(input_file)[0] + ".pdf"
-    with tb.open_file(input_file) as f, PdfPages(output_file) as pdf, tqdm(total=5) as bar:
+    if os.path.isfile(output_file) and not overwrite:
+        return
+    print("Plotting", input_file)
+    with tb.open_file(input_file) as f, PdfPages(output_file) as pdf:
         cfg = get_config_dict(f)
         chip_serial_number = cfg["configuration_in.chip.settings.chip_sn"]
         plt.figure(figsize=(6.4, 4.8))
@@ -30,7 +33,6 @@ def main(input_file):
         counts2d, edges, _ = np.histogram2d(hits["col"], hits["row"], bins=[512, 512], range=[[0, 512], [0, 512]])
         with np.errstate(all='ignore'):
             tot = (hits["te"] - hits["le"]) & 0x7f
-        bar.update(1)
 
         bins = 100 if counts2d.max() > 200 else max(counts2d.max(), 5)
         plt.hist(counts2d.reshape(-1), bins=bins, range=[0.5, max(counts2d.max(), 5) + 0.5])
@@ -39,7 +41,7 @@ def main(input_file):
         plt.ylabel("Pixels / bin")
         plt.yscale('log')
         plt.grid(axis='y')
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         plt.hist(tot, bins=128, range=[-0.5, 127.5])
         plt.title("ToT")
@@ -47,7 +49,7 @@ def main(input_file):
         plt.ylabel("Hits / bin")
         plt.yscale('log')
         plt.grid(axis='y')
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         plt.hist2d(hits["col"], hits["row"], bins=[512, 512], range=[[0, 512], [0, 512]],
                    rasterized=True)  # Necessary for quick save and view in PDF
@@ -56,7 +58,7 @@ def main(input_file):
         plt.ylabel("Row")
         cb = plt.colorbar()
         cb.set_label("Hits / pixel")
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         tot2d, _, _ = np.histogram2d(
             hits["col"], hits["row"], bins=[512, 512], range=[[0, 512], [0, 512]],
@@ -70,7 +72,7 @@ def main(input_file):
         plt.ylabel("Row")
         cb = plt.colorbar()
         cb.set_label("ToT [25 ns]")
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         plt.close()
 
@@ -80,11 +82,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "input_file", nargs="*",
         help="The _interpreted.h5 file(s). If not given, looks in output_data/module_0/chip_0.")
+    parser.add_argument("-f", "--overwrite", action="store_true",
+                        help="Overwrite plots when already present.")
     args = parser.parse_args()
+
+    files = []
     if args.input_file:  # If anything was given on the command line
         for pattern in args.input_file:
-            for fp in glob.glob(pattern, recursive=True):
-                main(fp)
+            files.extend(glob.glob(pattern, recursive=True))
     else:
-        for fp in glob.glob("output_data/module_0/chip_0/*_interpreted.h5"):
-            main(fp)
+        files.extend(glob.glob("output_data/module_0/chip_0/*_threshold_scan_interpreted.h5"))
+
+    for fp in tqdm(files):
+        try:
+            main(fp, args.overwrite)
+        except Exception:
+            print(traceback.format_exc())

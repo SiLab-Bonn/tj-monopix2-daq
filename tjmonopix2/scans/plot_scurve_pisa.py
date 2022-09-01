@@ -3,6 +3,7 @@
 import argparse
 import glob
 import os
+import traceback
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,10 +12,12 @@ from tqdm import tqdm
 from plot_utils_pisa import *
 
 
-def main(input_file):
-    print("Plotting", input_file)
+def main(input_file, overwrite=False):
     output_file = os.path.splitext(input_file)[0] + ".pdf"
-    with tb.open_file(input_file) as f, PdfPages(output_file) as pdf, tqdm(total=3) as bar:
+    if os.path.isfile(output_file) and not overwrite:
+        return
+    print("Plotting", input_file)
+    with tb.open_file(input_file) as f, PdfPages(output_file) as pdf:
         cfg = get_config_dict(f)
         chip_serial_number = cfg["configuration_in.chip.settings.chip_sn"]
         plt.figure(figsize=(6.4, 4.8))
@@ -64,7 +67,6 @@ def main(input_file):
             bins=[col_n, row_n, charge_dac_bins],
             range=[[col_start, col_stop], [row_start, row_stop], charge_dac_range])
         occupancy /= n_injections
-        bar.update(1)
 
         occupancy_charges = occupancy_edges[2].astype(np.float32)
         occupancy_charges = (occupancy_charges[:-1] + occupancy_charges[1:]) / 2
@@ -78,7 +80,7 @@ def main(input_file):
         plt.ylabel("Occupancy")
         cb = plt.colorbar()
         cb.set_label("Pixels / bin")
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         m = 32 if tot.max() <= 32 else 128
         plt.hist2d(charge_dac, tot, bins=[charge_dac_bins, m],
@@ -89,7 +91,7 @@ def main(input_file):
         plt.ylabel("ToT [25 ns]")
         cb = plt.colorbar()
         cb.set_label("Hits / bin")
-        pdf.savefig(); plt.clf(); bar.update(1)
+        pdf.savefig(); plt.clf()
 
         plt.close()
 
@@ -100,11 +102,19 @@ if __name__ == "__main__":
         "input_file", nargs="*",
         help="The _threshold_scan_interpreted.h5 file(s)."
              " If not given, looks in output_data/module_0/chip_0.")
+    parser.add_argument("-f", "--overwrite", action="store_true",
+                        help="Overwrite plots when already present.")
     args = parser.parse_args()
+
+    files = []
     if args.input_file:  # If anything was given on the command line
         for pattern in args.input_file:
-            for fp in glob.glob(pattern, recursive=True):
-                main(fp)
+            files.extend(glob.glob(pattern, recursive=True))
     else:
-        for fp in glob.glob("output_data/module_0/chip_0/*_threshold_scan_interpreted.h5"):
-            main(fp)
+        files.extend(glob.glob("output_data/module_0/chip_0/*_threshold_scan_interpreted.h5"))
+
+    for fp in tqdm(files):
+        try:
+            main(fp, args.overwrite)
+        except Exception:
+            print(traceback.format_exc())
