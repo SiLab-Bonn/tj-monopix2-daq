@@ -7,7 +7,7 @@ import yaml
 
 
 auto_type="autoscan"
-sample="W8R3"
+sample="W8R13"
 basepath="output_data"
 
 commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation
@@ -60,12 +60,18 @@ for f in files:
     df['ToT HV Casc. FE (3)'] = df['avg_tot_3']
     df['ToT HV FE (4)'] = df['avg_tot_4']
     
+    df['Noisy Normal FE (1)'] = df['noisy_px_1']
+    df['Noisy Cascode FE (2)'] = df['noisy_px_2']
+    df['Noisy HV Casc. FE (3)'] = df['noisy_px_3']
+    df['Noisy HV FE (4)'] = df['noisy_px_4']
     
-    fig, ax= plt.subplots(2, 1, sharex=True)
+    
+    fig, ax= plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [3, 1, 1]})
     fig.suptitle(sample+": DAC Parameter scan: "+reg)
     
     ys = ['Normal FE (1)', 'Cascode FE (2)', 'HV Casc. FE (3)', 'HV FE (4)', ]
     ytots = ['ToT Normal FE (1)', 'ToT Cascode FE (2)', 'ToT HV Casc. FE (3)', 'ToT HV FE (4)', ]
+    ynoisys = ['Noisy Normal FE (1)', 'Noisy Cascode FE (2)', 'Noisy HV Casc. FE (3)', 'Noisy HV FE (4)', ]
     df.plot(ax=ax[0], x=reg, y=ys, style='-+')
     
     
@@ -75,23 +81,29 @@ for f in files:
     
     ax[0].set_ylabel("Injection efficiency")
     
-    df.plot(ax=ax[1], x=reg, y=ytots, style='-+')
+    df.plot(ax=ax[1], x=reg, y=ytots, style='-+', legend=None)
     
-    ax[1].set_ylabel("Average ToT / LSBs")
+    ax[1].set_ylabel("avg ToT / LSBs")
     ax[1].grid()
     ax[1].set_xlabel(reg + " / LSBs")
     
+    df.plot(ax=ax[2], x=reg, y=ynoisys, style='-+', legend=None)
+    
+    ax[2].set_ylabel("Noisy\npixels")
+    ax[2].grid()
+    ax[2].set_xlabel(reg + " / LSBs")
     
     
-    ax[1].text(0.9, -0.15, commit,
+    
+    ax[2].text(0.9, -0.5, commit,
      horizontalalignment='center',
      verticalalignment='top',
-     transform = ax[1].transAxes)
+     transform = ax[2].transAxes)
      
-    ax[1].text(0.1, -0.15, register_text, size=6,
+    ax[2].text(0.1, -0.5, register_text, size=6,
      horizontalalignment='center',
      verticalalignment='top',
-     transform = ax[1].transAxes)
+     transform = ax[2].transAxes)
      
     
     ax[0].text(x=defaults[reg], y=0.3, s="default value", rotation=90, size=8, color='green',horizontalalignment='right',)
