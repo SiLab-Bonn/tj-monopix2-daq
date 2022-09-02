@@ -77,7 +77,7 @@ class TJMonopix2(Transceiver):
              'total_hits': self.total_hits,
              'total_triggers': self.total_trigger_words})
         return meta_data
-    
+
     def interpret_data(self, data):
         ''' Called for every chunk received '''
         raw_data, meta_data = data[0][1]

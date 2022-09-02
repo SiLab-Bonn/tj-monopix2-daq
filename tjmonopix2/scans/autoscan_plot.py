@@ -7,7 +7,7 @@ import yaml
 
 
 auto_type="autoscan"
-sample="W8R3"
+sample="W14R12"
 basepath="output_data"
 
 commit="Commit: " + os.popen('git log --pretty=format:"%h" -n 1').read()   # gets current commit-id for documentation

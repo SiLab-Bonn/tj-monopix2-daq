@@ -12,27 +12,40 @@ from tqdm import tqdm
 from plotting_scurves import Plotting
 
 scan_configuration = {
-    'start_column': 0,
-    'stop_column': 5,
-    'start_row': 0,
+    'start_column': 225,
+    'stop_column': 230,
+    'start_row': 507,
     'stop_row': 512,
 
     'n_injections': 100,
-    'VCAL_HIGH': 150,
-    'VCAL_LOW_start': 140,
-    'VCAL_LOW_stop': 40,
+    'VCAL_HIGH': 140,
+    'VCAL_LOW_start': 139,
+    'VCAL_LOW_stop': 1,
     'VCAL_LOW_step': -1
 }
 
 register_overrides = {
-    "ITHR": 64,
-    "IBIAS": 50,
-    "ICASN": 0,
-    "VCASP": 93,
-    "VRESET": 143,
-    "VCASC": 228,
-    "IDB": 100,
-    'ITUNE': 53
+    'ITHR': 35,
+    'IBIAS': 50,
+    'VRESET': 143,
+    'ICASN': 0,
+    'VCASP': 93,
+    "VCASC": 228,  # Default 228
+    "IDB": 100,  # Default 100
+    'ITUNE': 53,  # Default 53
+    # 'MON_EN_VH': 0,
+    # 'MON_EN_VL': 0,
+    # 'OVR_EN_VH': 0,
+    # 'OVR_EN_VL': 0,
+    # Enable analog monitoring pixel
+    'EN_PULSE_ANAMON_L': 1,
+    'ANAMON_SFN_L': 0b0001,
+    'ANAMON_SFP_L': 0b1000,
+    'ANAMONIN_SFN1_L': 0b1000,
+    'ANAMONIN_SFN2_L': 0b1000,
+    'ANAMONIN_SFP_L': 0b1000,
+    # Enable hitor
+    'SEL_PULSE_EXT_CONF': 0
 }
 
 
@@ -49,6 +62,10 @@ class ThresholdScan(ScanBase):
 
         for r in self.register_overrides:
             self.chip.registers[r].write(self.register_overrides[r])
+        # Enable HITOR (active high) on all columns, all rows
+        for i in range(512//16):
+            self.chip._write_register(18+i, 0xffff)
+            self.chip._write_register(50+i, 0xffff)
 
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
@@ -75,10 +92,6 @@ class ThresholdScan(ScanBase):
     def _analyze(self):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
-
-        if self.configuration['bench']['analysis']['create_pdf']:
-            with Plotting(analyzed_data_file=a.analyzed_data_file) as p:
-                p.create_standard_plots()
 
 
 if __name__ == "__main__":
