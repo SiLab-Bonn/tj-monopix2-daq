@@ -69,12 +69,12 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
     mean_tot = np.zeros((512,512))
     bins = np.linspace(1,127,128)
     for col in range(512):
-	    for row in range(512):
-		    heights = hist_tot[col][row][0]
-		    if np.sum(heights) > 0:
-			    mean_tot[col][row] = np.dot(bins,heights)/(np.sum(heights))
-		    else:
-			    mean_tot[col][row] = 0
+        for row in range(512):
+            heights = hist_tot[col][row][0]
+            if np.sum(heights) > 0:
+                mean_tot[col][row] = np.dot(bins,heights)/(np.sum(heights))
+            else:
+                mean_tot[col][row] = 0
     
     ninj = register_overrides.get('n_injections', 50)
     cols = regs.copy()

@@ -78,9 +78,6 @@ class RawDataInterpreter(object):
 
         self.n_scan_params = n_scan_params
 
-        self.n_triggers = 0
-        self.n_tdc = 0
-
         self.reset_histograms()
 
     def interpret(self, raw_data, hit_data, scan_param_id=0):
@@ -200,8 +197,13 @@ class RawDataInterpreter(object):
         return self.n_tdc
 
     def reset_histograms(self):
-        self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
-        self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
+        self.too_many_scan_params = self.n_scan_params > 5  # Allocate max 340 MB
+        if self.too_many_scan_params:
+            self.hist_occ = np.zeros((512, 512, 1), dtype=numba.uint32)
+            self.hist_tot = self.hist_tot = np.zeros((512, 512, 1, 128), dtype=numba.uint16)
+        else:
+            self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
+            self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
@@ -220,6 +222,7 @@ class RawDataInterpreter(object):
         return b6 + b5 + b4 + b3 + b2 + b1 + b0
 
     def _fill_hist(self, col, row, tot, scan_param_id):
+        if self.too_many_scan_params:
+            scan_param_id = 0
         self.hist_occ[col, row, scan_param_id] += 1
         self.hist_tot[col, row, scan_param_id, tot] += 1
-        
