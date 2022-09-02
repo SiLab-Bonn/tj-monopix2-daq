@@ -134,12 +134,10 @@ class Analysis(object):
 
         return hit_table
 
-    def analyze_data(self, enable_numpy_output=True, numpy_output_tag=''):
-        #print("00000000000000000000000000000000")
+    def analyze_data(self, enable_numpy_output=False, numpy_output_tag=''):
         self.log.info('Analyzing data...')
         self.chunk_offset = 0
         with tb.open_file(self.raw_data_file) as in_file:
-            #print("0.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.50.5")
             n_words = in_file.root.raw_data.shape[0]
             meta_data = in_file.root.meta_data[:]
 
@@ -175,7 +173,6 @@ class Analysis(object):
                     if self.store_hits:
                         hit_table.append(hit_dat)
                         hit_table.flush()
-                        #print("type(hit_table)  ", type(hit_table))
                     pbar.update(upd)
                 pbar.close()
 
@@ -194,7 +191,6 @@ class Analysis(object):
     def _create_additional_hit_data(self, hist_occ, hist_tot):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
-            np.save("output_data/hawkeye.npz",hist_occ)
             out_file.create_carray(out_file.root,
                                    name='HistOcc',
                                    title='Occupancy Histogram',

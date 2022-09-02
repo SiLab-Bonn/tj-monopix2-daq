@@ -28,7 +28,7 @@ register_overrides_default.update(register_config['register-overrides'])
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 512,
+    'stop_column': 383,
     'start_row': 10,
     'stop_row': 11,
 }
@@ -76,15 +76,23 @@ def run_scan(register_overrides=register_overrides_default, basename='autoscan')
             else:
                 mean_tot[col][row] = 0
     
-    
-    
+    ninj = register_overrides.get('n_injections', 50)
     cols = regs.copy()
+    
+    cols["noisy_px_1"] = np.sum(hist_occ[0:224, :] > ninj)
+    cols["noisy_px_2"] = np.sum(hist_occ[224:448, :] > ninj)
+    cols["noisy_px_3"] = np.sum(hist_occ[448:480, :] > ninj)
+    cols["noisy_px_4"] = np.sum(hist_occ[480:512, :] > ninj)
+    
+    hist_occ[hist_occ > ninj] = 0  # comment out if you want to count noisy pixels too
+    
     cols["n_hits_1"] = np.sum(hist_occ[0:224, :], axis=(0,1,2))
     tots = mean_tot[0:244, scan_configuration['start_row']:scan_configuration['stop_row']]
     cols["avg_tot_1"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_1"] = n_inj_12
     
     cols["n_hits_2"] = np.sum(hist_occ[224:448, :], axis=(0,1,2))
+    
     tots = mean_tot[244:488, scan_configuration['start_row']:scan_configuration['stop_row']]
     cols["avg_tot_2"] = tots[np.nonzero(tots)].mean()
     cols["n_inj_2"] = n_inj_12
