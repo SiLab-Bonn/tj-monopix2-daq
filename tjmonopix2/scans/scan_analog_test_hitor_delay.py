@@ -25,9 +25,9 @@ register_overrides = {
     'n_injections' : 20000,
     "CMOS_TX_EN_CONF": 1,
     'VL': 1,
-    'VH': 170,
+    'VH': 140,
     'ITHR': 64,
-    'IBIAS': 50,
+    'IBIAS': 100,
     'VRESET': 143,
     'ICASN': 0,
     'VCASP': 93,
@@ -68,6 +68,13 @@ class AnalogScan(ScanBase):
         # Enable analog monitoring on Normal FE
         self.chip.registers["EN_PULSE_ANAMON_L"].write(1)
 
+        # Asked to do this by Lars Schall
+        self.chip.registers['ANAMON_SFN_L'].write(0b0001)
+        self.chip.registers['ANAMON_SFP_L'].write(0b1000)
+        self.chip.registers['ANAMONIN_SFN1_L'].write(0b1000)
+        self.chip.registers['ANAMONIN_SFN2_L'].write(0b1000)
+        self.chip.registers['ANAMONIN_SFP_L'].write(0b1000)
+
         self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
     def _scan(self, n_injections=50, **_):
@@ -80,7 +87,7 @@ class AnalogScan(ScanBase):
             for i in range(512//16):
                 self.chip._write_register(18+i, 0xffff)
                 self.chip._write_register(50+i, 0xffff)
-            self.chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=n_injections, latency=1400)
+            self.chip.inject(PulseStartCnfg=1, PulseStopCnfg=512, repetitions=n_injections, latency=1400)
 
         ret = {}
         for r in registers:

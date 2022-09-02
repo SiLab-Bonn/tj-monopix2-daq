@@ -85,8 +85,8 @@ def main(input_file, overwrite=False):
         pdf.savefig(); plt.clf()
 
         m = 32 if tot.max() <= 32 else 128
-        plt.hist2d(charge_dac, tot, bins=[charge_dac_bins, m],
-                   range=[charge_dac_range, [-0.5, m + 0.5]],
+        plt.hist2d(charge_dac, tot, bins=[250, m],
+                   range=[[0, 250], [-0.5, m + 0.5]],
                    cmin=1, rasterized=True)  # Necessary for quick save and view in PDF
         plt.title(subtitle)
         plt.suptitle("ToT curve")
@@ -103,7 +103,9 @@ def main(input_file, overwrite=False):
         # Assuming the shape is an erf, this estimator is consistent
         w = np.maximum(0, 0.5 - np.abs(occupancy - 0.5))
         threshold_DAC = np.average(occupancy_charges, axis=2, weights=w)
-        plt.hist(threshold_DAC.reshape(-1), bins=charge_dac_bins, range=charge_dac_range)
+        m1 = int(max(charge_dac_range[0], threshold_DAC.min() - 2))
+        m2 = int(min(charge_dac_range[1], threshold_DAC.max() + 2))
+        plt.hist(threshold_DAC.reshape(-1), bins=m2-m1, range=[m1, m2])
         plt.title(subtitle)
         plt.suptitle("Threshold distribution")
         plt.xlabel("Threshold [DAC]")
