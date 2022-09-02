@@ -93,6 +93,10 @@ class ThresholdScan(ScanBase):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
+        if self.configuration['bench']['analysis']['create_pdf']:
+            with Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+                p.create_standard_plots()
+
 
 if __name__ == "__main__":
     with ThresholdScan(scan_config=scan_configuration, register_overrides=register_overrides) as scan:

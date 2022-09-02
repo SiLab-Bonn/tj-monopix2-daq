@@ -134,7 +134,7 @@ class Analysis(object):
 
         return hit_table
 
-    def analyze_data(self, enable_numpy_output=False, numpy_output_tag=''):
+    def analyze_data(self, enable_numpy_output=True, numpy_output_tag=''):
         #print("00000000000000000000000000000000")
         self.log.info('Analyzing data...')
         self.chunk_offset = 0
@@ -179,17 +179,17 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                # hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
-                # if enable_numpy_output:
-                #     timestamp_test=datetime.datetime.now()
-                #     timestamp_test= timestamp_test.strftime("%Y-%m-%d_%H:%M")
-                #     np.save("output_data/analoge_hist_occ"+timestamp_test+numpy_output_tag, hist_occ)
-                #     np.save("output_data/analoge_hist_tot"+timestamp_test+numpy_output_tag, hist_tot)
+                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                if enable_numpy_output:
+                    timestamp_test=datetime.datetime.now()
+                    timestamp_test= timestamp_test.strftime("%Y-%m-%d_%H:%M")
+                    np.save("output_data/analoge_hist_occ"+timestamp_test+numpy_output_tag, hist_occ)
+                    np.save("output_data/analoge_hist_tot"+timestamp_test+numpy_output_tag, hist_tot)
 
-                # self.hist_occ = hist_occ
-                # self.hist_tot = hist_tot
+                self.hist_occ = hist_occ
+                self.hist_tot = hist_tot
 
-        # self._create_additional_hit_data(hist_occ, hist_tot)
+        self._create_additional_hit_data(hist_occ, hist_tot)
 
     def _create_additional_hit_data(self, hist_occ, hist_tot):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
