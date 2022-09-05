@@ -488,7 +488,6 @@ class MaskObject(dict):
                 indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup))
                 indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup))
                 indata += self.chip.write_sync(write=False)
-                last_coords = (col, row)
                 written.add((colgroup, rowgroup))
                 if len(indata) > 4000:  # Write command to chip before it gets too long
                     self.chip.write_command(indata)
@@ -629,10 +628,11 @@ class TJMonoPix2(object):
 
         self.registers = RegisterObject(self, 'registers.yaml')
 
-        masks = {'enable': {'default': False},
-                 'injection': {'default': False},
-                 'tdac': {'default': 0b000}
-                }
+        masks = {
+            'enable': {'default': False},
+            'injection': {'default': False},
+            'tdac': {'default': 0b000}  # all pixels masked
+        }
         self.masks = MaskObject(self, masks, (512, 512))
 
         # Load disabled pixels from chip config

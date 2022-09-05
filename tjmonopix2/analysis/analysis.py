@@ -209,7 +209,7 @@ class Analysis(object):
 
                 if scan_id in ['threshold_scan']:
                     scan_params = [self.scan_config['VCAL_HIGH'] - v for v in range(self.scan_config['VCAL_LOW_start'],
-                                                                                   self.scan_config['VCAL_LOW_stop'], self.scan_config['VCAL_LOW_step'])]
+                                                                                    self.scan_config['VCAL_LOW_stop'], self.scan_config['VCAL_LOW_step'])]
                     self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False)
                 elif scan_id == 'autorange_threshold_scan':
                     scan_params = self.get_scan_param_values(scan_parameter='vcal_high') - self.get_scan_param_values(scan_parameter='vcal_med')
