@@ -5,7 +5,7 @@
 # ------------------------------------------------------------
 #
 
-from tjmonopix2.analysis import analysis
+from tjmonopix2.analysis import analysis, plotting
 from tjmonopix2.scans.shift_and_inject import (get_scan_loop_mask_steps,
                                                shift_and_inject)
 from tjmonopix2.system.scan_base import ScanBase
