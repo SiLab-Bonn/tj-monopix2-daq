@@ -38,11 +38,11 @@ OVERTEXT_COLOR = '#07529a'
 SCURVE_CHI2_UPPER_LIMIT = 50
 
 DACS = {'TJMONOPIX2': ['IBIAS', 'ITHR',
-                        'ICASN', 'IDB',
-                        'ITUNE', 'ICOMP',
-                        'IDEL', 'IRAM',
-                        'VRESET', 'VCASP',
-                        'VCASC', 'VCLIP',]
+                       'ICASN', 'IDB',
+                       'ITUNE', 'ICOMP',
+                       'IDEL', 'IRAM',
+                       'VRESET', 'VCASP',
+                       'VCASC', 'VCLIP']
         }
 
 
