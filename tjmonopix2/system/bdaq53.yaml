@@ -41,6 +41,18 @@ hw_drivers:
     base_addr : 0x0500
     size      : 16
 
+  - name      : gpio_xadc_vpvn
+    type      : gpio
+    interface : intf
+    base_addr : 0x0900
+    size      : 16
+
+  - name      : gpio_xadc_fpga_temp
+    type      : gpio
+    interface : intf
+    base_addr : 0x0A00
+    size      : 16
+
   - name      : rst
     type      : pulse_gen
     interface : intf

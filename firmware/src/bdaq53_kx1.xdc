@@ -211,6 +211,13 @@ set_property IOSTANDARD LVDS_25 [get_ports HITOR_*]
 # set_property IOSTANDARD LVCMOS25 [get_ports RESETB_EXT]
 # set_property PULLUP TRUE [get_ports RESETB_EXT]
 
+# NTC_MUX
+set_property PACKAGE_PIN M26 [get_ports {NTC_MUX[0]}]
+set_property PACKAGE_PIN R25 [get_ports {NTC_MUX[1]}]
+set_property PACKAGE_PIN P25 [get_ports {NTC_MUX[2]}]
+set_property IOSTANDARD LVCMOS25 [get_ports {NTC_MUX*}]
+set_property SLEW SLOW [get_ports NTC*]
+
 # SPI configuration flash
 set_property CONFIG_MODE SPIx4 [current_design]
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
