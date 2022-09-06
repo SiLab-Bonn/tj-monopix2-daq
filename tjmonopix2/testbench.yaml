@@ -38,9 +38,9 @@ hardware: # Setup-specific hardware settings
 
 calibration: # Setup-specific calibration constants
   bdaq_ntc: # Resistors on BDAQ board for NTC readout
-    R16: 200.00e3
-    R17: 4.75e3
-    R19: 2.50e3
+    R16: 412.00e3
+    R17: 13.00e3
+    R19: 6.04e3
 
 # Standard analysis settings
 # Scans might overwrite these settings if needed.
