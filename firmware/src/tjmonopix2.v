@@ -55,6 +55,9 @@ module tjmonopix2 #(
 
         input wire HITOR_P, HITOR_N,             // HITOR
 
+        // NTC
+        output wire [2:0] NTC_MUX,
+
         // SiTCP EEPROM
         output wire EEPROM_CS, EEPROM_SK, EEPROM_DI,
         input wire EEPROM_DO,
@@ -630,6 +633,8 @@ tjmonopix2_core #(
         .READ_EXT(READ_EXT), 
         .RO_RST_EXT(RO_RST_EXT), 
         .TOKEN_OUT(TOKEN_OUT),
+    `elsif BDAQ53
+        .NTC_MUX(NTC_MUX),
     `endif
 
     .CHIP_ID(CHIP_ID)
