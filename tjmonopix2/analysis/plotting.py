@@ -22,12 +22,12 @@ from matplotlib.figure import Figure
 from matplotlib.artist import setp
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import colors, cm
 from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.ticker as ticker
-import matplotlib.gridspec as gridspec
-from matplotlib.colors import ListedColormap
+# import matplotlib.ticker as ticker
+# import matplotlib.gridspec as gridspec
+# from matplotlib.colors import ListedColormap
 
 from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
@@ -82,7 +82,7 @@ class Plotting(object):
         self.scan_config = au.ConfigDict(root.configuration_in.scan.scan_config[:])
         self.run_config = au.ConfigDict(root.configuration_in.scan.run_config[:])
         self.chip_settings = au.ConfigDict(root.configuration_in.chip.settings[:])
-        self.cols = 512 
+        self.cols = 512
         self.rows = 512
         self.num_pix = self.rows * self.cols
         self.plot_box_bounds = [0.5, self.cols + 0.5, self.rows + 0.5, 0.5]
@@ -93,7 +93,7 @@ class Plotting(object):
 
         self.registers = au.ConfigDict(root.configuration_in.chip.registers[:])
 
-        if self.run_config['scan_id']: # not in ['adc_tuning', 'dac_linearity_scan', 'seu_test', 'pixel_register_scan']:  # TODO: define 'usual' scans
+        if self.run_config['scan_id']:  # not in ['adc_tuning', 'dac_linearity_scan', 'seu_test', 'pixel_register_scan']:  # TODO: define 'usual' scans
             self.enable_mask = self._mask_disabled_pixels(root.configuration_in.chip.use_pixel[:], self.scan_config)
             self.n_enabled_pixels = len(self.enable_mask[~self.enable_mask])
             self.tdac_mask = root.configuration_in.chip.masks.tdac[:]
@@ -113,7 +113,6 @@ class Plotting(object):
                                                    -1 * self.scan_config['VTH_step']))
         else:
             self.scan_parameter_range = None
-
 
         if self.run_config['scan_id'] not in ['dac_linearity_scan', 'seu_test', 'adc_tuning', 'pixel_register_scan', 'noise_occupancy_scan_advanced', 'bump_connection_threshold_shift_scan', 'bump_connection_noise_shift_bias_scan', 'bump_connection_noise_shift_ir_scan']:
             try:
@@ -265,13 +264,13 @@ class Plotting(object):
         try:
             title = ('Time-over-Threshold distribution ($\\Sigma$ = {0:1.0f})'.format(np.sum(self.HistTot.sum(axis=(0, 1, 2)).T)))
             self._plot_1d_hist(hist=self.HistTot.sum(axis=(0, 1, 2)).T,
-                                title=title,
-                                log_y=True,
-                                plot_range=range(0, self.HistTot.shape[3]),
-                                x_axis_title='ToT code',
-                                y_axis_title='# of hits',
-                                color='b',
-                                suffix='tot')
+                               title=title,
+                               log_y=True,
+                               plot_range=range(0, self.HistTot.shape[3]),
+                               x_axis_title='ToT code',
+                               y_axis_title='# of hits',
+                               color='b',
+                               suffix='tot')
         except Exception:
             self.log.error('Could not create tot plot!')
 
@@ -305,9 +304,9 @@ class Plotting(object):
                 scan_parameter_range = self.scan_parameter_range
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
-                        'scan_parameters': scan_parameter_range,
-                        'electron_axis': electron_axis,
-                        'scan_parameter_name': scan_parameter_name}]
+                       'scan_parameters': scan_parameter_range,
+                       'electron_axis': electron_axis,
+                       'scan_parameter_name': scan_parameter_name}]
 
             for param in params:
                 self._plot_scurves(**param)
@@ -473,7 +472,7 @@ class Plotting(object):
     def create_tdac_map(self):
         try:
             mask = self.enable_mask.copy()
-            min_tdac, max_tdac, _, tdac_incr = (1, 7, 7, 1)
+            min_tdac, max_tdac, _, _ = (1, 7, 7, 1)
             self._plot_fancy_occupancy(hist=np.ma.masked_array(self.tdac_mask, mask).T,
                                        title='TDAC map',
                                        z_label='TDAC',
@@ -500,7 +499,6 @@ class Plotting(object):
         except Exception:
             self.log.error('Could not create chi2 map!')
 
-    
     def create_hit_pix_plot(self):
         try:
             occ_1d = np.ma.masked_array(self.HistOcc[:].sum(axis=2), self.enable_mask).ravel()
@@ -999,7 +997,6 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-
     def _plot_scurves(self, scurves, scan_parameters, electron_axis=False, scan_parameter_name=None, suffix='scurves', title='S-curves', ylabel='Occupancy'):
         max_occ = np.max(scurves) + 50
         if self.run_config['scan_id'] == 'autorange_threshold_scan':
@@ -1013,13 +1010,13 @@ class Plotting(object):
         for col in range(self.cols):
             for row in range(self.rows):
                 coords[col * self.rows + row] = (col, row)
-        noisy_pixels = []
-        for param in scurves:
-            for pixel_num, pixel_occ in enumerate(param):
-                c = coords[pixel_num]
-                if pixel_occ > y_max and c not in noisy_pixels:
-                    noisy_pixels.append(c)
-        n_noisy_pixels = len(noisy_pixels)
+        # noisy_pixels = []
+        # for param in scurves:
+        #     for pixel_num, pixel_occ in enumerate(param):
+        #         c = coords[pixel_num]
+        #         if pixel_occ > y_max and c not in noisy_pixels:
+        #             noisy_pixels.append(c)
+        # n_noisy_pixels = len(noisy_pixels)
 
         param_count = scurves.shape[0]
         hist = np.empty([param_count, max_occ], dtype=np.uint32)
@@ -1298,88 +1295,5 @@ class Plotting(object):
         #     textright = '$\mu={0:1.1f}$\nRMS$={1:1.1f}$'.format(au.get_mean_from_histogram(hist, np.arange(hist.shape[0])), au.get_std_from_histogram(hist, np.arange(hist.shape[0])))
         #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         #     ax.text(0.05, 0.9, textright, transform=ax.transAxes, fontsize=8, verticalalignment='top', bbox=props)
-
-        self._save_plots(fig, suffix=suffix)
-
-    def _plot_fancy_occupancy(self, hist, title='Occupancy', z_label='#', z_min=None, z_max=None, log_z=True, norm_projection=False, show_sum=True, suffix='fancy_occupancy'):
-        if log_z:
-            title += '\n(logarithmic scale)'
-        title += '\nwith projections'
-
-        if z_min is None:
-            z_min = np.ma.min(hist)
-        if log_z and z_min == 0:
-            z_min = 0.1
-        if z_max is None:
-            z_max = np.ma.max(hist)
-
-        fig = Figure()
-        FigureCanvas(fig)
-        ax = fig.add_subplot(111)
-        self._add_text(fig)
-
-        extent = self.plot_box_bounds
-        if log_z:
-            bounds = np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=255, endpoint=True)
-        else:
-            bounds = np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True)
-        cmap = copy.copy(cm.get_cmap('plasma'))
-        cmap.set_bad('w')
-        norm = colors.BoundaryNorm(bounds, cmap.N)
-
-        im = ax.imshow(hist, interpolation='none', aspect='auto', cmap=cmap, norm=norm, extent=extent)  # TODO: use pcolor or pcolormesh
-        ax.set_ylim((self.plot_box_bounds[2], self.plot_box_bounds[3]))
-        ax.set_xlim((self.plot_box_bounds[0], self.plot_box_bounds[1]))
-        if self._module_type is None or not self._module_type.switch_axis():
-            ax.set_xlabel('Column')
-            ax.set_ylabel('Row')
-        else:
-            ax.set_xlabel('Row')
-            ax.set_ylabel('Column')
-
-        # create new axes on the right and on the top of the current axes
-        # The first argument of the new_vertical(new_horizontal) method is
-        # the height (width) of the axes to be created in inches.
-        divider = make_axes_locatable(ax)
-        axHistx = divider.append_axes("top", 1.2, pad=0.2, sharex=ax)
-        axHisty = divider.append_axes("right", 1.2, pad=0.2, sharey=ax)
-
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        if log_z:
-            cb = fig.colorbar(im, cax=cax, ticks=np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=9, endpoint=True))
-        else:
-            cb = fig.colorbar(im, cax=cax, ticks=np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True))
-        cb.set_label(z_label)
-        # make some labels invisible
-        setp(axHistx.get_xticklabels() + axHisty.get_yticklabels(), visible=False)
-        if norm_projection:
-            hight = np.ma.mean(hist, axis=0)
-        else:
-            hight = np.ma.sum(hist, axis=0)
-
-        axHistx.bar(x=range(1, hist.shape[1] + 1), height=hight, align='center', linewidth=0)
-        axHistx.set_xlim((self.plot_box_bounds[0], self.plot_box_bounds[1]))
-        if hist.all() is np.ma.masked:
-            axHistx.set_ylim((0, 1))
-        axHistx.locator_params(axis='y', nbins=3)
-        axHistx.ticklabel_format(style='sci', scilimits=(0, 4), axis='y')
-        axHistx.set_ylabel(z_label)
-        if norm_projection:
-            width = np.ma.mean(hist, axis=1)
-        else:
-            width = np.ma.sum(hist, axis=1)
-
-        axHisty.barh(y=range(1, hist.shape[0] + 1), width=width, align='center', linewidth=0)
-        axHisty.set_ylim((self.plot_box_bounds[2], self.plot_box_bounds[3]))
-        if hist.all() is np.ma.masked:
-            axHisty.set_xlim((0, 1))
-        axHisty.locator_params(axis='x', nbins=3)
-        axHisty.ticklabel_format(style='sci', scilimits=(0, 4), axis='x')
-        axHisty.set_xlabel(z_label)
-
-        if not show_sum:
-            ax.set_title(title, color=TITLE_COLOR, x=1.35, y=1.2)
-        else:
-            ax.set_title(title + '\n($\\Sigma$ = {0})'.format((0 if hist.all() is np.ma.masked else np.ma.sum(hist))), color=TITLE_COLOR, x=1.35, y=1.2)
 
         self._save_plots(fig, suffix=suffix)
