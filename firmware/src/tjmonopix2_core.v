@@ -304,59 +304,61 @@ gpio #(
 );
 
 `ifdef BDAQ53
-    wire [15:0] MEASURED_FPGA_TEMP;
+    `ifndef SIM
+        wire [15:0] MEASURED_FPGA_TEMP;
 
-    gpio #(
-        .BASEADDR(GPIO_XADC_FPGA_TEMP_BASEADDR),
-        .HIGHADDR(GPIO_XADC_FPGA_TEMP_HIGHADDR),
-        .ABUSWIDTH(32),
-        .IO_WIDTH(16),
-        .IO_DIRECTION(16'h0000)
-    ) i_gpio_xadc_fpga_temp (
-        .BUS_CLK(BUS_CLK),
-        .BUS_RST(BUS_RST),
-        .BUS_ADD(BUS_ADD),
-        .BUS_DATA(BUS_DATA),
-        .BUS_RD(BUS_RD),
-        .BUS_WR(BUS_WR),
-        .IO(MEASURED_FPGA_TEMP)
-    );
+        gpio #(
+            .BASEADDR(GPIO_XADC_FPGA_TEMP_BASEADDR),
+            .HIGHADDR(GPIO_XADC_FPGA_TEMP_HIGHADDR),
+            .ABUSWIDTH(32),
+            .IO_WIDTH(16),
+            .IO_DIRECTION(16'h0000)
+        ) i_gpio_xadc_fpga_temp (
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR),
+            .IO(MEASURED_FPGA_TEMP)
+        );
 
-    wire [15:0] MEASURED_VPVN;
+        wire [15:0] MEASURED_VPVN;
 
-    gpio #(
-        .BASEADDR(GPIO_XADC_VPVN_BASEADDR),
-        .HIGHADDR(GPIO_XADC_VPVN_HIGHADDR),
-        .ABUSWIDTH(32),
-        .IO_WIDTH(16),
-        .IO_DIRECTION(16'h0000)
-    ) i_gpio_xadc_vpvn (
-        .BUS_CLK(BUS_CLK),
-        .BUS_RST(BUS_RST),
-        .BUS_ADD(BUS_ADD),
-        .BUS_DATA(BUS_DATA),
-        .BUS_RD(BUS_RD),
-        .BUS_WR(BUS_WR),
-        .IO(MEASURED_VPVN)
-    );
+        gpio #(
+            .BASEADDR(GPIO_XADC_VPVN_BASEADDR),
+            .HIGHADDR(GPIO_XADC_VPVN_HIGHADDR),
+            .ABUSWIDTH(32),
+            .IO_WIDTH(16),
+            .IO_DIRECTION(16'h0000)
+        ) i_gpio_xadc_vpvn (
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR),
+            .IO(MEASURED_VPVN)
+        );
 
-    // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
-    xadc_ug480 i_xadc_ug480(
-        .VAUXP(),
-        .VAUXN(),
-        .RESET(BUS_RST),
-        .ALM(),
-        .DCLK(BUS_CLK),
-        .MEASURED_TEMP(MEASURED_FPGA_TEMP),
-        .MEASURED_VPVN(MEASURED_VPVN),
-        .MEASURED_VCCINT(),
-        .MEASURED_VCCAUX(),
-        .MEASURED_VCCBRAM(),
-        .MEASURED_AUX0(),
-        .MEASURED_AUX1(),
-        .MEASURED_AUX2(),
-        .MEASURED_AUX3()
-    );
+        // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
+        xadc_ug480 i_xadc_ug480(
+            .VAUXP(),
+            .VAUXN(),
+            .RESET(BUS_RST),
+            .ALM(),
+            .DCLK(BUS_CLK),
+            .MEASURED_TEMP(MEASURED_FPGA_TEMP),
+            .MEASURED_VPVN(MEASURED_VPVN),
+            .MEASURED_VCCINT(),
+            .MEASURED_VCCAUX(),
+            .MEASURED_VCCBRAM(),
+            .MEASURED_AUX0(),
+            .MEASURED_AUX1(),
+            .MEASURED_AUX2(),
+            .MEASURED_AUX3()
+        );
+    `endif
 `endif
 
 // ----- Reset pulser ----- //
