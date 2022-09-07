@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
+`include "xadc.v"
+
 // Basil modules
 `include "i2c/i2c.v"
 `include "i2c/i2c_core.v"
@@ -79,9 +81,6 @@ module tjmonopix2_core #(
     // Displayport control signals
     input wire [3:0] GPIO_SENSE,
 
-    // NTC
-    output wire [2:0] NTC_MUX,
-
     // Fifo
     input wire ARB_READY_OUT,
     output wire ARB_WRITE_OUT,
@@ -107,6 +106,9 @@ module tjmonopix2_core #(
     input wire LVDS_DATA,
     input wire LVDS_HITOR,
     output wire LVDS_PULSE_EXT,
+
+    // NTC
+    output wire [2:0] NTC_MUX,
 
     `ifdef MIO3
         // CHSYNC output only connected on MIO3 compatible PCBs
@@ -153,9 +155,6 @@ reg SI570_IS_CONFIGURED = 1'b0;
 localparam VERSION = 1; // Module version
 
 // -------  MODULE ADREESSES  ------- //
-localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
-localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
-
 localparam GPIO_BASEADDR = 32'h0010;
 localparam GPIO_HIGHADDR = 32'h0100 - 1;
 
@@ -164,6 +163,9 @@ localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
 
 localparam RX_BASEADDR = 32'h0200;
 localparam RX_HIGHADDR = 32'h0300 - 1; 
+
+localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
+localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
 
 localparam PULSE_RST_BASEADDR = 32'h0400;
 localparam PULSE_RST_HIGHADDR = 32'h0500 - 1;
@@ -179,6 +181,15 @@ localparam TDC_HIGHADDR = 32'h0800 - 1;
 
 localparam PULSER_VETO_BASEADDR = 32'h0800;
 localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
+
+// Temperature measurements with XADC in FPGA
+`ifdef BDAQ53
+    localparam GPIO_XADC_VPVN_BASEADDR = 32'h0900;
+    localparam GPIO_XADC_VPVN_HIGHADDR = 32'h0A00-1;
+
+    localparam GPIO_XADC_FPGA_TEMP_BASEADDR = 32'h0A00;
+    localparam GPIO_XADC_FPGA_TEMP_HIGHADDR = 32'h0B00-1;
+`endif
 
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
@@ -292,6 +303,64 @@ gpio #(
     .IO(IO_CONTROL)
 );
 
+`ifdef BDAQ53
+    `ifndef SIM
+        wire [15:0] MEASURED_FPGA_TEMP;
+
+        gpio #(
+            .BASEADDR(GPIO_XADC_FPGA_TEMP_BASEADDR),
+            .HIGHADDR(GPIO_XADC_FPGA_TEMP_HIGHADDR),
+            .ABUSWIDTH(32),
+            .IO_WIDTH(16),
+            .IO_DIRECTION(16'h0000)
+        ) i_gpio_xadc_fpga_temp (
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR),
+            .IO(MEASURED_FPGA_TEMP)
+        );
+
+        wire [15:0] MEASURED_VPVN;
+
+        gpio #(
+            .BASEADDR(GPIO_XADC_VPVN_BASEADDR),
+            .HIGHADDR(GPIO_XADC_VPVN_HIGHADDR),
+            .ABUSWIDTH(32),
+            .IO_WIDTH(16),
+            .IO_DIRECTION(16'h0000)
+        ) i_gpio_xadc_vpvn (
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR),
+            .IO(MEASURED_VPVN)
+        );
+
+        // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
+        xadc_ug480 i_xadc_ug480(
+            .VAUXP(),
+            .VAUXN(),
+            .RESET(BUS_RST),
+            .ALM(),
+            .DCLK(BUS_CLK),
+            .MEASURED_TEMP(MEASURED_FPGA_TEMP),
+            .MEASURED_VPVN(MEASURED_VPVN),
+            .MEASURED_VCCINT(),
+            .MEASURED_VCCAUX(),
+            .MEASURED_VCCBRAM(),
+            .MEASURED_AUX0(),
+            .MEASURED_AUX1(),
+            .MEASURED_AUX2(),
+            .MEASURED_AUX3()
+        );
+    `endif
+`endif
+
 // ----- Reset pulser ----- //
 wire RST_PULSE;
 reg [2:0] IO_FF;
@@ -325,7 +394,7 @@ assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
     wire CMOS_PULSE_EXT;
 `endif
 
-// ------- MODULES for GPAC - I2C module  ------- //
+// ------- I2C module ------- //
 wire I2C_CLK;
 
 clock_divider #(
