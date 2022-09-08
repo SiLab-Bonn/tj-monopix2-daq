@@ -35,7 +35,7 @@ def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['inj
     '''
     for fe, active_pixels in chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
         if not fe == 'skipped':
-            chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=n_injections, latency=1400)
+            chip.inject(PulseStartCnfg=1, PulseStopCnfg=257, repetitions=n_injections, latency=800)
         if pbar is not None:
             pbar.update(1)
 
