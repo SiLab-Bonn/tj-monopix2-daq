@@ -102,14 +102,14 @@ class TDACTuning(ScanBase):
             self.log.info('Use default TDAC mask (TDAC steps = {0})'.format(steps))
 
         self.log.info('Searching optimal local threshold settings')
-        pbar = tqdm(total=get_scan_loop_mask_steps(scan=self) * len(steps), unit=' Mask steps')
+        pbar = tqdm(total=get_scan_loop_mask_steps(self.chip) * len(steps), unit=' Mask steps')
         for scan_param, step in enumerate(steps):
             # Set new TDACs
             self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = self.data.tdac_map[start_column:stop_column, start_row:stop_row]
             self.chip.masks.update()
             # Inject target charge
             with self.readout(scan_param_id=scan_param, callback=self.analyze_data_online):
-                shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param)
+                shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param)
             # Get hit occupancy using online analysis
             occupancy = self.data.hist_occ.get()
 

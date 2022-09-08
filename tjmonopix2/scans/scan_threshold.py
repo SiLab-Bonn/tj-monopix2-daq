@@ -45,13 +45,13 @@ class ThresholdScan(ScanBase):
         self.chip.registers["VH"].write(VCAL_HIGH)
         vcal_low_range = range(VCAL_LOW_start, VCAL_LOW_stop, VCAL_LOW_step)
 
-        pbar = tqdm(total=get_scan_loop_mask_steps(self) * len(vcal_low_range), unit='Mask steps')
+        pbar = tqdm(total=get_scan_loop_mask_steps(self.chip) * len(vcal_low_range), unit='Mask steps')
         for scan_param_id, vcal_low in enumerate(vcal_low_range):
             self.chip.registers["VL"].write(vcal_low)
 
             self.store_scan_par_values(scan_param_id=scan_param_id, vcal_high=VCAL_HIGH, vcal_low=vcal_low)
             with self.readout(scan_param_id=scan_param_id):
-                shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id)
+                shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id)
         pbar.close()
         self.log.success('Scan finished')
 

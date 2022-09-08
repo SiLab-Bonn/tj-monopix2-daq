@@ -11,13 +11,13 @@
 '''
 
 
-def shift_and_inject(scan, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True):
+def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True):
     ''' Regular mask shift and analog injection function.
 
     Parameters:
     ----------
-        scan : scan object
-            Scan object
+        chip : chip object
+            Chip object
         n_injections : int
             Number of injections per loop.
         pbar : tqdm progressbar
@@ -33,22 +33,22 @@ def shift_and_inject(scan, n_injections, pbar=None, scan_param_id=0, masks=['inj
         skip_empty : boolean
             If True skip empty mask steps for speedup. Default is True.
     '''
-    for fe, active_pixels in scan.chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
+    for fe, active_pixels in chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
         if not fe == 'skipped':
-            scan.chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=n_injections, latency=1400)
+            chip.inject(PulseStartCnfg=1, PulseStopCnfg=65, repetitions=n_injections, latency=1400)
         if pbar is not None:
             pbar.update(1)
 
 
-def get_scan_loop_mask_steps(scan, pattern='default'):
+def get_scan_loop_mask_steps(chip, pattern='default'):
     ''' Returns total number of mask steps for specific pattern
 
     Parameters:
     ----------
-        scan : scan object
-            Scan object
+        chip : chip object
+            Chip object
         pattern : string
             Injection pattern ('default', 'hitbus', ...)
     '''
 
-    return scan.chip.masks.get_mask_steps(pattern=pattern)
+    return chip.masks.get_mask_steps(pattern=pattern)

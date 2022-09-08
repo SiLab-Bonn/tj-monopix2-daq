@@ -39,9 +39,9 @@ class AnalogScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
     def _scan(self, n_injections=100, **_):
-        pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
+        pbar = tqdm(total=get_scan_loop_mask_steps(self.chip), unit='Mask steps')
         with self.readout(scan_param_id=0):
-            shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=0)
+            shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=0)
         pbar.close()
 
         self.log.success('Scan finished')

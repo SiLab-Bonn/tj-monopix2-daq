@@ -159,7 +159,7 @@ class GDACTuning(ScanBase):
         # Set new TDACs
         # Inject target charge
         with self.readout(scan_param_id=scan_param_id, callback=self.analyze_data_online):
-            shift_and_inject(scan=self, n_injections=n_injections, pbar=self.data.pbar, scan_param_id=scan_param_id)
+            shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=self.data.pbar, scan_param_id=scan_param_id)
         # Get hit occupancy using online analysis
         occupancy = self.data.hist_occ.get()
 
