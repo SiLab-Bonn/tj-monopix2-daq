@@ -322,7 +322,7 @@ class Plotting(object):
                                          suffix='tdac_threshold_distribution',
                                          min_tdac=min(min_tdac, max_tdac),
                                          max_tdac=max(min_tdac, max_tdac),
-                                         range_tdac=range_tdac)
+                                         range_tdac=range_tdac, centered_ticks=True)
         except Exception:
             self.log.error('Could not create stacked threshold plot!')
 
@@ -415,7 +415,7 @@ class Plotting(object):
     def create_tdac_plot(self):
         try:
             mask = self.enable_mask.copy()
-            min_tdac, max_tdac, _, tdac_incr = (1, 7, 7, 1)
+            min_tdac, max_tdac, _, tdac_incr = (0, 8, 8, 1)
             plot_range = range(min_tdac, max_tdac + tdac_incr, tdac_incr)
             self._plot_distribution(self.tdac_mask[~mask].T,
                                     plot_range=plot_range,
@@ -436,7 +436,7 @@ class Plotting(object):
                                        z_label='TDAC',
                                        z_min=min(min_tdac, max_tdac),
                                        z_max=max(min_tdac, max_tdac),
-                                       log_z=False,
+                                       log_z=False, centered_ticks=True,
                                        norm_projection=True)
         except Exception:
             self.log.error('Could not create TDAC map!')
@@ -755,7 +755,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix='histogram')
 
-    def _plot_fancy_occupancy(self, hist, title='Occupancy', z_label='#', z_min=None, z_max=None, log_z=True, norm_projection=False, show_sum=True, suffix='fancy_occupancy'):
+    def _plot_fancy_occupancy(self, hist, title='Occupancy', z_label='#', z_min=None, z_max=None, log_z=True, norm_projection=False, show_sum=True, centered_ticks=False, suffix='fancy_occupancy'):
         if log_z:
             title += '\n(logarithmic scale)'
         title += '\nwith projections'
@@ -776,8 +776,11 @@ class Plotting(object):
         if log_z:
             bounds = np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=255, endpoint=True)
         else:
-            bounds = np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True)
-        cmap = copy.copy(cm.get_cmap('plasma'))
+            bounds = np.linspace(start=z_min, stop=z_max, num=int(z_max + 1), endpoint=True)
+        if centered_ticks:
+            cmap = copy.copy(cm.get_cmap('plasma', (z_max)))
+        else:
+            cmap = copy.copy(cm.get_cmap('plasma'))
         cmap.set_bad('w')
         norm = colors.BoundaryNorm(bounds, cmap.N)
 
@@ -801,6 +804,11 @@ class Plotting(object):
         cax = divider.append_axes("right", size="5%", pad=0.1)
         if log_z:
             cb = fig.colorbar(im, cax=cax, ticks=np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=9, endpoint=True))
+        elif centered_ticks:
+            ctick_size = (z_max - z_min) / (z_max)
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=colors.Normalize(vmin=z_min - ctick_size / 2, vmax=z_max + ctick_size / 2))
+            sm.set_array([])
+            cb = fig.colorbar(sm, cax=cax, ticks=np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True))
         else:
             cb = fig.colorbar(im, cax=cax, ticks=np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True))
         cb.set_label(z_label)
@@ -957,22 +965,16 @@ class Plotting(object):
         tdac_bar = {}
 
         # select threshold data for different tdac values according to tdac map
-        for tdac in range(range_tdac):
-            data_thres_tdac[tdac] = data[tdac_mask == tdac - abs(min_tdac)]
+        for tdac in range(range_tdac + 1):
+            data_thres_tdac[tdac] = data[tdac_mask == tdac]
             # histogram threshold data for each tdac
             hist_tdac[tdac], _ = np.histogram(np.ravel(data_thres_tdac[tdac]), bins=bins)
-
-            if tdac == 0:
-                tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], width=tick_size, align='edge', color=cmap(.9 / range_tdac * tdac), linewidth=0)
-            elif tdac == 1:
-                tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], bottom=hist_tdac[0], width=tick_size, align='edge', color=cmap(1. / range_tdac * tdac), linewidth=0)
-            else:
-                tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], bottom=np.sum([hist_tdac[i] for i in range(tdac)], axis=0), width=tick_size, align='edge', color=cmap(1. / range_tdac * tdac), linewidth=0)
+            tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], bottom=np.sum([hist_tdac[i] for i in range(tdac)], axis=0), width=tick_size, align='edge', color=cmap(1. / range_tdac * tdac), linewidth=0)
 
         fig.subplots_adjust(right=0.85)
         cax = fig.add_axes([0.89, 0.11, 0.02, 0.645])
         if centered_ticks:
-            ctick_size = (max_tdac - min_tdac) / (range_tdac - 1)
+            ctick_size = (max_tdac - min_tdac) / (range_tdac)
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=colors.Normalize(vmin=min_tdac - ctick_size / 2, vmax=max_tdac + ctick_size / 2))
         else:
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=colors.Normalize(vmin=min_tdac, vmax=max_tdac))
