@@ -17,17 +17,13 @@ import datetime
 
 from collections import OrderedDict
 from scipy.optimize import curve_fit
-from scipy.stats import norm
 from matplotlib.figure import Figure
 from matplotlib.artist import setp
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import colors, cm
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.ticker as ticker
-import matplotlib.gridspec as gridspec
-from matplotlib.colors import ListedColormap
 
 from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
@@ -38,11 +34,11 @@ OVERTEXT_COLOR = '#07529a'
 SCURVE_CHI2_UPPER_LIMIT = 50
 
 DACS = {'TJMONOPIX2': ['IBIAS', 'ITHR',
-                        'ICASN', 'IDB',
-                        'ITUNE', 'ICOMP',
-                        'IDEL', 'IRAM',
-                        'VRESET', 'VCASP',
-                        'VCASC', 'VCLIP',]
+                       'ICASN', 'IDB',
+                       'ITUNE', 'ICOMP',
+                       'IDEL', 'IRAM',
+                       'VRESET', 'VCASP',
+                       'VCASC', 'VCLIP', ]
         }
 
 
@@ -82,7 +78,7 @@ class Plotting(object):
         self.scan_config = au.ConfigDict(root.configuration_in.scan.scan_config[:])
         self.run_config = au.ConfigDict(root.configuration_in.scan.run_config[:])
         self.chip_settings = au.ConfigDict(root.configuration_in.chip.settings[:])
-        self.cols = 512 
+        self.cols = 512
         self.rows = 512
         self.num_pix = self.rows * self.cols
         self.plot_box_bounds = [0.5, self.cols + 0.5, self.rows + 0.5, 0.5]
@@ -114,57 +110,26 @@ class Plotting(object):
         else:
             self.scan_parameter_range = None
 
+        try:
+            self.HistTdcStatus = root.HistTdcStatus[:]
+        except tb.NoSuchNodeError:
+            self.HistTdcStatus = None
+        self.HistOcc = root.HistOcc[:]
+        self.HistTot = root.HistTot[:]
+        if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
+            self.ThresholdMap = root.ThresholdMap[:, :]
+            self.Chi2Map = root.Chi2Map[:, :]
+            self.Chi2Sel = (self.Chi2Map > 0) & (self.Chi2Map < SCURVE_CHI2_UPPER_LIMIT) & (~self.enable_mask)
+            self.n_failed_scurves = self.n_enabled_pixels - len(self.Chi2Map[self.Chi2Sel])
+            self.NoiseMap = root.NoiseMap[:]
 
-        if self.run_config['scan_id'] not in ['dac_linearity_scan', 'seu_test', 'adc_tuning', 'pixel_register_scan', 'noise_occupancy_scan_advanced', 'bump_connection_threshold_shift_scan', 'bump_connection_noise_shift_bias_scan', 'bump_connection_noise_shift_ir_scan']:
-            try:
-                self.HistTdcStatus = root.HistTdcStatus[:]
-            except tb.NoSuchNodeError:
-                self.HistTdcStatus = None
-            self.HistOcc = root.HistOcc[:]
-            self.HistTot = root.HistTot[:]
-            if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
-                self.ThresholdMap = root.ThresholdMap[:, :]
-                self.Chi2Map = root.Chi2Map[:, :]
-                self.Chi2Sel = (self.Chi2Map > 0) & (self.Chi2Map < SCURVE_CHI2_UPPER_LIMIT) & (~self.enable_mask)
-                self.n_failed_scurves = self.n_enabled_pixels - len(self.Chi2Map[self.Chi2Sel])
-                self.NoiseMap = root.NoiseMap[:]
-
-            if self.mask_noisy_pixels:
-                noisy_pixels = np.where(self.HistOcc > self.mask_noisy_pixels)
-                for i in range(len(noisy_pixels[0])):
-                    self.log.warning('Disabling noisy pixel ({0}, {1})'.format(noisy_pixels[0][i], noisy_pixels[1][i]))
-                    self.enable_mask[noisy_pixels[0][i], noisy_pixels[1][i]] = True
-                self.n_enabled_pixels = len(self.enable_mask[~self.enable_mask])
-                self.log.warning('Disabled {} noisy pixels in total.'.format(len(noisy_pixels[0])))
-
-        # if self.run_config['scan_id'] in ['noise_occupancy_scan_advanced']:
-        #     self.HistOcc = root.HistOcc[:]
-
-        # if self.run_config['scan_id'] in ['tot_calibration']:
-        #     self.HistTotCal = root.HistTotCal[:]
-        #     self.HistTotCalMean = root.HistTotCalMean[:]
-        #     self.HistTotCalStd = root.HistTotCalStd[:]
-        #     self.TOThist = root.TOThist[:]
-
-        # if self.run_config['scan_id'] in ['hitor_calibration']:
-        #     self.HistTdc = root.hist_2d_tdc_vcal[:]
-        #     self.HistTotCalMean = root.hist_tot_mean[:]
-        #     self.HistTotCalStd = root.hist_tot_std[:]
-        #     self.HistTdcCalMean = root.hist_tdc_mean[:]
-        #     self.HistTdcCalStd = root.hist_tdc_std[:]
-        #     self.lookup_table = root.lookup_table[:]
-
-        # if self.run_config['scan_id'] in ['dac_linearity_scan', 'adc_tuning']:
-        #     self.DAC_data = root.dac_data[:]
-
-        # if self.run_config['scan_id'] in ['bump_connection_bias_thr_shift_scan', 'bump_connection_source_scan', 'bump_connection_analysis_of_source_scan']:
-        #     self.BumpConnectivityMap = root.BumpConnectivityMap[:]
-        #     self.BumpConnectivityStatistics = au.ConfigDict(in_file.root.BumpConnectivityStatistics[:])
-
-        # if self.run_config['scan_id'] == 'bump_connection_bias_thr_shift_scan':
-        #     self.ThresholdShiftMap = root.ThresholdShiftMap[:]
-        #     self.NoiseShiftMap = root.NoiseShiftMap[:]
-        #     self.Cuts = au.ConfigDict(in_file.root.Cuts[:])
+        if self.mask_noisy_pixels:
+            noisy_pixels = np.where(self.HistOcc > self.mask_noisy_pixels)
+            for i in range(len(noisy_pixels[0])):
+                self.log.warning('Disabling noisy pixel ({0}, {1})'.format(noisy_pixels[0][i], noisy_pixels[1][i]))
+                self.enable_mask[noisy_pixels[0][i], noisy_pixels[1][i]] = True
+            self.n_enabled_pixels = len(self.enable_mask[~self.enable_mask])
+            self.log.warning('Disabled {} noisy pixels in total.'.format(len(noisy_pixels[0])))
 
         try:
             self.Cluster = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
@@ -200,18 +165,15 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['source_scan', 'bump_connection_source_scan', 'ext_trigger_scan', 'source_scan_random_trigger', 'source_scan_injection', 'eudaq_scan', 'self_trigger_scan']:
+            if self.run_config['scan_id'] in ['source_scan']:
                 self.create_fancy_occupancy()
                 self.create_tot_plot()
-            # if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'hitor_calibration', 'tot_calibration', 'autorange_threshold_scan']:
-                # self.create_tot_hist()
-                # self.create_tot_map()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'fast_threshold_scan', 'autorange_threshold_scan', 'in_time_threshold_scan', 'noise_occupancy_scan', 'global_threshold_tuning', 'ext_trigger_scan', 'source_scan', 'source_scan_random_trigger', 'source_scan_injection', 'eudaq_scan', 'self_trigger_scan', 'crosstalk_scan', 'bump_connection_bias_thr_shift_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
                 self.create_tot_plot()
-            if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'autorange_threshold_scan']:
+            if self.run_config['scan_id'] in ['threshold_scan']:
                 self.create_tot_hist()
                 self.create_scurves_plot()
                 self.create_threshold_plot()
@@ -225,11 +187,6 @@ class Plotting(object):
                 self.create_threshold_map()
                 self.create_noise_plot()
                 self.create_noise_map()
-            if self.run_config['scan_id'] == 'tot_calibration':
-                self.create_tot_perpixel_plot()
-            if self.run_config['scan_id'] in ['hitor_calibration']:
-                self.create_tdc_hist()
-                self.create_tdc_tot_perpixel_plot()
 
             if self.clustered:
                 self.create_cluster_tot_plot()
@@ -265,13 +222,13 @@ class Plotting(object):
         try:
             title = ('Time-over-Threshold distribution ($\\Sigma$ = {0:1.0f})'.format(np.sum(self.HistTot.sum(axis=(0, 1, 2)).T)))
             self._plot_1d_hist(hist=self.HistTot.sum(axis=(0, 1, 2)).T,
-                                title=title,
-                                log_y=True,
-                                plot_range=range(0, self.HistTot.shape[3]),
-                                x_axis_title='ToT code',
-                                y_axis_title='# of hits',
-                                color='b',
-                                suffix='tot')
+                               title=title,
+                               log_y=True,
+                               plot_range=range(0, self.HistTot.shape[3]),
+                               x_axis_title='ToT code',
+                               y_axis_title='# of hits',
+                               color='b',
+                               suffix='tot')
         except Exception:
             self.log.error('Could not create tot plot!')
 
@@ -305,9 +262,9 @@ class Plotting(object):
                 scan_parameter_range = self.scan_parameter_range
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
-                        'scan_parameters': scan_parameter_range,
-                        'electron_axis': electron_axis,
-                        'scan_parameter_name': scan_parameter_name}]
+                       'scan_parameters': scan_parameter_range,
+                       'electron_axis': electron_axis,
+                       'scan_parameter_name': scan_parameter_name}]
 
             for param in params:
                 self._plot_scurves(**param)
@@ -473,7 +430,7 @@ class Plotting(object):
     def create_tdac_map(self):
         try:
             mask = self.enable_mask.copy()
-            min_tdac, max_tdac, _, tdac_incr = (1, 7, 7, 1)
+            min_tdac, max_tdac = (1, 7)
             self._plot_fancy_occupancy(hist=np.ma.masked_array(self.tdac_mask, mask).T,
                                        title='TDAC map',
                                        z_label='TDAC',
@@ -500,7 +457,6 @@ class Plotting(object):
         except Exception:
             self.log.error('Could not create chi2 map!')
 
-    
     def create_hit_pix_plot(self):
         try:
             occ_1d = np.ma.masked_array(self.HistOcc[:].sum(axis=2), self.enable_mask).ravel()
@@ -522,6 +478,7 @@ class Plotting(object):
             self.log.error('Could not create hits per pixel plot!')
 
     '''Internal functions not meant to be called by user'''
+
     def _mask_disabled_pixels(self, enable_mask, scan_config):
         mask = np.invert(enable_mask)
         mask[:scan_config['start_column'], :] = True
@@ -597,13 +554,6 @@ class Plotting(object):
         FigureCanvas(fig)
         ax = fig.add_subplot(111)
         ax.axis('off')
-        # if self.chip_type.lower() == 'rd53a':
-        #     logo = plt.imread(os.path.join(os.path.dirname(__file__), '..', 'chips', 'RD53A_logo.bmp'))
-        #     logo = logo[::4, ::4]
-        # if self.chip_type.lower() in ['itkpixv1', 'crocv1']:
-        #     logo = plt.imread(os.path.join(os.path.dirname(__file__), '..', 'chips', 'RD53B_logo.bmp'))
-        #     logo = logo[::8, ::8]
-        # fig.figimage(logo, fig.bbox.xmax - 50 - 10, fig.bbox.ymax - 50 - 10)
 
         scan_id = self.run_config['scan_id']
         run_name = self.run_config['run_name']
@@ -775,110 +725,6 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-    def _create_2d_pixel_hist(self, fig, ax, hist2d, title=None, x_axis_title=None, y_axis_title=None, z_min=0, z_max=None, cmap=None):
-        extent = self.plot_box_bounds
-        if z_max is None:
-            if hist2d.all() is np.ma.masked:  # check if masked array is fully masked
-                z_max = 1.0
-            else:
-                z_max = 2 * np.ma.median(hist2d)
-        bounds = np.linspace(start=z_min, stop=z_max, num=255, endpoint=True)
-        if cmap is None:
-            cmap = copy.copy(cm.get_cmap('coolwarm'))
-        cmap.set_bad('w', 1.0)
-        norm = colors.BoundaryNorm(bounds, cmap.N)
-        im = ax.imshow(hist2d, interpolation='none', aspect="auto", cmap=cmap, norm=norm, extent=extent)
-        if title is not None:
-            ax.set_title(title)
-        if x_axis_title is not None:
-            ax.set_xlabel(x_axis_title)
-        if y_axis_title is not None:
-            ax.set_ylabel(y_axis_title)
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im, boundaries=bounds, cmap=cmap, norm=norm, ticks=np.linspace(start=0, stop=z_max, num=9, endpoint=True), cax=cax)
-
-    def _plot_three_way(self, hist, title, x_axis_title=None, z_min=None, z_max=None, bins=101, suffix='threeway'):  # the famous 3 way plot (enhanced)
-        cmap = copy.copy(cm.get_cmap('plasma'))
-        # TODO: set color for bad pixels
-        # set nan to special value
-        # masked_array = np.ma.array (a, mask=np.isnan(a))
-        # cmap = matplotlib.cm.jet
-        # cmap.set_bad('w',1.0)
-        # ax.imshow(masked_array, interpolation='none', cmap=cmap)
-        hist = np.ma.masked_invalid(hist)
-        if z_min is None:
-            z_min = 0.0
-        elif z_min == 'minimum':
-            z_min = np.ma.min(hist)
-        if z_max == 'median' or z_max is None:
-            z_max = 2 * np.ma.median(hist)
-        elif z_max == 'maximum':
-            z_max = np.ma.max(hist)
-        if z_max < 1 or hist.all() is np.ma.masked:
-            z_max = 1.0
-
-        x_axis_title = '' if x_axis_title is None else x_axis_title
-        fig = Figure()
-        FigureCanvas(fig)
-        fig.patch.set_facecolor('white')
-        ax1 = fig.add_subplot(311)
-        self._create_2d_pixel_hist(fig, ax1, hist, title=title, x_axis_title="column", y_axis_title="row", z_min=z_min if z_min else 0, z_max=z_max, cmap=cmap)
-        ax2 = fig.add_subplot(312)
-        self._create_1d_hist(ax2, hist, bins=bins, x_axis_title=x_axis_title, y_axis_title="#", x_min=z_min, x_max=z_max)
-        ax3 = fig.add_subplot(313)
-        self._create_pixel_scatter_plot(ax3, hist, x_axis_title='channel=row + column*{0}'.format(self.rows), y_axis_title=x_axis_title, y_min=z_min, y_max=z_max)
-        self._add_text(fig)
-        self._save_plots(fig, suffix=suffix)
-
-    def _create_1d_hist(self, ax, hist, title=None, x_axis_title=None, y_axis_title=None, bins=101, x_min=None, x_max=None):
-        if x_min is None:
-            x_min = 0.0
-        if x_max is None:
-            if hist.all() is np.ma.masked:  # check if masked array is fully masked
-                x_max = 1.0
-            else:
-                x_max = hist.max()
-        hist_bins = int(x_max - x_min) + 1 if bins is None else bins
-        if hist_bins > 1:
-            bin_width = (x_max - x_min) / (hist_bins - 1)
-        else:
-            bin_width = 1.0
-        hist_range = (x_min - bin_width / 2, x_max + bin_width / 2)
-        masked_hist_compressed = np.ma.masked_invalid(np.ma.masked_array(hist)).compressed()
-        if masked_hist_compressed.size == 0:
-            ax.plot([])
-        else:
-            _, _, _ = ax.hist(x=masked_hist_compressed, bins=hist_bins, range=hist_range, align='mid')  # re-bin to 1d histogram, x argument needs to be 1D
-        # BUG: np.ma.compressed(np.ma.masked_array(hist, copy=True)) (2D) is not equal to np.ma.masked_array(hist, copy=True).compressed() (1D) if hist is ndarray
-        ax.set_xlim(hist_range)  # overwrite xlim
-        if hist.all() is np.ma.masked:  # or np.allclose(hist, 0.0):
-            ax.set_ylim((0, 1))
-            ax.set_xlim((-0.5, +0.5))
-        elif masked_hist_compressed.size == 0:  # or np.allclose(hist, 0.0):
-            ax.set_ylim((0, 1))
-        if title is not None:
-            ax.set_title(title)
-        if x_axis_title is not None:
-            ax.set_xlabel(x_axis_title)
-        if y_axis_title is not None:
-            ax.set_ylabel(y_axis_title)
-        xmin, xmax = ax.get_xlim()
-        points = np.linspace(xmin, xmax, 500)
-        param = norm.fit(masked_hist_compressed)
-        pdf_fitted = norm.pdf(points, loc=param[0], scale=param[1]) * (len(masked_hist_compressed) * bin_width)
-        ax.plot(points, pdf_fitted, "r--", label='Normal distribution')
-        try:
-            median = np.median(masked_hist_compressed)
-        except IndexError:
-            self.log.warning('Cannot create 1D histogram named {0}'.format(title))
-            return
-        ax.axvline(x=median, color="g")
-
-        textleft = '$\\Sigma={0}$\n$\\mathrm{{mean\\,\\mu={1:1.2f}}}$\n$\\mathrm{{std\\,\\sigma={2:1.2f}}}$\n$\\mathrm{{median={3:1.2f}}}$'.format(len(masked_hist_compressed), param[0], param[1], median)
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.9, textleft, transform=ax.transAxes, fontsize=8, verticalalignment='top', bbox=props)
-
     def _plot_2d_param_hist(self, hist, scan_parameters, y_max=None, electron_axis=False, scan_parameter_name=None, title='Scan Parameter Histogram', ylabel='', suffix=None):
 
         if y_max is None:
@@ -999,7 +845,6 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-
     def _plot_scurves(self, scurves, scan_parameters, electron_axis=False, scan_parameter_name=None, suffix='scurves', title='S-curves', ylabel='Occupancy'):
         max_occ = np.max(scurves) + 50
         if self.run_config['scan_id'] == 'autorange_threshold_scan':
@@ -1065,10 +910,10 @@ class Plotting(object):
             ax.set_xlabel(scan_parameter_name)
         ax.set_ylabel(ylabel)
 
-        # text = 'Failed fits: {0}\nNoisy pixels: {1}'.format(self.n_failed_scurves, n_noisy_pixels)
-        # props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        # ax.text(0.05, 0.88, text, transform=ax.transAxes,
-        #         fontsize=8, verticalalignment='top', bbox=props)
+        text = 'Failed fits: {0}\nNoisy pixels: {1}'.format(self.n_failed_scurves, n_noisy_pixels)
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text(0.05, 0.88, text, transform=ax.transAxes,
+                fontsize=8, verticalalignment='top', bbox=props)
 
         if electron_axis:
             self._add_electron_axis(fig, ax)
@@ -1292,94 +1137,5 @@ class Plotting(object):
                 ax.set_yscale('log')
                 ax.set_ylim((1e-1, np.amax(hist) * 2))
         ax.grid(True)
-
-        # # Add mean and rms in case of TOT plot
-        # if suffix == 'tot':
-        #     textright = '$\mu={0:1.1f}$\nRMS$={1:1.1f}$'.format(au.get_mean_from_histogram(hist, np.arange(hist.shape[0])), au.get_std_from_histogram(hist, np.arange(hist.shape[0])))
-        #     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        #     ax.text(0.05, 0.9, textright, transform=ax.transAxes, fontsize=8, verticalalignment='top', bbox=props)
-
-        self._save_plots(fig, suffix=suffix)
-
-    def _plot_fancy_occupancy(self, hist, title='Occupancy', z_label='#', z_min=None, z_max=None, log_z=True, norm_projection=False, show_sum=True, suffix='fancy_occupancy'):
-        if log_z:
-            title += '\n(logarithmic scale)'
-        title += '\nwith projections'
-
-        if z_min is None:
-            z_min = np.ma.min(hist)
-        if log_z and z_min == 0:
-            z_min = 0.1
-        if z_max is None:
-            z_max = np.ma.max(hist)
-
-        fig = Figure()
-        FigureCanvas(fig)
-        ax = fig.add_subplot(111)
-        self._add_text(fig)
-
-        extent = self.plot_box_bounds
-        if log_z:
-            bounds = np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=255, endpoint=True)
-        else:
-            bounds = np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True)
-        cmap = copy.copy(cm.get_cmap('plasma'))
-        cmap.set_bad('w')
-        norm = colors.BoundaryNorm(bounds, cmap.N)
-
-        im = ax.imshow(hist, interpolation='none', aspect='auto', cmap=cmap, norm=norm, extent=extent)  # TODO: use pcolor or pcolormesh
-        ax.set_ylim((self.plot_box_bounds[2], self.plot_box_bounds[3]))
-        ax.set_xlim((self.plot_box_bounds[0], self.plot_box_bounds[1]))
-        if self._module_type is None or not self._module_type.switch_axis():
-            ax.set_xlabel('Column')
-            ax.set_ylabel('Row')
-        else:
-            ax.set_xlabel('Row')
-            ax.set_ylabel('Column')
-
-        # create new axes on the right and on the top of the current axes
-        # The first argument of the new_vertical(new_horizontal) method is
-        # the height (width) of the axes to be created in inches.
-        divider = make_axes_locatable(ax)
-        axHistx = divider.append_axes("top", 1.2, pad=0.2, sharex=ax)
-        axHisty = divider.append_axes("right", 1.2, pad=0.2, sharey=ax)
-
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        if log_z:
-            cb = fig.colorbar(im, cax=cax, ticks=np.logspace(start=np.log10(z_min), stop=np.log10(z_max), num=9, endpoint=True))
-        else:
-            cb = fig.colorbar(im, cax=cax, ticks=np.linspace(start=z_min, stop=z_max, num=int((z_max - z_min) + 1), endpoint=True))
-        cb.set_label(z_label)
-        # make some labels invisible
-        setp(axHistx.get_xticklabels() + axHisty.get_yticklabels(), visible=False)
-        if norm_projection:
-            hight = np.ma.mean(hist, axis=0)
-        else:
-            hight = np.ma.sum(hist, axis=0)
-
-        axHistx.bar(x=range(1, hist.shape[1] + 1), height=hight, align='center', linewidth=0)
-        axHistx.set_xlim((self.plot_box_bounds[0], self.plot_box_bounds[1]))
-        if hist.all() is np.ma.masked:
-            axHistx.set_ylim((0, 1))
-        axHistx.locator_params(axis='y', nbins=3)
-        axHistx.ticklabel_format(style='sci', scilimits=(0, 4), axis='y')
-        axHistx.set_ylabel(z_label)
-        if norm_projection:
-            width = np.ma.mean(hist, axis=1)
-        else:
-            width = np.ma.sum(hist, axis=1)
-
-        axHisty.barh(y=range(1, hist.shape[0] + 1), width=width, align='center', linewidth=0)
-        axHisty.set_ylim((self.plot_box_bounds[2], self.plot_box_bounds[3]))
-        if hist.all() is np.ma.masked:
-            axHisty.set_xlim((0, 1))
-        axHisty.locator_params(axis='x', nbins=3)
-        axHisty.ticklabel_format(style='sci', scilimits=(0, 4), axis='x')
-        axHisty.set_xlabel(z_label)
-
-        if not show_sum:
-            ax.set_title(title, color=TITLE_COLOR, x=1.35, y=1.2)
-        else:
-            ax.set_title(title + '\n($\\Sigma$ = {0})'.format((0 if hist.all() is np.ma.masked else np.ma.sum(hist))), color=TITLE_COLOR, x=1.35, y=1.2)
 
         self._save_plots(fig, suffix=suffix)
