@@ -7,7 +7,7 @@ Data acquisition system for the TJ-Monopix2 pixel detector.
 # Installation
 Clone the repository and install the required dependencies with
 ```bash
-pip install basil-daq coloredlogs GitPython numba numpy matplotlib tables tqdm scipy basil-daq PyYAML pyzmq
+pip install basil-daq coloredlogs GitPython matplotlib numba numpy pyyaml pyzmq scipy tables tqdm 
 ```
 Afterwards install the package (editable) by running
 ```bash
