@@ -89,7 +89,7 @@ class Plotting(object):
 
         self.registers = au.ConfigDict(root.configuration_in.chip.registers[:])
 
-        if self.run_config['scan_id']: # not in ['adc_tuning', 'dac_linearity_scan', 'seu_test', 'pixel_register_scan']:  # TODO: define 'usual' scans
+        if self.run_config['scan_id']:  # TODO: define 'usual' scans
             self.enable_mask = self._mask_disabled_pixels(root.configuration_in.chip.use_pixel[:], self.scan_config)
             self.n_enabled_pixels = len(self.enable_mask[~self.enable_mask])
             self.tdac_mask = root.configuration_in.chip.masks.tdac[:]
@@ -571,13 +571,6 @@ class Plotting(object):
 
         ax.text(0.01, 0.9, text, fontsize=10)
         ax.text(-0.1, -0.11, 'Software version: {0}'.format(sw_ver), fontsize=3)
-
-        # if scan_id in ['threshold_scan', 'fast_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
-        #     txt = 'Charge calibration: $y \\; [e^-] = x \\; [\\Delta VCAL] \\cdot ({0:1.2f} \\pm {1:1.2f}) \\; [\\frac{{e^-}}{{\\Delta VCAL}}] + ({2:1.0f} \\pm {3:1.2f}) \\; [e^-]$'.format(self.calibration['e_conversion_slope'],
-        #                                                                                                                                                                                      self.calibration['e_conversion_slope_error'],
-        #                                                                                                                                                                                      self.calibration['e_conversion_offset'],
-        #                                                                                                                                                                                      self.calibration['e_conversion_offset_error'])
-        #     ax.text(0.01, 0.02, txt, fontsize=6)
 
         if 'maskfile' in self.scan_config.keys() and self.scan_config['maskfile'] is not None and not self.scan_config['maskfile'] == 'None':
             ax.text(0.01, -0.05, 'Maskfile:\n{0}'.format(self.scan_config['maskfile']), fontsize=6)
