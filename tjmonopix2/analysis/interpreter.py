@@ -29,6 +29,8 @@ class_spec = [
     ('hist_tdc', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
+    
+    ('too_many_scan_params', numba.boolean),
 ]
 
 
