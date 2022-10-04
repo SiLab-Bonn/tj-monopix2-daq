@@ -553,7 +553,8 @@ tlu_controller #(
     .DIVISOR(8),
     .ABUSWIDTH(ABUSWIDTH),
     .WIDTH(8),
-    .TLU_TRIGGER_MAX_CLOCK_CYCLES(32)
+    .TLU_TRIGGER_MAX_CLOCK_CYCLES(32),
+    .TIMESTAMP_N_OF_BIT(64)
 ) i_tlu_controller (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
@@ -654,24 +655,6 @@ tdc_s3 #(
     .TIMESTAMP(TIMESTAMP[15:0])
 );
 
-// sync TIMESTAMP from CLK40 to CLK16
-wire [26:0] timestep_gray;
-bin2gray bin2gray (.bin(TIMESTAMP), .gray(timestep_gray));
-reg [26:0] timestep_gray_sync;
-
-always@(posedge CLK40)
-    timestep_gray_sync <= timestep_gray;
-
-reg [26:0] timestep_gray_16_0, timestep_gray_16;
-
-always@(posedge CLK16) begin
-    timestep_gray_16_0 <= timestep_gray_sync;
-    timestep_gray_16 <= timestep_gray_16_0;
-end
-
-wire [26:0] TIMESTAMP16;
-gray2bin gray2bin ( .gray(timestep_gray_16), .bin(TIMESTAMP16));
-
 // fast readout
 tjmono2_rx #(
     .BASEADDR(RX_BASEADDR),
@@ -680,6 +663,7 @@ tjmono2_rx #(
     .ABUSWIDTH(ABUSWIDTH),
     .USE_FIFO_CLK(0)
 ) tjmono2_rx (
+    .TS_CLK(CLK40),
     .FCLK(CLK160),
     .FCLK2X(CLK320),
     .RX_CLKW(CLK16),
@@ -697,7 +681,7 @@ tjmono2_rx #(
     .RX_FIFO_FULL(),
     .RX_ENABLED(),
 
-    .TIMESTAMP(TIMESTAMP16),
+    .TIMESTAMP(TIMESTAMP[51:0]),
 
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
