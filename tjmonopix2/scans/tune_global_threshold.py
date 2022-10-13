@@ -18,21 +18,21 @@ from tjmonopix2.analysis import online as oa
 
 
 scan_configuration = {
-    'start_column': 370,
-    'stop_column': 372,
+    'start_column': 32,
+    'stop_column': 64,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
 
     # Target threshold
-    'VCAL_LOW': 0,
+    'VCAL_LOW': 1,
     'VCAL_HIGH': 35,
 
     # This setting does not have to be changed, it only allows (slightly) faster retuning
     # E.g.: gdac_value_bits = [3, 2, 1, 0] uses the 4th, 3rd, 2nd, and 1st GDAC value bit.
     # GDAC is not an existing DAC, its value is mapped to ITHR currently
-    'gdac_value_bits': range(7, -1, -1)
+    'gdac_value_bits': range(6, -1, -1)
 }
 
 
@@ -69,7 +69,6 @@ class GDACTuning(ScanBase):
         self.chip.registers["VL"].write(VCAL_LOW)
         self.chip.registers["VH"].write(VCAL_HIGH)
 
-        self.chip.registers["ITHR"].write(50)
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
         self.data.hist_occ = oa.OccupancyHistogramming()
@@ -94,8 +93,8 @@ class GDACTuning(ScanBase):
 
         def write_gdac_registers(gdac):
             ''' Write new GDAC setting for enabled flavors '''
-            self.chip.registers['ITHR'].write(gdac)
-            self.chip.configuration['registers']['ITHR'] = int(gdac)
+            self.chip.registers['ICASN'].write(gdac)
+            self.chip.configuration['registers']['ICASN'] = int(gdac)
 
         # Set GDACs to start value
         start_value = 2 ** gdac_value_bits[0]
@@ -131,8 +130,10 @@ class GDACTuning(ScanBase):
                 self.log.info('Found best result, skip remaining iterations')
                 break
 
+            self.log.info('Mean Occ of {} at ICASN = {}'.format(mean_occ, gdac_new))
+
             # Update GDACS from measured mean occupancy
-            if not np.isnan(mean_occ) and mean_occ < n_injections / 2.:  # threshold too low
+            if not np.isnan(mean_occ) and mean_occ > n_injections / 2.:  # threshold too low
                 gdac_new = np.bitwise_and(gdac_new, ~(1 << gdac_bit))  # decrease threshold
 
         else:  # Loop finished but last bit = 0 still has to be checked
