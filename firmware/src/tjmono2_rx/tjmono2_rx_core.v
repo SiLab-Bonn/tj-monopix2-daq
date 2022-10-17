@@ -39,6 +39,7 @@ module tjmono2_rx_core
     input wire BUS_WR,
     input wire BUS_RD,
 
+    input wire CLK40,
     input wire [51:0] TIMESTAMP
 );
 
