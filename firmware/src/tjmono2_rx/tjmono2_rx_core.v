@@ -39,7 +39,6 @@ module tjmono2_rx_core
     input wire BUS_WR,
     input wire BUS_RD,
 
-    input wire CLK40,
     input wire [51:0] TIMESTAMP
 );
 
@@ -204,7 +203,7 @@ assign RX_DATA_DDR = CONF_SAMPLING_EDGE ? Q1 : Q2;
 wire cdc_fifo_empty, cdc_fifo_full;
 wire RESET_FIFO, RESET_WCLK;
 wire [51:0] TIMESTAMP_WCLK; // Timestamp in FCLK domain
-cdc_reset_sync rst_wclk_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(CLK40), .pulse_out(RESET_WCLK));
+cdc_reset_sync rst_wclk_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(TS_CLK), .pulse_out(RESET_WCLK));
 cdc_reset_sync rst_fclk_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(RX_CLKW), .pulse_out(RESET_FIFO));
 
 // Continuously put timestamp in very short fifo for constant overwrite if not read
@@ -217,7 +216,7 @@ cdc_syncfifo #(
     .rempty(cdc_fifo_empty),
     .wdata(TIMESTAMP),
     .winc(1'b1),
-    .wclk(CLK40),
+    .wclk(TS_CLK),
     .wrst(RESET_WCLK),
     .rinc(!cdc_fifo_empty),
     .rclk(RX_CLKW),
