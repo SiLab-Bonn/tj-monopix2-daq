@@ -29,7 +29,7 @@ module receiver_logic
     input wire [3:0]        load_rawcnt,
     input wire [7:0]        empty_record,
     input wire              FIFO_CLK,
-    input wire [26:0]       TIMESTAMP
+    input wire [51:0]       TIMESTAMP
 );
 
 wire RESET_WCLK;
@@ -199,50 +199,73 @@ always@(posedge WCLK) begin
         write_dec_in <= 1'b1;
     else
         write_dec_in <= 1'b0;
-
 end
 
-wire cdc_fifo_full, cdc_fifo_empty;
-always@(posedge WCLK) begin
-    if(RESET_WCLK)
-        lost_err_cnt <= 0;
-    else
-        if(cdc_fifo_full && write_dec_in && lost_err_cnt != 8'hff)
-            lost_err_cnt <= lost_err_cnt + 1;
-        else
-            lost_err_cnt <= lost_err_cnt;
+reg [27:0] wdata;
+
+localparam STATE_IDLE = 2'b00, STATE_TS_MSB = 2'b01, STATE_TS_LSB = 2'b10;
+reg [1:0] state = STATE_IDLE;
+reg write_cdc;
+reg [51:0] timestamp_buf;
+
+always @(*) begin
+    case (state)
+        STATE_TS_MSB: wdata <= {2'b11, timestamp_buf[51:26]};
+        STATE_TS_LSB: wdata <= {2'b10, timestamp_buf[25:0]};
+        // idle
+        default: wdata <= {1'b0, {data_dec_in[0], data_dec_in[1], data_dec_in[2]}};
+    endcase
 end
 
-wire [27:0] cdc_data_out;
-wire [27:0] wdata;
-assign wdata =  sof ? {1'b1, TIMESTAMP} : {1'b0, data_dec_in[0],data_dec_in[1],data_dec_in[2]};
-
-// generate delayed and long reset
-reg [5:0] rst_cnt;
-always@(posedge BUS_CLK) begin
-    if(RESET)
-        rst_cnt <= 5'd8;
-    else if(rst_cnt != 5'd7)
-        rst_cnt <= rst_cnt +1;
-end
-wire rst_long = rst_cnt[5];
-reg cdc_sync_ff;
 always @(posedge WCLK) begin
-    cdc_sync_ff <= rst_long;
+    if (RESET_WCLK)
+        state <= STATE_IDLE;
+    else
+        state <= state;
+
+     case (state)
+        STATE_IDLE: begin
+                if(sof) begin
+                    timestamp_buf <= TIMESTAMP;
+                    state <= STATE_TS_MSB;
+                end
+            end
+        STATE_TS_MSB: begin
+            state <= STATE_TS_LSB;
+        end
+        STATE_TS_LSB: begin
+            state <= STATE_IDLE;
+        end
+    endcase
 end
 
 wire RESET_FIFO;
 cdc_reset_sync rst_fifo_pulse_sync (.clk_in(WCLK), .pulse_in(RESET_WCLK), .clk_out(FIFO_CLK), .pulse_out(RESET_FIFO));
 
+wire cdc_fifo_full, cdc_fifo_empty;
+wire [27:0] cdc_data_out;
+
+// Data is lost when writing to CDC FIFO or FIFO for decoded datawhen they are full
+always@(posedge WCLK) begin
+    if(RESET_WCLK)
+        lost_err_cnt <= 0;
+    else
+        if((cdc_fifo_full && write_cdc) && lost_err_cnt != 8'hff)
+            lost_err_cnt <= lost_err_cnt + 1;
+        else
+            lost_err_cnt <= lost_err_cnt;
+end
+
+// Move data to output FIFO domain
 cdc_syncfifo #(
     .DSIZE(28),
-    .ASIZE(3)
+    .ASIZE(4)
 ) cdc_syncfifo_i (
     .rdata(cdc_data_out),
     .wfull(cdc_fifo_full),
     .rempty(cdc_fifo_empty),
     .wdata(wdata),
-    .winc((sof | write_dec_in) & !cdc_fifo_full),
+    .winc(((write_dec_in) || (state == STATE_TS_LSB) || (state == STATE_TS_MSB)) & !cdc_fifo_full),
     .wclk(WCLK),
     .wrst(RESET_WCLK),
     .rinc(!full),

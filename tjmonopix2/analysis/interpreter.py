@@ -38,11 +38,6 @@ def is_tjmono(word):
 
 
 @numba.njit
-def is_tjmono_timestamp(word):
-    return (word & 0xF8000000) == 0x48000000
-
-
-@numba.njit
 def is_tlu(word):
     return word & 0x80000000 == 0x80000000
 
@@ -62,6 +57,14 @@ def get_tlu_timestamp(word):
     return (word >> 16) & 0x7FFF
 
 
+@numba.njit
+def is_tjmono_timestamp_msb(word):
+    return (word & 0xFC000000) == 0x4C000000
+
+
+@numba.njit
+def is_tjmono_timestamp_lsb(word):
+    return (word & 0xFC000000) == 0x48000000
 @numba.njit
 def get_tdc_value(word):
     return word & 0xFFF
@@ -90,8 +93,10 @@ class RawDataInterpreter(object):
             #############################
             # Part 1: interpret TJ word #
             #############################
-            if is_tjmono_timestamp(raw_data_word):
-                self.tj_timestamp = raw_data_word & 0x7FFFFFF
+            if is_tjmono_timestamp_msb(raw_data_word):
+                self.tj_timestamp = (raw_data_word & 0x3FFFFFF) << 26
+            elif is_tjmono_timestamp_lsb(raw_data_word):
+                self.tj_timestamp = self.tj_timestamp | (raw_data_word & 0x3FFFFFF)
             elif is_tjmono(raw_data_word):
                 dat = np.zeros(3, dtype=np.uint16)
                 dat[0] = (raw_data_word & 0x7FC0000) >> 18
