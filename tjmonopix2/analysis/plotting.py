@@ -687,17 +687,17 @@ class Plotting(object):
             ax.set_ylabel('Column')
 
         divider = make_axes_locatable(ax)
-        ticks = np.linspace(start=z_min, stop=z_max, num=10, endpoint=True)
+        ticks = np.linspace(start=z_min, stop=z_max + (1 if extend_upper_bound else 0), num=10, endpoint=True)
         if self.cb_side:  # and not electron_axis:
             pad = 0.8 if electron_axis else 0.2
             cax = divider.append_axes("right", size="5%", pad=pad)
             cb = fig.colorbar(im, cax=cax, ticks=ticks)
-            cax.set_yticklabels([int(round(x)) for x in ticks])
+            cax.set_yticklabels([round(x, 1) for x in ticks])
         else:
             pad = 1.0 if electron_axis else 0.6
             cax = divider.append_axes("bottom", size="5%", pad=pad)
             cb = fig.colorbar(im, cax=cax, ticks=ticks, orientation='horizontal')
-            cax.set_xticklabels([int(round(x)) for x in ticks])
+            cax.set_xticklabels([round(x, 1) for x in ticks])
         cb.set_label(z_label)
 
         if electron_axis:
