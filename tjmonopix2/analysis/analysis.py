@@ -51,6 +51,7 @@ class Analysis(object):
             self.run_config = au.ConfigDict(in_file.root.configuration_in.scan.run_config[:])
             self.scan_config = au.ConfigDict(in_file.root.configuration_in.scan.scan_config[:])
             self.chip_settings = au.ConfigDict(in_file.root.configuration_in.chip.settings[:])
+            self.tlu_config = au.ConfigDict(in_file.root.configuration_in.bench.TLU[:])
 
     def __enter__(self):
         return self
@@ -151,7 +152,7 @@ class Analysis(object):
                 if self.store_hits:
                     hit_table = self._create_hit_table(out_file, dtype=au.hit_dtype)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params)
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0

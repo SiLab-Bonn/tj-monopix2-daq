@@ -23,7 +23,6 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors, cm
 from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.ticker as ticker
 
 from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
