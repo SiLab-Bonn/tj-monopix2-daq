@@ -39,16 +39,6 @@ def is_tdc(word):
 
 
 @numba.njit
-def get_tlu_number(word):
-    return word & 0xFFFF
-
-
-@numba.njit
-def get_tlu_timestamp(word):
-    return (word >> 16) & 0x7FFF
-
-
-@numba.njit
 def is_tjmono_timestamp_msb(word):
     return (word & 0xFC000000) == 0x4C000000
 
