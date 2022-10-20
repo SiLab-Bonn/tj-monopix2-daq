@@ -1,0 +1,11 @@
+basil-daq
+coloredlogs
+gitpython
+matplotlib
+numba
+numpy
+pyyaml
+pyzmq
+scipy
+tables
+tqdm
