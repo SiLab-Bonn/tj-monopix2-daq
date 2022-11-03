@@ -107,7 +107,7 @@ class GDACTuning(ScanBase):
         sel_pixel[self.data.start_column:self.data.stop_column, self.data.start_row:self.data.stop_row] = True
 
         self.log.info('Searching optimal global threshold setting.')
-        self.data.pbar = tqdm(total=len(gdac_value_bits) * self.chip.masks.get_mask_steps() * 2, unit=' Mask steps')
+        self.data.pbar = tqdm(total=(len(gdac_value_bits) + 1) * self.chip.masks.get_mask_steps(), unit=' Mask steps')
         for scan_param_id in range(len(gdac_value_bits)):
             # Set the GDAC bit in all flavours
             gdac_bit = gdac_value_bits[scan_param_id]
@@ -137,7 +137,6 @@ class GDACTuning(ScanBase):
                 gdac_new = np.bitwise_and(gdac_new, ~(1 << gdac_bit))  # decrease threshold
 
         else:  # Loop finished but last bit = 0 still has to be checked
-            self.data.pbar.close()
             scan_param_id += 1
             gdac_new = np.bitwise_and(gdac_new, ~(1 << gdac_bit))
             # Do not check if setting was already used before, safe time of one iteration
@@ -148,7 +147,7 @@ class GDACTuning(ScanBase):
                 best_gdacs, best_gdac_offset = update_best_gdacs(mean_occ, best_gdacs, best_gdac_offset)
         self.data.pbar.close()
 
-        self.log.success('Optimal ITHR value is {0:1.0f} with mean occupancy {1:1.0f}'.format(best_gdacs, int(mean_occ)))
+        self.log.success('Optimal ICASN value is {0:1.0f} with median occupancy {1:1.0f}'.format(best_gdacs, int(mean_occ)))
 
         # Set final result
         self.data.best_gdacs = best_gdacs
