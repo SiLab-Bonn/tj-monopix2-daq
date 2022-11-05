@@ -48,7 +48,7 @@ def fill_dict_from_conf_table(table):
     return conf
 
 
-def send_data(socket, data, scan_par_id, name='ReadoutData'):
+def send_data(socket, data, scan_param_id, name='ReadoutData'):
     '''Sends the data of every read out (raw data and meta data)
 
         via ZeroMQ to a specified socket.
@@ -60,7 +60,7 @@ def send_data(socket, data, scan_par_id, name='ReadoutData'):
         timestamp_start=data[1],  # float
         timestamp_stop=data[2],  # float
         error=data[3],  # int
-        scan_par_id=scan_par_id
+        scan_param_id=scan_param_id
     )
     try:
         data_ser = ou.simple_enc(data[0], meta=data_meta_data)
@@ -1124,7 +1124,7 @@ class ScanBase(object):
         self.meta_data_table.flush()
 
         if self.socket:
-            send_data(self.socket, data=data_tuple, scan_par_id=self.scan_param_id)
+            send_data(self.socket, data=data_tuple, scan_param_id=self.scan_param_id)
 
     def handle_err(self, exc):
         ''' Handle errors when readout is started '''
