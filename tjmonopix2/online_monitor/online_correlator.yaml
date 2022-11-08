@@ -14,16 +14,16 @@ converter :
         kind : pymosa_converter  # Use pymosas interpreter to interpret Mimosa data
         frontend : tcp://127.0.0.1:6500
         backend : tcp://127.0.0.1:6600
-    FEI4 :
-        kind : pybar_fei4  # Use pybar interpreter to interpret fei4 data
-        frontend : tcp://127.0.0.1:7500
-        backend : tcp://127.0.0.1:7600         
+#    FEI4 :
+#        kind : pybar_fei4  # Use pybar interpreter to interpret fei4 data
+#        frontend : tcp://127.0.0.1:7500
+#        backend : tcp://127.0.0.1:7600         
     HitCorrelator :
         kind : hit_correlator_converter  # Use pymosas hit correlator to correlate the DUTs
         frontend : 
-            - tcp://127.0.0.1:5600  # Listen to TJ2 interpreter
+            - tcp://127.0.0.1:5666  # Listen to TJ2 interpreter
             - tcp://127.0.0.1:6600  # Listen to M26 interpreter
-            - tcp://127.0.0.1:7600  # Listen to FEI4 interpreter
+#            - tcp://127.0.0.1:7600  # Listen to FEI4 interpreter
         backend : tcp://127.0.0.1:8600
         duts :
             TJ2 :
@@ -36,15 +36,15 @@ converter :
                 column_size : 18.4
                 n_rows : 576
                 row_size : 18.4
-            FE-I4 :
-                n_columns : 80
-                column_size : 250.0
-                n_rows : 360
-                row_size : 50.0
+#            FE-I4 :
+#                n_columns : 80
+#                column_size : 250.0
+#                n_rows : 360
+#                row_size : 50.0
         correlation_planes:
             - name : TJ Monopix 2
               dut_type : TJ2
-              address : tcp://127.0.0.1:5600
+              address : tcp://127.0.0.1:5666
             - name : Mimosa26 Plane 1
               dut_type : M26
               address : tcp://127.0.0.1:6600
@@ -69,21 +69,21 @@ converter :
               dut_type : M26
               address : tcp://127.0.0.1:6600
               id : 5          
-            - name : FE-I4
-              dut_type : FE-I4
-              address : tcp://127.0.0.1:7600        
+#            - name : FE-I4
+#              dut_type : FE-I4
+#              address : tcp://127.0.0.1:7600        
 
 receiver :
     TJ2 :
         kind : tjmonopix2_recv
-        frontend : tcp://127.0.0.1:5600
+        frontend : tcp://127.0.0.1:5666
     Mimosa26 :
         kind : pymosa_receiver
         frontend : tcp://127.0.0.1:6600
-    FE-I4 :
-        kind : pybar_fei4
-        frontend : tcp://127.0.0.1:7600
-    HitCorrelator :
+#    FE-I4 :
+#        kind : pybar_fei4
+#        frontend : tcp://127.0.0.1:7600
+    HIT_Correlator :
         kind : hit_correlator_receiver  # Use pymosas hit correlator to correlate the DUTs
         frontend : tcp://127.0.0.1:8600
         duts :
@@ -97,11 +97,11 @@ receiver :
                 column_size : 18.4
                 n_rows : 576
                 row_size : 18.4
-            FE-I4 :
-                n_columns : 80
-                column_size : 250.0
-                n_rows : 360
-                row_size : 50.0
+#            FE-I4 :
+#                n_columns : 80
+#                column_size : 250.0
+#                n_rows : 360
+#                row_size : 50.0
         correlation_planes:
             - name : TJ Monopix 2
               dut_type : TJ2
@@ -117,12 +117,17 @@ receiver :
               dut_type : M26
             - name : Mimosa26 Plane 6
               dut_type : M26
-            - name : FE-I4
-              dut_type : FE-I4
+#            - name : FE-I4
+#              dut_type : FE-I4
 
 # producer_sim:
 #     TJ2 :
 #         kind : silab_default_producer
 #         backend : tcp://127.0.0.1:5500
-#         delay : 0.05
-#         data_file : /home/leloup/git/tj-monopix2-daq/tjmonopix2/online_monitor/20221103_223039_source_scan.h5
+#         delay : 0.2
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106_224756_source_scan.h5
+#     Mimosa26 :
+#         kind : pymosa_producer_sim
+#         backend : tcp://127.0.0.1:6500
+#         delay : 0.2
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106-224754_M26_TELESCOPE.h5
