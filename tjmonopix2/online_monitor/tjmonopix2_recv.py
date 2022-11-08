@@ -1,8 +1,5 @@
-import copy
 import time
-
 import numpy as np
-from matplotlib import cm
 
 from PyQt5 import QtWidgets
 import pyqtgraph as pg
@@ -12,17 +9,12 @@ from online_monitor.utils import utils
 from online_monitor.receiver.receiver import Receiver
 
 
-def generate_colormap_lut(cm_name):
-    # https://github.com/pyqtgraph/pyqtgraph/issues/561
-    colormap = copy.copy(cm.get_cmap(cm_name))
-    colormap._init()
-    lut = (colormap._lut[:-3] * 255).astype(np.uint8)
-    return lut
-
-
 class TJMonopix2(Receiver):
 
     def setup_receiver(self):
+        self.occupancy_data = None
+        self.tot_data = None
+        self.tdc_data = None
         # We want to change converter settings
         self.set_bidirectional_communication()
 
@@ -78,7 +70,7 @@ class TJMonopix2(Receiver):
         view = occupancy_graphics.addViewBox()
         self.occupancy_img = pg.ImageItem(border='w')
         # Set colormap from matplotlib
-        lut = generate_colormap_lut("viridis")
+        lut = utils.lut_from_colormap("plasma")
 
         self.occupancy_img.setLookupTable(lut, update=True)
         plot = pg.PlotWidget(viewBox=view, labels={'bottom': 'Column', 'left': 'Row'})
@@ -114,25 +106,34 @@ class TJMonopix2(Receiver):
 
     def handle_data(self, data):
         # Histogram data
-        self.occupancy_img.setImage(data['occupancy'][:, :],
-                                    autoDownsample=True)
-        self.tot_plot.setData(x=np.arange(-0.5, 128.5, 1),
-                              y=data['tot_hist'], fillLevel=0,
-                              brush=(0, 0, 255, 150))
-        self.tdc_plot.setData(x=np.linspace(-0.5, data['tdc_hist'].shape[0] - 0.5, data['tdc_hist'].shape[0] + 1),
-                              y=data['tdc_hist'],
-                              # stepMode=True,
-                              fillLevel=0,
-                              brush=(0, 0, 255, 150))
-
+        self.occupancy_data = data['occupancy']
+        self.tot_data = data['tot_hist']
+        self.tdc_data = data['tdc_hist']
+        
         # Meta data
         self._update_rate(data['meta_data']['fps'],
                           data['meta_data']['hps'],
                           data['meta_data']['tps'],
                           data['meta_data']['total_hits'],
                           data['meta_data']['total_triggers'])
+                          
         self.timestamp_label.setText("Data Timestamp\n%s" % time.asctime(time.localtime(data['meta_data']['timestamp_stop'])))
         self.scan_parameter_label.setText("Parameter ID\n%d" % data['meta_data']['scan_param_id'])
         now = time.time()
         self.plot_delay = self.plot_delay * 0.9 + (now - data['meta_data']['timestamp_stop']) * 0.1
         self.plot_delay_label.setText("Plot Delay\n%s" % 'not realtime' if abs(self.plot_delay) > 5 else "Plot Delay\n%1.2f ms" % (self.plot_delay * 1.e3))
+
+    def refresh_data(self):
+        
+        if self.occupancy_data is not None:
+            self.occupancy_img.setImage(self.occupancy_data[:, :], autoDownSample=True)
+        if self.tot_data is not None:
+            self.tot_plot.setData(x=np.arange(-0.5, 128.5, 1),
+                                  y=self.tot_data, fillLevel=0,
+                                  brush=(0, 0, 255, 150))
+        if self.tdc_data is not None:
+            self.tdc_plot.setData(x=np.linspace(-0.5, self.tdc_data.shape[0] - 0.5, self.tdc_data.shape[0] + 1),
+                                  y=self.tdc_data,
+                                  # stepMode=True,
+                                  fillLevel=0,
+                                  brush=(0, 0, 255, 150))

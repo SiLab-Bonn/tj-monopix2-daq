@@ -9,3 +9,4 @@ pyzmq
 scipy
 tables
 tqdm
+online_monitor>=0.6.0
