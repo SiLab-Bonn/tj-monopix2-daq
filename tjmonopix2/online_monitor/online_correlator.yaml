@@ -10,10 +10,14 @@ converter :
         backend : tcp://127.0.0.1:5600
         analyze_tdc : False  #  Enable interpretation of TDC words
         noisy_threshold : 3  # Pixels per readout above noisy_threshold * median occupancy
-    Mimosa26 :
+    PymosaConverter :
         kind : pymosa_converter  # Use pymosas interpreter to interpret Mimosa data
         frontend : tcp://127.0.0.1:6500
         backend : tcp://127.0.0.1:6600
+    PymosaHistogrammer :
+        kind : pymosa_histogrammer  # Use pymosas interpreter to interpret Mimosa data
+        frontend : tcp://127.0.0.1:6600
+        backend : tcp://127.0.0.1:6700    
 #    FEI4 :
 #        kind : pybar_fei4  # Use pybar interpreter to interpret fei4 data
 #        frontend : tcp://127.0.0.1:7500
@@ -21,7 +25,7 @@ converter :
     HitCorrelator :
         kind : hit_correlator_converter  # Use pymosas hit correlator to correlate the DUTs
         frontend : 
-            - tcp://127.0.0.1:5666  # Listen to TJ2 interpreter
+            - tcp://127.0.0.1:5600  # Listen to TJ2 interpreter
             - tcp://127.0.0.1:6600  # Listen to M26 interpreter
 #            - tcp://127.0.0.1:7600  # Listen to FEI4 interpreter
         backend : tcp://127.0.0.1:8600
@@ -44,7 +48,7 @@ converter :
         correlation_planes:
             - name : TJ Monopix 2
               dut_type : TJ2
-              address : tcp://127.0.0.1:5666
+              address : tcp://127.0.0.1:5600
             - name : Mimosa26 Plane 1
               dut_type : M26
               address : tcp://127.0.0.1:6600
@@ -76,10 +80,10 @@ converter :
 receiver :
     TJ2 :
         kind : tjmonopix2_recv
-        frontend : tcp://127.0.0.1:5666
+        frontend : tcp://127.0.0.1:5600
     Mimosa26 :
         kind : pymosa_receiver
-        frontend : tcp://127.0.0.1:6600
+        frontend : tcp://127.0.0.1:6700
 #    FE-I4 :
 #        kind : pybar_fei4
 #        frontend : tcp://127.0.0.1:7600
