@@ -15,5 +15,5 @@ receiver :
 #     TJ2 :
 #         kind : silab_default_producer
 #         backend : tcp://127.0.0.1:5500
-#         delay : 0.05
-#         data_file : /home/leloup/git/tj-monopix2-daq/tjmonopix2/online_monitor/20221103_223039_source_scan.h5
+#         delay : 0.01
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106_224756_source_scan.h5
