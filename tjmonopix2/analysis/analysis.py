@@ -127,12 +127,12 @@ class Analysis(object):
             Copy configuration nodes from raw data file.
         '''
         table = out_file.create_table(out_file.root, name=name,
-                                        description=dtype,
-                                        title=title,
-                                        expectedrows=self.chunk_size,
-                                        filters=tb.Filters(complib='blosc',
-                                                            complevel=5,
-                                                            fletcher32=False))
+                                      description=dtype,
+                                      title=title,
+                                      expectedrows=self.chunk_size,
+                                      filters=tb.Filters(complib='blosc',
+                                                         complevel=5,
+                                                         fletcher32=False))
 
         return table
 

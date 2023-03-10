@@ -138,7 +138,6 @@ def xy2d_morton(x, y):
     return x | (y << 1)
 
 
-
 def get_threshold(x, y, n_injections):
     ''' Fit less approximation of threshold from s-curve.
 
