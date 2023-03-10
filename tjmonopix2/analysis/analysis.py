@@ -99,7 +99,7 @@ class Analysis(object):
             parameter.
         '''
 
-        for scan_par_id, start, stop in par_range:
+        for scan_param_id, start, stop in par_range:
             for i in range(start, stop, self.chunk_size):
                 # Shift chunk index to not split events. The offset is determined from previous analyzed chunk.
                 # Restrict maximum offset, can happen for readouts without a single event, issue #171
@@ -108,13 +108,13 @@ class Analysis(object):
 
                 # Limit maximum read words by chunk size
                 stop_limited = min(i + self.chunk_size, stop)
-                yield scan_par_id, data[start_chunk:stop_limited]
+                yield scan_param_id, data[start_chunk:stop_limited]
 
         # Remaining data of last chunk
         self.last_chunk = True  # Set flag for special treatmend
         if self.chunk_offset == 0:
             return
-        yield scan_par_id, data[stop + self.chunk_offset:stop]
+        yield scan_param_id, data[stop + self.chunk_offset:stop]
 
     def _create_hit_table(self, out_file, dtype):
         ''' Create hit table node for storage in out_file.

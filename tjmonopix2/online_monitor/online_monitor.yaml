@@ -10,3 +10,10 @@ receiver :
     TJ2 :
         kind : tjmonopix2_recv
         frontend : tcp://127.0.0.1:5600
+
+# producer_sim:
+#     TJ2 :
+#         kind : silab_default_producer
+#         backend : tcp://127.0.0.1:5500
+#         delay : 0.01
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106_224756_source_scan.h5
