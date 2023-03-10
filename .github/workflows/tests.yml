@@ -23,7 +23,7 @@ jobs:
             sim-version: v4.106
             python-version: '3.10'
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Anaconda ${{matrix.python-version}}
       uses: conda-incubator/setup-miniconda@v2
       with:
