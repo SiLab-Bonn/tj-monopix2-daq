@@ -11,6 +11,7 @@ import multiprocessing as mp
 import warnings
 from functools import partial
 
+import numba
 import numpy as np
 from scipy.optimize import OptimizeWarning, curve_fit
 from scipy.special import erf
@@ -26,6 +27,16 @@ hit_dtype = np.dtype([
     ("token_id", "<i4"),
     ("timestamp", "<i8"),
     ("scan_param_id", "<i2"),
+])
+
+event_dtype = np.dtype([
+    ("event_number", "<u4"),
+    ("trigger_number", "<u4"),
+    ("frame", "<u1"),
+    ("column", "<u2"),
+    ("row", "<u2"),
+    ("charge", "<u1"),
+    ("timestamp", "<i8"),
 ])
 
 
@@ -92,6 +103,40 @@ def imap_bar(func, args, n_processes=None, unit='it', unit_scale=False):
     p.close()
     p.join()
     return res_list
+
+
+@numba.njit(locals={'cluster_shape': numba.int64})
+def calc_cluster_shape(cluster_array):
+    '''Boolean 8x8 array to number.
+    '''
+    cluster_shape = 0
+    indices_x, indices_y = np.nonzero(cluster_array)
+    for index in np.arange(indices_x.size):
+        cluster_shape += 2**xy2d_morton(indices_x[index], indices_y[index])
+    return cluster_shape
+
+
+@numba.njit(numba.int64(numba.uint32, numba.uint32))
+def xy2d_morton(x, y):
+    ''' Tuple to number.
+
+    See: https://stackoverflow.com/questions/30539347/
+         2d-morton-code-encode-decode-64bits
+    '''
+    x = (x | (x << 16)) & 0x0000FFFF0000FFFF
+    x = (x | (x << 8)) & 0x00FF00FF00FF00FF
+    x = (x | (x << 4)) & 0x0F0F0F0F0F0F0F0F
+    x = (x | (x << 2)) & 0x3333333333333333
+    x = (x | (x << 1)) & 0x5555555555555555
+
+    y = (y | (y << 16)) & 0x0000FFFF0000FFFF
+    y = (y | (y << 8)) & 0x00FF00FF00FF00FF
+    y = (y | (y << 4)) & 0x0F0F0F0F0F0F0F0F
+    y = (y | (y << 2)) & 0x3333333333333333
+    y = (y | (y << 1)) & 0x5555555555555555
+
+    return x | (y << 1)
+
 
 
 def get_threshold(x, y, n_injections):
