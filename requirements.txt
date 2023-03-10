@@ -4,6 +4,7 @@ gitpython
 matplotlib
 numba
 numpy
+pixel-clusterizer
 pyyaml
 pyzmq
 scipy

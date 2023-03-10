@@ -7,10 +7,13 @@
 
 import os
 
+import numba
 import numpy as np
 import tables as tb
+from pixel_clusterizer.clusterizer import HitClusterizer
 from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
+from tjmonopix2.analysis.events import build_events
 from tjmonopix2.system import logger
 from tqdm import tqdm
 
@@ -24,6 +27,7 @@ class Analysis(object):
         self.raw_data_file = raw_data_file
         self.analyzed_data_file = analyzed_data_file
         self.store_hits = store_hits
+        self.build_events = build_events
         self.cluster_hits = cluster_hits
         self.chunk_size = chunk_size
         self.analyze_tdc = analyze_tdc
@@ -44,6 +48,9 @@ class Analysis(object):
         self.threshold_map = np.ones(shape=(self.columns, self.rows)) * -1
         self.noise_map = np.ones_like(self.threshold_map) * -1
         self.chi2_map = np.zeros_like(self.threshold_map) * -1
+
+        # Setup clusterizer
+        self._setup_clusterizer()
 
     def _get_configs(self):
         ''' Load run config to allow analysis routines to access these info '''
@@ -111,24 +118,154 @@ class Analysis(object):
                 yield scan_param_id, data[start_chunk:stop_limited]
 
         # Remaining data of last chunk
-        self.last_chunk = True  # Set flag for special treatmend
+        self.last_chunk = True  # Set flag for special treatment
         if self.chunk_offset == 0:
             return
         yield scan_param_id, data[stop + self.chunk_offset:stop]
 
-    def _create_hit_table(self, out_file, dtype):
+    def _create_table(self, out_file, name, title, dtype):
         ''' Create hit table node for storage in out_file.
             Copy configuration nodes from raw data file.
         '''
-        hit_table = out_file.create_table(out_file.root, name='Dut',
-                                          description=dtype,
-                                          title='hit_data',
-                                          expectedrows=self.chunk_size,
-                                          filters=tb.Filters(complib='blosc',
-                                                             complevel=5,
-                                                             fletcher32=False))
+        table = out_file.create_table(out_file.root, name=name,
+                                      description=dtype,
+                                      title=title,
+                                      expectedrows=self.chunk_size,
+                                      filters=tb.Filters(complib='blosc',
+                                                         complevel=5,
+                                                         fletcher32=False))
 
-        return hit_table
+        return table
+
+    def _setup_clusterizer(self):
+        ''' Define data structure and settings for hit clusterizer package '''
+        # Define all field names and data types
+        hit_fields = {'event_number': 'event_number',
+                      'trigger_number': 'trigger_number',
+                      'frame': 'frame',
+                      'column': 'column',
+                      'row': 'row',
+                      'charge': 'charge',
+                      'timestamp': 'timestamp'
+                      }
+        hit_description = [('event_number', 'u4'),
+                           ('trigger_number', 'u4'),
+                           ('frame', 'u1'),
+                           ('column', 'u2'),
+                           ('row', 'u2'),
+                           ('charge', 'u1'),
+                           ('timestamp', 'i8')]
+        cluster_fields = {'event_number': 'event_number',
+                          'column': 'column',
+                          'row': 'row',
+                          'size': 'n_hits',
+                          'id': 'ID',
+                          'tot': 'charge',
+                          'scan_param_id': 'scan_param_id',
+                          'seed_col': 'seed_column',
+                          'seed_row': 'seed_row',
+                          'mean_col': 'mean_column',
+                          'mean_row': 'mean_row'}
+        cluster_description = [('event_number', 'u4'),
+                               ('id', '<u2'),
+                               ('size', '<u2'),
+                               ('tot', '<u2'),
+                               ('seed_col', '<u2'),
+                               ('seed_row', '<u2'),
+                               ('mean_col', '<f4'),
+                               ('mean_row', '<f4'),
+                               ('dist_col', '<u4'),
+                               ('dist_row', '<u4'),
+                               ('cluster_shape', '<i8'),
+                               ('scan_param_id', 'u4')]
+
+        hit_dtype = np.dtype(hit_description)
+        self.cluster_dtype = np.dtype(cluster_description)
+
+        hit_dtype = np.dtype(hit_description)
+        self.cluster_dtype = np.dtype(cluster_description)
+
+        if self.cluster_hits:  # Allow analysis without clusterizer installed
+            # Define end of cluster function to calculate cluster shape
+            # and cluster distance in column and row direction
+            @numba.njit
+            def _end_of_cluster_function(hits, clusters, cluster_size,
+                                         cluster_hit_indices, cluster_index,
+                                         cluster_id, charge_correction,
+                                         noisy_pixels, disabled_pixels,
+                                         seed_hit_index):
+                hit_arr = np.zeros((15, 15), dtype=np.bool_)
+                center_col = hits[cluster_hit_indices[0]].column
+                center_row = hits[cluster_hit_indices[0]].row
+                hit_arr[7, 7] = 1
+                min_col = hits[cluster_hit_indices[0]].column
+                max_col = hits[cluster_hit_indices[0]].column
+                min_row = hits[cluster_hit_indices[0]].row
+                max_row = hits[cluster_hit_indices[0]].row
+                for i in cluster_hit_indices[1:]:
+                    if i < 0:  # Not used indeces = -1
+                        break
+                    diff_col = np.int32(hits[i].column - center_col)
+                    diff_row = np.int32(hits[i].row - center_row)
+                    if np.abs(diff_col) < 8 and np.abs(diff_row) < 8:
+                        hit_arr[7 + hits[i].column - center_col,
+                                7 + hits[i].row - center_row] = 1
+                    if hits[i].column < min_col:
+                        min_col = hits[i].column
+                    if hits[i].column > max_col:
+                        max_col = hits[i].column
+                    if hits[i].row < min_row:
+                        min_row = hits[i].row
+                    if hits[i].row > max_row:
+                        max_row = hits[i].row
+
+                if max_col - min_col < 8 and max_row - min_row < 8:
+                    # Make 8x8 array
+                    col_base = 7 + min_col - center_col
+                    row_base = 7 + min_row - center_row
+                    cluster_arr = hit_arr[col_base:col_base + 8,
+                                          row_base:row_base + 8]
+                    # Finally calculate cluster shape
+                    # uint64 desired, but numexpr and others limited to int64
+                    if cluster_arr[7, 7] == 1:
+                        cluster_shape = np.int64(-1)
+                    else:
+                        cluster_shape = np.int64(
+                            au.calc_cluster_shape(cluster_arr))
+                else:
+                    # Cluster is exceeding 8x8 array
+                    cluster_shape = np.int64(-1)
+
+                clusters[cluster_index].cluster_shape = cluster_shape
+                clusters[cluster_index].dist_col = max_col - min_col + 1
+                clusters[cluster_index].dist_row = max_row - min_row + 1
+
+            def end_of_cluster_function(hits, clusters, cluster_size,
+                                        cluster_hit_indices, cluster_index,
+                                        cluster_id, charge_correction,
+                                        noisy_pixels, disabled_pixels,
+                                        seed_hit_index):
+                _end_of_cluster_function(hits, clusters, cluster_size,
+                                         cluster_hit_indices, cluster_index,
+                                         cluster_id, charge_correction,
+                                         noisy_pixels, disabled_pixels,
+                                         seed_hit_index)
+
+            # Initialize clusterizer with custom hit/cluster fields
+            self.clz = HitClusterizer(
+                hit_fields=hit_fields,
+                hit_dtype=hit_dtype,
+                cluster_fields=cluster_fields,
+                cluster_dtype=self.cluster_dtype,
+                min_hit_charge=1,
+                max_hit_charge=128,
+                column_cluster_distance=5,
+                row_cluster_distance=5,
+                frame_cluster_distance=1,
+                ignore_same_hits=True)
+
+            # Set end_of_cluster function for shape and distance calculation
+            self.clz.set_end_of_cluster_function(end_of_cluster_function)
 
     def analyze_data(self):
         self.log.info('Analyzing data...')
@@ -150,7 +287,21 @@ class Analysis(object):
                 out_file.copy_children(in_file.root.configuration_out, out_file.root.configuration_in, recursive=True)
 
                 if self.store_hits:
-                    hit_table = self._create_hit_table(out_file, dtype=au.hit_dtype)
+                    hit_table = self._create_table(out_file, name='Dut', title='hit_data', dtype=au.hit_dtype)
+                if self.build_events:
+                    trigger_n, trigger_ts, event_n = 0, 0, 0
+                    event_table = self._create_table(out_file, name='Hits', title='event_data', dtype=au.event_dtype)
+                if self.cluster_hits:
+                    cluster_table = out_file.create_table(
+                        out_file.root, name='Cluster',
+                        description=self.cluster_dtype,
+                        title='Cluster',
+                        filters=tb.Filters(complib='blosc',
+                                           complevel=5,
+                                           fletcher32=False))
+                    hist_cs_size = np.zeros(shape=(100, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(100, ), dtype=np.uint32)
+                    hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
                 self.last_chunk = False
@@ -169,6 +320,31 @@ class Analysis(object):
                     if self.store_hits:
                         hit_table.append(hit_dat)
                         hit_table.flush()
+                    if self.build_events:
+                        if np.count_nonzero(hit_dat["col"] == 1023) > 0:
+                            event_buffer = np.zeros(len(hit_dat), dtype=au.event_dtype)
+                            event_dat, trigger_n, trigger_ts, event_n = build_events(hit_dat, event_buffer, trigger_n, trigger_ts, event_n)
+                            event_table.append(event_dat)
+                            event_table.flush()
+                        else:
+                            self.log.error("No TLU data found in raw data. Check data or disable event building")
+                            raise Exception
+                        if self.cluster_hits:  # FIXME Currently only supported for event data
+                            _, cluster = self.clz.cluster_hits(event_dat)
+                            cluster_table.append(cluster)
+                            # Create actual cluster hists
+                            cs_size = np.bincount(cluster['size'],
+                                                  minlength=100)[:100]
+                            cs_tot = np.bincount(cluster['tot'],
+                                                 minlength=100)[:100]
+                            sel = np.logical_and(cluster['cluster_shape'] > 0,
+                                                 cluster['cluster_shape'] < 300)
+                            cs_shape = np.bincount(cluster['cluster_shape'][sel],
+                                                   minlength=300)[:300]
+                            # Add to total hists
+                            hist_cs_size += cs_size.astype(np.uint32)
+                            hist_cs_tot += cs_tot.astype(np.uint32)
+                            hist_cs_shape += cs_shape.astype(np.uint32)
                     pbar.update(upd)
                 pbar.close()
 
