@@ -86,5 +86,3 @@ if __name__ == "__main__":
                 end = min(start + chunk_size, n_words)
                 pbar.update(len(hits))
             pbar.close()
-
-    print(n_events)
