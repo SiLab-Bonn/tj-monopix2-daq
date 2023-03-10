@@ -13,6 +13,7 @@ import tables as tb
 from pixel_clusterizer.clusterizer import HitClusterizer
 from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
+from tjmonopix2.analysis.events import build_events
 from tjmonopix2.system import logger
 from tqdm import tqdm
 
@@ -26,6 +27,7 @@ class Analysis(object):
         self.raw_data_file = raw_data_file
         self.analyzed_data_file = analyzed_data_file
         self.store_hits = store_hits
+        self.build_events = build_events
         self.cluster_hits = cluster_hits
         self.chunk_size = chunk_size
         self.analyze_tdc = analyze_tdc
@@ -49,7 +51,6 @@ class Analysis(object):
 
         # Setup clusterizer
         self._setup_clusterizer()
-
 
     def _get_configs(self):
         ''' Load run config to allow analysis routines to access these info '''
@@ -287,6 +288,9 @@ class Analysis(object):
 
                 if self.store_hits:
                     hit_table = self._create_table(out_file, name='Dut', title='hit_data', dtype=au.hit_dtype)
+                if self.build_events:
+                    trigger_n, trigger_ts, event_n = 0, 0, 0
+                    event_table = self._create_table(out_file, name='Hits', title='event_data', dtype=au.event_dtype)
                 if self.cluster_hits:
                     cluster_table = out_file.create_table(
                         out_file.root, name='Cluster',
@@ -298,7 +302,6 @@ class Analysis(object):
                     hist_cs_size = np.zeros(shape=(100, ), dtype=np.uint32)
                     hist_cs_tot = np.zeros(shape=(100, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
-
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
                 self.last_chunk = False
@@ -317,6 +320,31 @@ class Analysis(object):
                     if self.store_hits:
                         hit_table.append(hit_dat)
                         hit_table.flush()
+                    if self.build_events:
+                        if np.count_nonzero(hit_dat["col"] == 1023) > 0:
+                            event_buffer = np.zeros(len(hit_dat), dtype=au.event_dtype)
+                            event_dat, trigger_n, trigger_ts, event_n = build_events(hit_dat, event_buffer, trigger_n, trigger_ts, event_n)
+                            event_table.append(event_dat)
+                            event_table.flush()
+                        else:
+                            self.log.error("No TLU data found in raw data. Check data or disable event building")
+                            raise Exception
+                        if self.cluster_hits:  # FIXME Currently only supported for event data
+                            _, cluster = self.clz.cluster_hits(event_dat)
+                            cluster_table.append(cluster)
+                            # Create actual cluster hists
+                            cs_size = np.bincount(cluster['size'],
+                                                  minlength=100)[:100]
+                            cs_tot = np.bincount(cluster['tot'],
+                                                 minlength=100)[:100]
+                            sel = np.logical_and(cluster['cluster_shape'] > 0,
+                                                 cluster['cluster_shape'] < 300)
+                            cs_shape = np.bincount(cluster['cluster_shape'][sel],
+                                                   minlength=300)[:300]
+                            # Add to total hists
+                            hist_cs_size += cs_size.astype(np.uint32)
+                            hist_cs_tot += cs_tot.astype(np.uint32)
+                            hist_cs_shape += cs_shape.astype(np.uint32)
                     pbar.update(upd)
                 pbar.close()
 
