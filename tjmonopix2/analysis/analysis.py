@@ -303,7 +303,7 @@ class Analysis(object):
                                            complevel=5,
                                            fletcher32=False))
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
-                    hist_cs_tot = np.zeros(shape=(128, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
@@ -350,7 +350,7 @@ class Analysis(object):
                         cluster_table.append(cluster)
                         # Create actual cluster hists
                         cs_size = np.bincount(cluster['size'], minlength=30)[:30]
-                        cs_tot = np.bincount(cluster['tot'], minlength=128)[:128]
+                        cs_tot = np.bincount(cluster['tot'], minlength=256)[:256]
                         sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
                         cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
                         # Add to total hists

@@ -42,7 +42,7 @@ DACS = {'TJMONOPIX2': ['IBIAS', 'ITHR',
 
 
 class Plotting(object):
-    def __init__(self, analyzed_data_file, pdf_file=None, level='preliminary', mask_noisy_pixels=False, clustered=False, internal=False, save_single_pdf=False, save_png=False):
+    def __init__(self, analyzed_data_file, pdf_file=None, level='preliminary', mask_noisy_pixels=False, internal=False, save_single_pdf=False, save_png=False):
         self.log = logger.setup_derived_logger('Plotting')
 
         self.plot_cnt = 0
@@ -51,7 +51,7 @@ class Plotting(object):
         self.level = level
         self.mask_noisy_pixels = mask_noisy_pixels
         self.internal = internal
-        self.clustered = clustered
+        self.clustered = False
         self.skip_plotting = False
         self.cb_side = False
         self._module_type = None
@@ -474,8 +474,13 @@ class Plotting(object):
     def create_cluster_tot_plot(self):
         ''' Create 1D cluster ToT plot '''
         try:
+            if np.max(np.nonzero(self.HistClusterTot)) < 128:
+                plot_range = range(0, 128)
+            else:
+                plot_range = range(0, np.max(np.nonzero(self.HistClusterTot)))
+
             self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
-                               log_y=False, plot_range=range(0, 128),
+                               log_y=False, plot_range=plot_range,
                                x_axis_title='Cluster ToT [25 ns]',
                                y_axis_title='# of clusters', suffix='cluster_tot')
         except Exception:
