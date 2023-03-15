@@ -42,7 +42,7 @@ DACS = {'TJMONOPIX2': ['IBIAS', 'ITHR',
 
 
 class Plotting(object):
-    def __init__(self, analyzed_data_file, pdf_file=None, level='preliminary', mask_noisy_pixels=False, internal=False, save_single_pdf=False, save_png=False):
+    def __init__(self, analyzed_data_file, pdf_file=None, level='preliminary', mask_noisy_pixels=False, clustered=False, internal=False, save_single_pdf=False, save_png=False):
         self.log = logger.setup_derived_logger('Plotting')
 
         self.plot_cnt = 0
@@ -51,7 +51,7 @@ class Plotting(object):
         self.level = level
         self.mask_noisy_pixels = mask_noisy_pixels
         self.internal = internal
-        self.clustered = False
+        self.clustered = clustered
         self.skip_plotting = False
         self.cb_side = False
         self._module_type = None
@@ -455,6 +455,32 @@ class Plotting(object):
                                  suffix='chi2_map')
         except Exception:
             self.log.error('Could not create chi2 map!')
+
+    def create_cluster_size_plot(self):
+        ''' Create 1D cluster size plot '''
+        try:
+            self._plot_1d_hist(hist=self.HistClusterSize[:], title='Cluster size',
+                            log_y=False, plot_range=range(0, 10),
+                            x_axis_title='Cluster size',
+                            y_axis_title='# of clusters', suffix='cluster_size')
+        except Exception:
+            self.log.error('Could not create cluster size plot!')
+
+    def create_cluster_tot_plot(self):
+        ''' Create 1D cluster ToT plot '''
+        try:
+            self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
+                            log_y=False, plot_range=range(0, 128),
+                            x_axis_title='Cluster ToT [25 ns]',
+                            y_axis_title='# of clusters', suffix='cluster_tot')
+        except Exception:
+            self.log.error('Could not create cluster TOT plot!')
+
+    def create_cluster_shape_plot(self):
+        try:
+            self._plot_cl_shape(self.HistClusterShape[:])
+        except Exception:
+            self.log.error('Could not create cluster shape plot!')
 
     def create_hit_pix_plot(self):
         try:
@@ -1133,3 +1159,41 @@ class Plotting(object):
         ax.grid(True)
 
         self._save_plots(fig, suffix=suffix)
+
+    def _plot_cl_shape(self, hist):
+        ''' Create a histogram with selected cluster shapes '''
+        x = np.arange(12)
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        self._add_text(fig)
+
+        selected_clusters = hist[[1, 3, 5, 6, 9, 13, 14, 7, 11, 19, 261, 15]]
+        ax.bar(x, selected_clusters, align='center')
+        ax.xaxis.set_ticks(x)
+        fig.subplots_adjust(bottom=0.2)
+        ax.set_xticklabels(["\u2004\u2596",
+                            # 2 hit cluster, horizontal
+                            "\u2597\u2009\u2596",
+                            # 2 hit cluster, vertical
+                            "\u2004\u2596\n\u2004\u2598",
+                            "\u259e",  # 2 hit cluster
+                            "\u259a",  # 2 hit cluster
+                            "\u2599",  # 3 hit cluster, L
+                            "\u259f",  # 3 hit cluster
+                            "\u259b",  # 3 hit cluster
+                            "\u259c",  # 3 hit cluster
+                            # 3 hit cluster, horizontal
+                            "\u2004\u2596\u2596\u2596",
+                            # 3 hit cluster, vertical
+                            "\u2004\u2596\n\u2004\u2596\n\u2004\u2596",
+                            # 4 hit cluster
+                            "\u2597\u2009\u2596\n\u259d\u2009\u2598"])
+        ax.set_title('Cluster shapes', color=TITLE_COLOR)
+        ax.set_xlabel('Cluster shape')
+        ax.set_ylabel('# of clusters')
+        ax.grid(True)
+        ax.set_yscale('log')
+        ax.set_ylim(ymin=1e-1)
+
+        self._save_plots(fig, suffix='cluster_shape')
