@@ -164,10 +164,9 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['source_scan']:
+            if self.run_config['scan_id'] in ['simple_scan']:
                 self.create_fancy_occupancy()
-                self.create_tot_plot()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
@@ -216,13 +215,19 @@ class Plotting(object):
         except Exception:
             self.log.error('Could not create occupancy map!')
 
+    def create_fancy_occupancy(self):
+        try:
+            self._plot_fancy_occupancy(hist=np.ma.masked_array(self.HistOcc[:].sum(axis=2), self.enable_mask).T)
+        except Exception:
+            self.log.error('Could not create fancy occupancy plot!')
+
     def create_tot_plot(self):
         ''' Create 1D tot plot '''
         try:
             title = ('Time-over-Threshold distribution ($\\Sigma$ = {0:1.0f})'.format(np.sum(self.HistTot.sum(axis=(0, 1, 2)).T)))
             self._plot_1d_hist(hist=self.HistTot.sum(axis=(0, 1, 2)).T,
                                title=title,
-                               log_y=True,
+                               log_y=False,
                                plot_range=range(0, self.HistTot.shape[3]),
                                x_axis_title='ToT code',
                                y_axis_title='# of hits',
