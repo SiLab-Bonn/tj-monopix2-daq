@@ -349,14 +349,10 @@ class Analysis(object):
                         _, cluster = self.clz.cluster_hits(data_to_clusterizer)
                         cluster_table.append(cluster)
                         # Create actual cluster hists
-                        cs_size = np.bincount(cluster['size'],
-                                                minlength=30)[:30]
-                        cs_tot = np.bincount(cluster['tot'],
-                                                minlength=128)[:128]
-                        sel = np.logical_and(cluster['cluster_shape'] > 0,
-                                                cluster['cluster_shape'] < 300)
-                        cs_shape = np.bincount(cluster['cluster_shape'][sel],
-                                                minlength=300)[:300]
+                        cs_size = np.bincount(cluster['size'], minlength=30)[:30]
+                        cs_tot = np.bincount(cluster['tot'], minlength=128)[:128]
+                        sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
+                        cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
                         # Add to total hists
                         hist_cs_size += cs_size.astype(np.uint32)
                         hist_cs_tot += cs_tot.astype(np.uint32)
