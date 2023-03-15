@@ -460,9 +460,9 @@ class Plotting(object):
         ''' Create 1D cluster size plot '''
         try:
             self._plot_1d_hist(hist=self.HistClusterSize[:], title='Cluster size',
-                            log_y=False, plot_range=range(0, 10),
-                            x_axis_title='Cluster size',
-                            y_axis_title='# of clusters', suffix='cluster_size')
+                               log_y=False, plot_range=range(0, 10),
+                               x_axis_title='Cluster size',
+                               y_axis_title='# of clusters', suffix='cluster_size')
         except Exception:
             self.log.error('Could not create cluster size plot!')
 
@@ -470,9 +470,9 @@ class Plotting(object):
         ''' Create 1D cluster ToT plot '''
         try:
             self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
-                            log_y=False, plot_range=range(0, 128),
-                            x_axis_title='Cluster ToT [25 ns]',
-                            y_axis_title='# of clusters', suffix='cluster_tot')
+                               log_y=False, plot_range=range(0, 128),
+                               x_axis_title='Cluster ToT [25 ns]',
+                               y_axis_title='# of clusters', suffix='cluster_tot')
         except Exception:
             self.log.error('Could not create cluster TOT plot!')
 
