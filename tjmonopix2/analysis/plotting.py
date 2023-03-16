@@ -131,7 +131,7 @@ class Plotting(object):
             self.log.warning('Disabled {} noisy pixels in total.'.format(len(noisy_pixels[0])))
 
         try:
-            self.Cluster = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
+            _ = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
             self.HistClusterSize = root.HistClusterSize[:]
             self.HistClusterShape = root.HistClusterShape[:]
             self.HistClusterTot = root.HistClusterTot[:]
