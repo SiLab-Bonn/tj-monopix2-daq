@@ -33,6 +33,9 @@ class Analysis(object):
         self.analyze_tdc = analyze_tdc
         self.use_tdc_trigger_dist = use_tdc_trigger_dist
 
+        if self.build_events:
+            self.cluster_hits = True
+
         if not os.path.isfile(raw_data_file):
             raise IOError('Raw data file %s does not exist.', raw_data_file)
 
@@ -299,8 +302,8 @@ class Analysis(object):
                         filters=tb.Filters(complib='blosc',
                                            complevel=5,
                                            fletcher32=False))
-                    hist_cs_size = np.zeros(shape=(100, ), dtype=np.uint32)
-                    hist_cs_tot = np.zeros(shape=(100, ), dtype=np.uint32)
+                    hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
@@ -329,28 +332,39 @@ class Analysis(object):
                         else:
                             self.log.error("No TLU data found in raw data. Check data or disable event building")
                             raise Exception
-                        if self.cluster_hits:  # FIXME Currently only supported for event data
-                            _, cluster = self.clz.cluster_hits(event_dat)
-                            cluster_table.append(cluster)
-                            # Create actual cluster hists
-                            cs_size = np.bincount(cluster['size'],
-                                                  minlength=100)[:100]
-                            cs_tot = np.bincount(cluster['tot'],
-                                                 minlength=100)[:100]
-                            sel = np.logical_and(cluster['cluster_shape'] > 0,
-                                                 cluster['cluster_shape'] < 300)
-                            cs_shape = np.bincount(cluster['cluster_shape'][sel],
-                                                   minlength=300)[:300]
-                            # Add to total hists
-                            hist_cs_size += cs_size.astype(np.uint32)
-                            hist_cs_tot += cs_tot.astype(np.uint32)
-                            hist_cs_shape += cs_shape.astype(np.uint32)
+                    if self.cluster_hits:
+                        if self.build_events:
+                            data_to_clusterizer = event_dat
+                        else:
+                            hit_data_cs_fmt = np.zeros(len(hit_dat), dtype=au.event_dtype)
+                            hit_data_cs_fmt['event_number'][:] = hit_dat['timestamp'][:]
+                            hit_data_cs_fmt['trigger_number'][:] = -1
+                            hit_data_cs_fmt['frame'][:] = -1
+                            hit_data_cs_fmt['column'][:] = hit_dat['col'][:]
+                            hit_data_cs_fmt['row'][:] = hit_dat['row'][:]
+                            hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
+                            hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
+                            data_to_clusterizer = hit_data_cs_fmt
+
+                        _, cluster = self.clz.cluster_hits(data_to_clusterizer)
+                        cluster_table.append(cluster)
+                        # Create actual cluster hists
+                        cs_size = np.bincount(cluster['size'], minlength=30)[:30]
+                        cs_tot = np.bincount(cluster['tot'], minlength=256)[:256]
+                        sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
+                        cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
+                        # Add to total hists
+                        hist_cs_size += cs_size.astype(np.uint32)
+                        hist_cs_tot += cs_tot.astype(np.uint32)
+                        hist_cs_shape += cs_shape.astype(np.uint32)
                     pbar.update(upd)
                 pbar.close()
 
                 hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
 
         self._create_additional_hit_data(hist_occ, hist_tot)
+        if self.cluster_hits:
+            self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
     def _create_additional_hit_data(self, hist_occ, hist_tot):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
@@ -398,3 +412,30 @@ class Analysis(object):
                                        filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
                 out_file.create_carray(out_file.root, name='Chi2Map', title='Chi2 / ndf Map', obj=self.chi2_map,
                                        filters=tb.Filters(complib='blosc', complevel=5, fletcher32=False))
+
+    def _create_additional_cluster_data(self, hist_cs_size, hist_cs_tot, hist_cs_shape):
+        '''
+            Store cluster histograms in analyzed data file
+        '''
+        with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
+            out_file.create_carray(out_file.root,
+                                   name='HistClusterSize',
+                                   title='Cluster Size Histogram',
+                                   obj=hist_cs_size,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+            out_file.create_carray(out_file.root,
+                                   name='HistClusterTot',
+                                   title='Cluster ToT Histogram',
+                                   obj=hist_cs_tot,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+            out_file.create_carray(out_file.root,
+                                   name='HistClusterShape',
+                                   title='Cluster Shape Histogram',
+                                   obj=hist_cs_shape,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))

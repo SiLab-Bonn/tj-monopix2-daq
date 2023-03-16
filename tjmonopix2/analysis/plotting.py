@@ -131,7 +131,7 @@ class Plotting(object):
             self.log.warning('Disabled {} noisy pixels in total.'.format(len(noisy_pixels[0])))
 
         try:
-            self.Cluster = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
+            _ = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
             self.HistClusterSize = root.HistClusterSize[:]
             self.HistClusterShape = root.HistClusterShape[:]
             self.HistClusterTot = root.HistClusterTot[:]
@@ -164,10 +164,9 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['source_scan']:
+            if self.run_config['scan_id'] in ['simple_scan']:
                 self.create_fancy_occupancy()
-                self.create_tot_plot()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
@@ -216,13 +215,19 @@ class Plotting(object):
         except Exception:
             self.log.error('Could not create occupancy map!')
 
+    def create_fancy_occupancy(self):
+        try:
+            self._plot_fancy_occupancy(hist=np.ma.masked_array(self.HistOcc[:].sum(axis=2), self.enable_mask).T)
+        except Exception:
+            self.log.error('Could not create fancy occupancy plot!')
+
     def create_tot_plot(self):
         ''' Create 1D tot plot '''
         try:
             title = ('Time-over-Threshold distribution ($\\Sigma$ = {0:1.0f})'.format(np.sum(self.HistTot.sum(axis=(0, 1, 2)).T)))
             self._plot_1d_hist(hist=self.HistTot.sum(axis=(0, 1, 2)).T,
                                title=title,
-                               log_y=True,
+                               log_y=False,
                                plot_range=range(0, self.HistTot.shape[3]),
                                x_axis_title='ToT code',
                                y_axis_title='# of hits',
@@ -455,6 +460,37 @@ class Plotting(object):
                                  suffix='chi2_map')
         except Exception:
             self.log.error('Could not create chi2 map!')
+
+    def create_cluster_size_plot(self):
+        ''' Create 1D cluster size plot '''
+        try:
+            self._plot_1d_hist(hist=self.HistClusterSize[:], title='Cluster size',
+                               log_y=False, plot_range=range(0, 10),
+                               x_axis_title='Cluster size',
+                               y_axis_title='# of clusters', suffix='cluster_size')
+        except Exception:
+            self.log.error('Could not create cluster size plot!')
+
+    def create_cluster_tot_plot(self):
+        ''' Create 1D cluster ToT plot '''
+        try:
+            if np.max(np.nonzero(self.HistClusterTot)) < 128:
+                plot_range = range(0, 128)
+            else:
+                plot_range = range(0, np.max(np.nonzero(self.HistClusterTot)))
+
+            self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
+                               log_y=False, plot_range=plot_range,
+                               x_axis_title='Cluster ToT [25 ns]',
+                               y_axis_title='# of clusters', suffix='cluster_tot')
+        except Exception:
+            self.log.error('Could not create cluster TOT plot!')
+
+    def create_cluster_shape_plot(self):
+        try:
+            self._plot_cl_shape(self.HistClusterShape[:])
+        except Exception:
+            self.log.error('Could not create cluster shape plot!')
 
     def create_hit_pix_plot(self):
         try:
@@ -1133,3 +1169,41 @@ class Plotting(object):
         ax.grid(True)
 
         self._save_plots(fig, suffix=suffix)
+
+    def _plot_cl_shape(self, hist):
+        ''' Create a histogram with selected cluster shapes '''
+        x = np.arange(12)
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        self._add_text(fig)
+
+        selected_clusters = hist[[1, 3, 5, 6, 9, 13, 14, 7, 11, 19, 261, 15]]
+        ax.bar(x, selected_clusters, align='center')
+        ax.xaxis.set_ticks(x)
+        fig.subplots_adjust(bottom=0.2)
+        ax.set_xticklabels(["\u2004\u2596",
+                            # 2 hit cluster, horizontal
+                            "\u2597\u2009\u2596",
+                            # 2 hit cluster, vertical
+                            "\u2004\u2596\n\u2004\u2598",
+                            "\u259e",  # 2 hit cluster
+                            "\u259a",  # 2 hit cluster
+                            "\u2599",  # 3 hit cluster, L
+                            "\u259f",  # 3 hit cluster
+                            "\u259b",  # 3 hit cluster
+                            "\u259c",  # 3 hit cluster
+                            # 3 hit cluster, horizontal
+                            "\u2004\u2596\u2596\u2596",
+                            # 3 hit cluster, vertical
+                            "\u2004\u2596\n\u2004\u2596\n\u2004\u2596",
+                            # 4 hit cluster
+                            "\u2597\u2009\u2596\n\u259d\u2009\u2598"])
+        ax.set_title('Cluster shapes', color=TITLE_COLOR)
+        ax.set_xlabel('Cluster shape')
+        ax.set_ylabel('# of clusters')
+        ax.grid(True)
+        ax.set_yscale('log')
+        ax.set_ylim(ymin=1e-1)
+
+        self._save_plots(fig, suffix='cluster_shape')
