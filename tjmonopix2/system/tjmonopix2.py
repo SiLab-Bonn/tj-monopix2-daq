@@ -407,9 +407,13 @@ class MaskObject(dict):
         '''
         self.pix_to_write = np.zeros(self.dimensions, bool)
         self.inj_to_write = np.zeros(self.dimensions, bool)
+        self.hor_to_write = np.zeros(self.dimensions, bool)
+
         for name, mask in self.items():
             if 'injection' in name:
                 self.inj_to_write = np.logical_or(self.inj_to_write, np.not_equal(mask, self.was[name]))
+            elif 'hitor' in name:
+                self.hor_to_write = np.logical_or(self.hor_to_write, np.not_equal(mask, self.was[name]))
             else:
                 self.pix_to_write = np.logical_or(self.pix_to_write, np.not_equal(mask, self.was[name]))
 
@@ -428,12 +432,12 @@ class MaskObject(dict):
         )
 
     def get_column_group_data(self, mask, colgroup):
-        inj = np.logical_or.reduce(self[mask], axis=1)[colgroup * 16: (colgroup + 1) * 16]
-        return np.packbits(inj, bitorder='little').view(np.uint16)[0]
+        dat = np.logical_or.reduce(self[mask], axis=1)[colgroup * 16: (colgroup + 1) * 16]
+        return np.packbits(dat, bitorder='little').view(np.uint16)[0]
 
     def get_row_group_data(self, mask, rowgroup):
-        inj = np.logical_or.reduce(self[mask], axis=0)[rowgroup * 16: (rowgroup + 1) * 16]
-        return np.packbits(inj, bitorder='little').view(np.uint16)[0]
+        dat = np.logical_or.reduce(self[mask], axis=0)[rowgroup * 16: (rowgroup + 1) * 16]
+        return np.packbits(dat, bitorder='little').view(np.uint16)[0]
 
     def update(self, force=False):
         ''' Write the actual pixel register configuration
@@ -448,11 +452,14 @@ class MaskObject(dict):
         if force:
             inj_write_mask = np.ones(self.dimensions, bool)
             pix_write_mask = np.ones(self.dimensions, bool)
+            hor_write_mask = np.ones(self.dimensions, bool)
         else:   # Find out which pixels need to be updated
             inj_write_mask = self.inj_to_write
             pix_write_mask = self.pix_to_write
+            hor_write_mask = self.hor_to_write
         inj_to_write = np.column_stack((np.where(inj_write_mask)))
         pix_to_write = np.column_stack((np.where(pix_write_mask)))
+        hor_to_write = np.column_stack((np.where(hor_write_mask)))
 
         data = []
         indata = self.chip.write_sync(write=False) * 10
@@ -487,6 +494,26 @@ class MaskObject(dict):
 
                 indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup))
                 indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup))
+                indata += self.chip.write_sync(write=False)
+                written.add((colgroup, rowgroup))
+                if len(indata) > 4000:  # Write command to chip before it gets too long
+                    self.chip.write_command(indata)
+                    data.append(indata)
+                    indata = self.chip.write_sync(write=False)
+            self.chip.write_command(indata)
+            data.append(indata)
+        if len(hor_to_write) > 0:
+            written = set()
+            for (col, row) in inj_to_write:
+                colgroup = int(col / 16)
+                rowgroup = int(row / 16)
+
+                # Speedup
+                if (colgroup, rowgroup) in written:
+                    continue
+
+                indata += self.chip._write_register(18 + colgroup, self.get_column_group_data('hitor', colgroup))
+                indata += self.chip._write_register(50 + rowgroup, self.get_row_group_data('hitor', rowgroup))
                 indata += self.chip.write_sync(write=False)
                 written.add((colgroup, rowgroup))
                 if len(indata) > 4000:  # Write command to chip before it gets too long
@@ -631,7 +658,8 @@ class TJMonoPix2(object):
         masks = {
             'enable': {'default': False},
             'injection': {'default': False},
-            'tdac': {'default': 0b000}  # all pixels masked
+            'tdac': {'default': 0b100},
+            'hitor': {'default': False}
         }
         self.masks = MaskObject(self, masks, (512, 512))
 
