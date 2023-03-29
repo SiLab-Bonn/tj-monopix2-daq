@@ -360,13 +360,13 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist = interpreter.get_histograms()
 
-        self._create_additional_hit_data(hist_occ, hist_tot)
+        self._create_additional_hit_data(hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist)
         if self.cluster_hits:
             self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
-    def _create_additional_hit_data(self, hist_occ, hist_tot):
+    def _create_additional_hit_data(self, hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
 
@@ -381,6 +381,38 @@ class Analysis(object):
                                    name='HistTot',
                                    title='ToT Histogram',
                                    obj=hist_tot,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+            
+            out_file.create_carray(out_file.root,
+                                   name='HistTdcLvds',
+                                   title='TDC Histogram',
+                                   obj=hist_tdc_lvds,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+
+            out_file.create_carray(out_file.root,
+                                   name='HistTdcLvdsDist',
+                                   title='TDC Dist Histogram',
+                                   obj=hist_tdc_lvds_dist,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+            
+            out_file.create_carray(out_file.root,
+                                   name='HistTdcCmos',
+                                   title='TDC Histogram',
+                                   obj=hist_tdc_cmos,
+                                   filters=tb.Filters(complib='blosc',
+                                                      complevel=5,
+                                                      fletcher32=False))
+
+            out_file.create_carray(out_file.root,
+                                   name='HistTdcCmosDist',
+                                   title='TDC Dist Histogram',
+                                   obj=hist_tdc_cmos_dist,
                                    filters=tb.Filters(complib='blosc',
                                                       complevel=5,
                                                       fletcher32=False))

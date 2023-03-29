@@ -241,19 +241,53 @@ class BDAQ53(Dut):
     #     '''Disables automatic sending of sync commands'''
     #     self['cmd'].set_auto_sync(0)
 
-    def configure_tdc_module(self):
+    def _set_tdc_registers(self, tdc_module="tdc_lvds"):
+        self[tdc_module].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
+        self[tdc_module].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
+        self[tdc_module].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
+        self[tdc_module].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
+        self[tdc_module].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
+
+    def _set_tdc_enable(self, tdc_module='tdc_lvds', enable=True):
+        self[tdc_module].ENABLE = enable
+
+    def configure_tdc_module(self, input="lvds"):
+        """Configuration of TDC module(s) for different kinds of inputs:
+           - single ended CMOS at LEMO RX1 (LEMO on chip carrier PCB)
+           - differential LVDS at DP_SL1 (DP2 on chip carrier PCB)
+
+        Args:
+            input (str, optional): Type of TDC input. Supports "lvds" (DP_SL1), "cmos" (LEMO RX1) or None (both). Defaults to "lvds".
+
+        Raises:
+            ValueError: Invalid type of TDC input choice
+        """
         self.log.info('Configuring TDC module')
-        self['tdc'].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
-        self['tdc'].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
-        self['tdc'].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
-        self['tdc'].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
-        self['tdc'].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
+        if input not in ['lvds', 'cmos', None]:
+            raise ValueError("Unsupported TDC input")
+        if input is None:
+            for tdc_module in ['lvds', 'cmos']:
+                self._set_tdc_registers(tdc_module=tdc_module)
+        else:
+            self._set_tdc_registers(tdc_module='tdc_{}'.format(input.lower()))
 
-    def enable_tdc_module(self):
-        self['tdc'].ENABLE = 1
+    def enable_tdc_module(self, input="lvds"):
+        if input not in ['lvds', 'cmos', None]:
+            raise ValueError("Unsupported TDC input")
+        if input is None:
+            for tdc_module in ['lvds', 'cmos']:
+                self._set_tdc_enable(tdc_module=tdc_module, enable=True)
+        else:
+            self._set_tdc_enable(tdc_module='tdc_{}'.format(input.lower()), enable=True)
 
-    def disable_tdc_module(self):
-        self['tdc'].ENABLE = 0
+    def disable_tdc_module(self, input="lvds"):
+        if input not in ['lvds', 'cmos', None]:
+            raise ValueError("Unsupported TDC input")
+        if input is None:
+            for tdc_module in ['lvds', 'cmos']:
+                self._set_tdc_enable(tdc_module=tdc_module, enable=False)
+        else:
+            self._set_tdc_enable(tdc_module='tdc_{}'.format(input.lower()), enable=False)
 
     def enable_tlu_module(self):
         self['tlu']['TRIGGER_ENABLE'] = True

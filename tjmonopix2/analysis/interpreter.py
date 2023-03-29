@@ -17,7 +17,10 @@ class_spec = [
 
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
-    ('hist_tdc', numba.uint32[:]),
+    ('hist_tdc_lvds', numba.uint32[:]),
+    ('hist_tdc_lvds_dist', numba.uint32[:]),
+    ('hist_tdc_cmos', numba.uint32[:]),
+    ('hist_tdc_cmos_dist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
@@ -34,8 +37,13 @@ def is_tlu(word):
 
 
 @numba.njit
-def is_tdc(word):
+def is_tdc_lvds(word):
     return word & 0xF0000000 == 0x20000000
+
+
+@numba.njit
+def is_tdc_cmos(word):
+    return word & 0xF0000000 == 0x10000000
 
 
 @numba.njit
@@ -59,8 +67,13 @@ def get_tlu_word(word, trigger_data_format):
 
 
 @numba.njit
-def get_tdc_value(word):
+def get_tdc_value(word, enable_write_timestamp=1, enable_trigger_dist=1):
     return word & 0xFFF
+
+
+@numba.njit
+def get_tdc_dist(word):
+    return (word & 0x0FF00000) >> 20
 
 
 @numba.experimental.jitclass(class_spec)
@@ -164,22 +177,46 @@ class RawDataInterpreter(object):
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
 
-            ##############################
-            # Part 3: interpret TDC word #
-            ##############################
-            elif is_tdc(raw_data_word):
+            ###################################
+            # Part 3: interpret TDC LVDS word #
+            ###################################
+            elif is_tdc_lvds(raw_data_word):
                 tdc_value = get_tdc_value(raw_data_word)
+                trigger_dist = get_tdc_dist(raw_data_word)
 
-                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
+                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC LVDS identifier
                 hit_data[hit_index]["row"] = 0
                 hit_data[hit_index]["le"] = 0
                 hit_data[hit_index]["te"] = 0
                 hit_data[hit_index]["token_id"] = tdc_value
-                hit_data[hit_index]["timestamp"] = 0
+                hit_data[hit_index]["timestamp"] = trigger_dist
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
                 self.n_tdc += 1
 
-                self.hist_tdc[tdc_value] += 1
+                self.hist_tdc_lvds[tdc_value] += 1
+                self.hist_tdc_lvds_dist[trigger_dist] += 1
+
+                # Prepare for next data block. Increase hit index
+                hit_index += 1
+
+            ###################################
+            # Part 4: interpret TDC CMOS word #
+            ###################################
+            elif is_tdc_cmos(raw_data_word):
+                tdc_value = get_tdc_value(raw_data_word)
+                trigger_dist = get_tdc_dist(raw_data_word)
+
+                hit_data[hit_index]["col"] = 0x3FD  # 1021 as TDC CMOS identifier
+                hit_data[hit_index]["row"] = 0
+                hit_data[hit_index]["le"] = 0
+                hit_data[hit_index]["te"] = 0
+                hit_data[hit_index]["token_id"] = tdc_value
+                hit_data[hit_index]["timestamp"] = trigger_dist
+                hit_data[hit_index]["scan_param_id"] = scan_param_id
+                self.n_tdc += 1
+
+                self.hist_tdc_cmos[tdc_value] += 1
+                self.hist_tdc_cmos_dist[trigger_dist] += 1
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
@@ -189,7 +226,7 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hist_tdc
+        return self.hist_occ, self.hist_tot, self.hist_tdc_lvds, self.hist_tdc_lvds_dist, self.hist_tdc_cmos, self.hist_tdc_cmos_dist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -200,7 +237,10 @@ class RawDataInterpreter(object):
     def reset(self):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
-        self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_tdc_lvds = np.zeros(4096, dtype=numba.uint32)
+        self.hist_tdc_lvds_dist = np.zeros(256, dtype=numba.uint32)
+        self.hist_tdc_cmos = np.zeros(4096, dtype=numba.uint32)
+        self.hist_tdc_cmos_dist = np.zeros(256, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
 

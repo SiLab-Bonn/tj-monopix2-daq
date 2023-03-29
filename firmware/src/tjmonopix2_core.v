@@ -176,8 +176,8 @@ localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h0600 - 1;
 localparam TLU_BASEADDR = 32'h0600;
 localparam TLU_HIGHADDR = 32'h0700 - 1;
 
-localparam TDC_BASEADDR = 32'h0700;
-localparam TDC_HIGHADDR = 32'h0800 - 1;
+localparam TDC_LVDS_BASEADDR = 32'h0700;
+localparam TDC_LVDS_HIGHADDR = 32'h0800 - 1;
 
 localparam PULSER_VETO_BASEADDR = 32'h0800;
 localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
@@ -193,6 +193,9 @@ localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
 
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
+
+localparam TDC_CMOS_BASEADDR = 32'h0D00;
+localparam TDC_CMOS_HIGHADDR = 32'h0E00 - 1;
 
 localparam I2C_BASEADDR = 32'h3000;
 localparam I2C_HIGHADDR = 32'h4000 - 1;
@@ -514,12 +517,12 @@ wire [31:0] TLU_FIFO_DATA;
 wire TLU_FIFO_PREEMPT_REQ;
 
 // TDC
-wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
-wire [31:0] TDC_FIFO_DATA;
+wire TDC_LVDS_FIFO_READ, TDC_LVDS_FIFO_EMPTY, TDC_CMOS_FIFO_READ, TDC_CMOS_FIFO_EMPTY;
+wire [31:0] TDC_LVDS_FIFO_DATA, TDC_CMOS_FIFO_DATA;
 
 rrp_arbiter 
 #( 
-    .WIDTH(3)
+    .WIDTH(4)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
@@ -527,17 +530,21 @@ rrp_arbiter
     .WRITE_REQ({
         ~RX_FIFO_EMPTY,
         ~TLU_FIFO_EMPTY,
-        ~TDC_FIFO_EMPTY
+        ~TDC_LVDS_FIFO_EMPTY,
+        ~TDC_CMOS_FIFO_EMPTY
     }),
-    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
-        TDC_FIFO_DATA}),
+        TDC_LVDS_FIFO_DATA,
+        TDC_CMOS_FIFO_DATA
+    }),
     .READ_GRANT({
         RX_FIFO_READ,
         TLU_FIFO_READ,
-        TDC_FIFO_READ
+        TDC_LVDS_FIFO_READ,
+        TDC_CMOS_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -617,30 +624,69 @@ wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
 // wire HITOR_FROM_TDC;
 
 tdc_s3 #(
-    .BASEADDR(TDC_BASEADDR),
-    .HIGHADDR(TDC_HIGHADDR),
+    .BASEADDR(TDC_LVDS_BASEADDR),
+    .HIGHADDR(TDC_LVDS_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .CLKDV(CLKDV),
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
     .FAST_TRIGGER(1),
-    .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
-) i_tdc (
+    .BROADCAST(0)         // generate for LVDS TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+) i_tdc_lvds (
     .CLK320(CLK320),      // 320 MHz
     .CLK160(CLK160),      // 160 MHz
     .DV_CLK(CLK40),       // 40 MHz
-    .TDC_IN(LVDS_HITOR),  // HITOR
+    .TDC_IN(LVDS_HITOR),  // LVDS HITOR (DP)
     .TDC_OUT(),
     .TRIG_IN(LEMO_RX[0]),
     .TRIG_OUT(),
 
     // input/output trigger signals for broadcasting mode
     .FAST_TRIGGER_IN(16'b0),
+    .FAST_TRIGGER_OUT(FAST_TRIGGER_OUT),  // collect 640 MHz sampled trigger signal to pass it to other modules
+
+    .FIFO_READ(TDC_LVDS_FIFO_READ),
+    .FIFO_EMPTY(TDC_LVDS_FIFO_EMPTY),
+    .FIFO_DATA(TDC_LVDS_FIFO_DATA),
+
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR),
+
+    .ARM_TDC(1'b0),
+    .EXT_EN(1'b0),
+
+    .TIMESTAMP(TIMESTAMP[15:0])
+);
+
+tdc_s3 #(
+    .BASEADDR(TDC_LVDS_BASEADDR),
+    .HIGHADDR(TDC_LVDS_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH),
+    .CLKDV(CLKDV),
+    .DATA_IDENTIFIER(4'b0001),
+    .FAST_TDC(1),
+    .FAST_TRIGGER(1),
+    .BROADCAST(1)         // generate FAST_TRIGGER signal for LVDS TDC module and receive here
+) i_tdc_cmos (
+    .CLK320(CLK320),      // 320 MHz
+    .CLK160(CLK160),      // 160 MHz
+    .DV_CLK(CLK40),       // 40 MHz
+    .TDC_IN(LEMO_RX[1]),  // CMOS HITOR (LEMO)
+    .TDC_OUT(),
+    .TRIG_IN(1'b0),
+    .TRIG_OUT(),
+
+    // input/output trigger signals for broadcasting mode
+    .FAST_TRIGGER_IN(FAST_TRIGGER_OUT),  // looped through tdc_lvds instance
     .FAST_TRIGGER_OUT(),  // collect 640 MHz sampled trigger signal to pass it to other modules
 
-    .FIFO_READ(TDC_FIFO_READ),
-    .FIFO_EMPTY(TDC_FIFO_EMPTY),
-    .FIFO_DATA(TDC_FIFO_DATA),
+    .FIFO_READ(TDC_CMOS_FIFO_READ),
+    .FIFO_EMPTY(TDC_CMOS_FIFO_EMPTY),
+    .FIFO_DATA(TDC_CMOS_FIFO_DATA),
 
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
