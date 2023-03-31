@@ -51,7 +51,7 @@ analysis:
   # module_plotting: True  # Create combined plots for chip in a module
   store_hits: True # store hit table
   # cluster_hits: False # store cluster data
-  # analyze_tdc: False # analyze TDC words
+  analyze_tdc: False # analyze TDC words
   # use_tdc_trigger_dist: False # analyze TDC to TRG distance
   # align_method: 0 # how to detect new events
   # chunk_size: 1000000 # scales amount of data in RAM (~150 MB)

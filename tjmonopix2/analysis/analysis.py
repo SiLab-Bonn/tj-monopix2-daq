@@ -62,6 +62,7 @@ class Analysis(object):
             self.scan_config = au.ConfigDict(in_file.root.configuration_in.scan.scan_config[:])
             self.chip_settings = au.ConfigDict(in_file.root.configuration_in.chip.settings[:])
             self.tlu_config = au.ConfigDict(in_file.root.configuration_in.bench.TLU[:])
+            self.tdc_config = au.ConfigDict(in_file.root.configuration_in.bench.TDC[:])
 
     def __enter__(self):
         return self
@@ -306,18 +307,20 @@ class Analysis(object):
                     hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
+                # Setup interpreter
+                interpreter = RawDataInterpreter(
+                    n_scan_params=n_scan_params,
+                    trigger_data_format=self.tlu_config['DATA_FORMAT'],
+                    en_trigger_dist=self.tdc_config['EN_TRIGGER_DIST']
+                )
+
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
                 for scan_param_id, words in self._words_of_parameter(par_range, in_file.root.raw_data):
                     hit_buffer = np.zeros(shape=4 * self.chunk_size, dtype=au.hit_dtype)
 
-                    hit_dat = interpreter.interpret(
-                        words,
-                        hit_buffer,
-                        scan_param_id
-                    )
+                    hit_dat = interpreter.interpret(words, hit_buffer, scan_param_id)
                     upd = words.shape[0]
 
                     if self.store_hits:
@@ -360,13 +363,13 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist = interpreter.get_histograms()
+                hist_occ, hist_tot, hists_tdc, hists_tdc_dist = interpreter.get_histograms()
 
-        self._create_additional_hit_data(hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist)
+        self._create_additional_hit_data(hist_occ, hist_tot, hists_tdc, hists_tdc_dist)
         if self.cluster_hits:
             self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
-    def _create_additional_hit_data(self, hist_occ, hist_tot, hist_tdc_lvds, hist_tdc_lvds_dist, hist_tdc_cmos, hist_tdc_cmos_dist):
+    def _create_additional_hit_data(self, hist_occ, hist_tot, hists_tdc, hists_tdc_dist):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
 
@@ -384,47 +387,25 @@ class Analysis(object):
                                    filters=tb.Filters(complib='blosc',
                                                       complevel=5,
                                                       fletcher32=False))
-            
-            out_file.create_carray(out_file.root,
-                                   name='HistTdcLvds',
-                                   title='TDC Histogram',
-                                   obj=hist_tdc_lvds,
-                                   filters=tb.Filters(complib='blosc',
-                                                      complevel=5,
-                                                      fletcher32=False))
 
-            out_file.create_carray(out_file.root,
-                                   name='HistTdcLvdsDist',
-                                   title='TDC Dist Histogram',
-                                   obj=hist_tdc_lvds_dist,
-                                   filters=tb.Filters(complib='blosc',
-                                                      complevel=5,
-                                                      fletcher32=False))
-            
-            out_file.create_carray(out_file.root,
-                                   name='HistTdcCmos',
-                                   title='TDC Histogram',
-                                   obj=hist_tdc_cmos,
-                                   filters=tb.Filters(complib='blosc',
-                                                      complevel=5,
-                                                      fletcher32=False))
+            if self.analyze_tdc:  # Only store if TDC analysis is used.
+                for key, hist in hists_tdc.items():
+                    out_file.create_carray(out_file.root,
+                                           name='HistTdc{}'.format(key.title()),
+                                           title='TDC Histogram',
+                                           obj=hist,
+                                           filters=tb.Filters(complib='blosc',
+                                                              complevel=5,
+                                                              fletcher32=False))
 
-            out_file.create_carray(out_file.root,
-                                   name='HistTdcCmosDist',
-                                   title='TDC Dist Histogram',
-                                   obj=hist_tdc_cmos_dist,
-                                   filters=tb.Filters(complib='blosc',
-                                                      complevel=5,
-                                                      fletcher32=False))
-
-            # if self.analyze_tdc:  # Only store if TDC analysis is used.
-            #     out_file.create_carray(out_file.root,
-            #                            name='HistTdcStatus',
-            #                            title='Tdc status Histogram',
-            #                            obj=hist_tdc_status,
-            #                            filters=tb.Filters(complib='blosc',
-            #                                               complevel=5,
-            #                                               fletcher32=False))
+                for key, hist in hists_tdc_dist.items():
+                    out_file.create_carray(out_file.root,
+                                           name='HistTdc{}Dist'.format(key.title()),
+                                           title='TDC Dist Histogram',
+                                           obj=hist,
+                                           filters=tb.Filters(complib='blosc',
+                                                              complevel=5,
+                                                              fletcher32=False))
 
             if scan_id in ['threshold_scan']:
                 n_injections = self.scan_config['n_injections']
