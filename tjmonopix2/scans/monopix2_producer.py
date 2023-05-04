@@ -392,7 +392,7 @@ class Monopix2Producer(pyeudaq.Producer):
             self.scan.chip._write_register(18 + 30, 0xffff)  # cols 480 to 495
             #self.scan.chip._write_register(18 + 31, 0xffff)  # cols 497 to 512
 
-        self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
+        #self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
 
         if self.masked_pixels_file:
             with open(self.masked_pixels_file) as f:
@@ -421,6 +421,16 @@ class Monopix2Producer(pyeudaq.Producer):
         if self.testbench_file:
             with open(self.testbench_file) as f:
                 bench_conf = yaml.full_load(f)
+
+        chip_config_file = self.GetConfigItem('CHIP_CONFIG_FILE')
+        if chip_config_file:
+            print(f'COnfig file found: {chip_config_file}')
+            bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = chip_config_file
+        
+        chip_sn = self.GetConfigItem('CHIP_SN')
+        if chip_sn:
+            print('chipsn found: ', chip_sn)
+            bench_conf['modules']['module_0']['chip_0']['chip_sn'] = chip_sn
 
         self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
         self.scan.skip_interpret_data = True
