@@ -17,6 +17,10 @@ from tjmonopix2.scans import scan_ext_trigger
 from tjmonopix2.analysis import analysis_utils as au
 from report_to_elog import elog
 
+PROJECT_FOLDER = os.path.join(os.path.dirname(__file__), '..')
+BDAQ_DEFAULT_CONF_FILE = os.path.join(PROJECT_FOLDER, 'system', 'bdaq53.yaml')
+TESTBENCH_DEFAULT_FILE = os.path.join(PROJECT_FOLDER, 'testbench.yaml')
+
 scan_configuration = {
     'start_column': 0,
     'stop_column': 512,
@@ -180,8 +184,8 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.en_bdaq_recording = True
         self.en_hitor = False
-        self.bdaq_conf_file = None
-        self.testbench_file = None
+        self.bdaq_conf_file = BDAQ_DEFAULT_CONF_FILE
+        self.testbench_file = TESTBENCH_DEFAULT_FILE
         self.board_ip = None
         self.scan = None
         self.thread_scan = None
@@ -203,8 +207,12 @@ class Monopix2Producer(pyeudaq.Producer):
     def DoInitialise(self):
         # EUDAQ ini only available during DoInitialise, store to variables
         self.board_ip = self.GetInitItem("BOARD_IP")
-        self.testbench_file = self.GetInitItem("TESTBENCH_FILE")
-        self.bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
+        testbench_file = self.GetInitItem("TESTBENCH_FILE")
+        if testbench_file:
+            self.testbench_file = testbench_file
+        bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
+        if bdaq_conf_file:
+            self.bdaq_conf_file = bdaq_conf_file
 
     def DoConfigure(self):
         # EUDAQ config only available during DoConfigure, store to variables
@@ -424,12 +432,12 @@ class Monopix2Producer(pyeudaq.Producer):
 
         chip_config_file = self.GetConfigItem('CHIP_CONFIG_FILE')
         if chip_config_file:
-            print(f'COnfig file found: {chip_config_file}')
+            print(f'Got CHIP_CONFIG_FILE parameter: {chip_config_file}')
             bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = chip_config_file
         
         chip_sn = self.GetConfigItem('CHIP_SN')
         if chip_sn:
-            print('chipsn found: ', chip_sn)
+            print(f'Got CHIP_SN parameter: {chip_sn}')
             bench_conf['modules']['module_0']['chip_0']['chip_sn'] = chip_sn
 
         self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
