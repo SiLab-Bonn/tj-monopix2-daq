@@ -440,9 +440,17 @@ class Monopix2Producer(pyeudaq.Producer):
             print(f'Got CHIP_SN parameter: {chip_sn}')
             bench_conf['modules']['module_0']['chip_0']['chip_sn'] = chip_sn
 
+        
+
         self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
         self.scan.skip_interpret_data = True
+        cmd_clk = self.GetConfigItem('CHIP_CMD_CLK')
+        if cmd_clk:
+            print(f'Got CHIP_CMD_CLK parameter: {cmd_clk}')
+            self.scan.cmd_clk = float(cmd_clk)
         self.scan.init()
+
+        
 
 
 if __name__ == '__main__':

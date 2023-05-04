@@ -214,6 +214,7 @@ class ScanBase(object):
         self.register_overrides = register_overrides
         
         self.daq = None  # readout system, defined during scan init if not existing
+        self.cmd_clk = 160.0
 
         # Needed for parallel scans where several readout threads change the chip handles
         self.chip_handle_lock = Lock()
@@ -523,7 +524,7 @@ class ScanBase(object):
                 if readout_system == "mio3":
                     self.daq = MIO3(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
                 else:
-                    self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                    self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'], cmd_clk=self.cmd_clk)
 
         # Instantiate TJ-Monopix2 chip
         for _ in self.iterate_chips():

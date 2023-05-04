@@ -24,11 +24,12 @@ class BDAQ53(Dut):
     '''
     Main class for BDAQ53 readout system
     '''
-    def __init__(self, conf=None, bench_config=None):
+    def __init__(self, conf=None, bench_config=None, cmd_clk=160.0):
         self.log = logger.setup_main_logger()
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.configuration = {}
         self.board_version = 'bdaq53'
+        self.cmd_clk = cmd_clk
 
         try:
             if bench_config is None:
@@ -70,7 +71,7 @@ class BDAQ53(Dut):
         #     self.rx_lanes[recv] = t_rx_lanes
 
         # Configure cmd encoder
-        self.set_cmd_clk(frequency=160.0)
+        self.set_cmd_clk(frequency=self.cmd_clk)
         self['cmd'].reset()
         time.sleep(0.1)
 
