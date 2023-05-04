@@ -5,17 +5,17 @@
 # ------------------------------------------------------------
 #
 
-from tqdm import tqdm
- 
+from tjmonopix2.analysis import analysis, plotting
+from tjmonopix2.scans.shift_and_inject import (get_scan_loop_mask_steps,
+                                               shift_and_inject)
 from tjmonopix2.system.scan_base import ScanBase
-from tjmonopix2.scans.shift_and_inject import shift_and_inject, get_scan_loop_mask_steps
-from tjmonopix2.analysis import analysis
+from tqdm import tqdm
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 100,
+    'stop_column': 224,
     'start_row': 0,
-    'stop_row': 100,
+    'stop_row': 512,
 }
 
 
@@ -26,7 +26,7 @@ class AnalogScan(ScanBase):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
-        #self.chip.masks['hitor'][0, 0] = True
+        # self.chip.masks['hitor'][0, 0] = True
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
@@ -38,13 +38,10 @@ class AnalogScan(ScanBase):
         self.chip.registers["VH"].write(150)
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
-        self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
-
-    def _scan(self, n_injections=50, **_):
-        n_injections=50
-        pbar = tqdm(total=get_scan_loop_mask_steps(self), unit='Mask steps')
+    def _scan(self, n_injections=100, **_):
+        pbar = tqdm(total=get_scan_loop_mask_steps(self.chip), unit='Mask steps')
         with self.readout(scan_param_id=0):
-            shift_and_inject(scan=self, n_injections=n_injections, pbar=pbar, scan_param_id=0)
+            shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=0)
         pbar.close()
 
         self.log.success('Scan finished')
@@ -52,6 +49,10 @@ class AnalogScan(ScanBase):
     def _analyze(self):
         with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
+
+        if self.configuration['bench']['analysis']['create_pdf']:
+            with plotting.Plotting(analyzed_data_file=a.analyzed_data_file) as p:
+                p.create_standard_plots()
 
 
 if __name__ == "__main__":

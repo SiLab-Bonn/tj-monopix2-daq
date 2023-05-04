@@ -104,16 +104,16 @@ class TuneTlu(ScanBase):
                 data_table = out_file_h5.create_table(out_file_h5.root, name='error_rate', description=np.zeros((1,), dtype=description).dtype,
                                                       title='Trigger number error rate for different data delay values')
 
-                for scan_par_id, words in au.words_of_parameter(data, meta_data):
+                for scan_param_id, words in au.words_of_parameter(data, meta_data):
                     print('words ', words)
-                    data_array['TRIGGER_DATA_DELAY'][scan_par_id] = scan_parameters[scan_par_id]
+                    data_array['TRIGGER_DATA_DELAY'][scan_param_id] = scan_parameters[scan_param_id]
                     selection = np.bitwise_and(words, 0x80000000) == 0x80000000  # Select the trigger words in the data stream
                     trigger_words = np.bitwise_and(words[selection], 0x7FFFFFFF)  # Get the trigger values
                     print('trigWords ', trigger_words)
                     if selection.shape[0] != words.shape[0]:
                         self.log.warning('There are not only trigger words in the data stream')
                     actual_errors = np.count_nonzero(np.diff(trigger_words[trigger_words != 0x7FFFFFFF]) != 1)
-                    data_array['error_rate'][scan_par_id] = float(actual_errors) / selection.shape[0]
+                    data_array['error_rate'][scan_param_id] = float(actual_errors) / selection.shape[0]
 
                     if self.configuration['bench']['analysis']['create_pdf']:
                         # Plot trigger number
@@ -121,7 +121,7 @@ class TuneTlu(ScanBase):
                         FigureCanvas(fig)
                         ax = fig.add_subplot(111)
                         ax.plot(range(trigger_words.shape[0]), trigger_words, '-', label='data')
-                        ax.set_title('Trigger words for delay setting index {0}'.format(scan_par_id))
+                        ax.set_title('Trigger words for delay setting index {0}'.format(scan_param_id))
                         ax.set_xlabel('Trigger word index')
                         ax.set_ylabel('Trigger word')
                         ax.grid(True)

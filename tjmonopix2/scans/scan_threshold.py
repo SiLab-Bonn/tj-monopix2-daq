@@ -13,14 +13,14 @@ from tqdm import tqdm
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 32,
+    'stop_column': 4,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
-    'VCAL_HIGH': 80,
-    'VCAL_LOW_start': 80,
-    'VCAL_LOW_stop': 40,
+    'VCAL_HIGH': 200,
+    'VCAL_LOW_start': 180,
+    'VCAL_LOW_stop': 100,
     'VCAL_LOW_step': -1
 }
 

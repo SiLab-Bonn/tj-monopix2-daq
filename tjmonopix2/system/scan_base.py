@@ -12,9 +12,6 @@ import multiprocessing
 import os
 import time
 import traceback
-import yaml
-import zmq
-
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
@@ -22,18 +19,17 @@ from threading import Lock
 
 import numpy as np
 import tables as tb
-
+import yaml
+import zmq
 from online_monitor.utils import utils as ou
 
 from tjmonopix2 import utils
 from tjmonopix2.analysis import analysis_utils as au
-from tjmonopix2.system.tjmonopix2 import TJMonoPix2
-
-from tjmonopix2.system import logger, fifo_readout
-from tjmonopix2.system.mio3 import MIO3
+from tjmonopix2.system import fifo_readout, logger
 from tjmonopix2.system.bdaq53 import BDAQ53
-
 from tjmonopix2.system.fifo_readout import FifoReadout
+from tjmonopix2.system.mio3 import MIO3
+from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 # Compression for data files
 FILTER_RAW_DATA = tb.Filters(complib='blosc', complevel=5, fletcher32=False)
@@ -52,7 +48,7 @@ def fill_dict_from_conf_table(table):
     return conf
 
 
-def send_data(socket, data, scan_par_id, name='ReadoutData'):
+def send_data(socket, data, scan_param_id, name='ReadoutData'):
     '''Sends the data of every read out (raw data and meta data)
 
         via ZeroMQ to a specified socket.
@@ -64,7 +60,7 @@ def send_data(socket, data, scan_par_id, name='ReadoutData'):
         timestamp_start=data[1],  # float
         timestamp_stop=data[2],  # float
         error=data[3],  # int
-        scan_par_id=scan_par_id
+        scan_param_id=scan_param_id
     )
     try:
         data_ser = ou.simple_enc(data[0], meta=data_meta_data)
@@ -124,7 +120,6 @@ class ChipContainer:
 
     def __init__(self, name, chip_settings, chip_conf, module_settings, output_filename, output_dir, log_fh, scan_config, suffix=''):
         self.name = name
-        
         self.chip_settings = chip_settings  # chip settings from testbench; not to be confused with self.chip_settings['chip_config_file']
         self.module_settings = module_settings  # module configuration of this chip from testbench
         self.chip_conf = chip_conf  # configuration object for chip
@@ -149,7 +144,6 @@ class ChipContainer:
 
     def __repr__(self):
         return 'ChipContainer for %s (%s) of %s with data at %s' % (self.name, self.chip_settings['chip_sn'], self.module_settings['name'], self.output_dir)
-
 
 
 class ScanBase(object):
@@ -287,7 +281,6 @@ class ScanBase(object):
             if self.is_parallel_scan:
                 # Enable all channels of defined chips
                 for _ in self.iterate_chips():
-                    # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
                 self.daq.reset_fifo()
                 self._scan(**self.scan_config)
@@ -297,7 +290,6 @@ class ScanBase(object):
                 self.daq.reset_fifo()
                 for i, _ in enumerate(self.iterate_chips()):
                     with self._logging_through_handler(self.log_fh):
-                        # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
                         ret_values[i] = self._scan(**self.scan_config)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
@@ -701,7 +693,7 @@ class ScanBase(object):
                 if not configuration:
                     raise RuntimeError('No configuration found in ' + file_name)
                 chip_conf = {}
-                settings = fill_dict_from_conf_table(configuration.chip.settings)
+                # settings = fill_dict_from_conf_table(configuration.chip.settings)
                 # chip_conf['chip_type'] = settings['chip_type']
                 # chip_conf['calibration'] = fill_dict_from_conf_table(configuration.chip.calibration)
                 # chip_conf['trim'] = fill_dict_from_conf_table(configuration.chip.trim)
@@ -732,7 +724,7 @@ class ScanBase(object):
 
         # Detect modules defined in testbench by the definition of a module serial number
         module_cfgs = self.get_module_cfgs()
-        #print('saz something')
+
         for mod_name, mod_cfg in module_cfgs.items():
             for k, v in mod_cfg.items():
                 # Detect chips defined in testbench by the definition of a chip serial number
@@ -749,23 +741,16 @@ class ScanBase(object):
                     module_settings.pop(k)
                     module_settings['name'] = mod_name
                     # Set chip config file name
-                    #print('saz something 2')
                     with self._logging_through_handlers():
                         chip_settings = v
                         if not chip_settings['chip_config_file']:  # take chip cfg from latest scan
-                            #print('..................... Use last scan.......................')
                             chip_settings['chip_config_file'] = utils.get_latest_config_node_from_files(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to yaml
-                                #print('..................... Use yaml......................')
                                 chip_settings['chip_config_file'] = utils.get_latest_chip_configuration_file(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to std. config
-                                #print('..................... Use our default config yaml .......................')
                                 std_cfg = DEFAULT_CONFIG_FILE
                                 self.log.warning("No explicit configuration supplied for chip {0}. Using '{1}'!".format(chip_settings['chip_sn'], std_cfg))
                                 chip_settings['chip_config_file'] = std_cfg
-                        print(chip_settings['chip_config_file'])
-                        #Force to use default.cfg.yaml
-                        chip_settings['chip_config_file'] = DEFAULT_CONFIG_FILE
                         self.log.info('Loading chip configuration for chip {0} from {1}'.format(chip_settings['chip_sn'], chip_settings['chip_config_file']))
                         chip_conf = self._parse_chip_cfg_file(chip_settings['chip_config_file'])
                     # Set scan and chip configuration
@@ -1123,7 +1108,6 @@ class ScanBase(object):
         '''
             Handling of the data.
         '''
-
         total_words = self.raw_data_earray.nrows
 
         self.raw_data_earray.append(data_tuple[0])
@@ -1143,7 +1127,7 @@ class ScanBase(object):
         self.meta_data_table.flush()
 
         if self.socket:
-            send_data(self.socket, data=data_tuple, scan_par_id=self.scan_param_id)
+            send_data(self.socket, data=data_tuple, scan_param_id=self.scan_param_id)
 
     def handle_err(self, exc):
         ''' Handle errors when readout is started '''
