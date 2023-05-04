@@ -7,14 +7,14 @@
 
 import ast
 import logging
-import tables as tb
 import multiprocessing as mp
-from functools import partial
 import warnings
+from functools import partial
 
-from scipy.special import erf
-from scipy.optimize import curve_fit, OptimizeWarning
+import numba
 import numpy as np
+from scipy.optimize import OptimizeWarning, curve_fit
+from scipy.special import erf
 from tqdm import tqdm
 
 logger = logging.getLogger('Analysis')
@@ -71,6 +71,18 @@ H_HAS_TDC = 0x00000001  # Hit has TDC word
 H_TDC_OVF = 0x00000002  # TDC overflow
 H_TDC_AMBIGUOUS = 0x00000004  # unique TDC hit assignment impossible
 H_TDC_ERR = 0x00000008  # TDC error
+
+
+event_dtype = np.dtype([
+    ("event_number", "<u4"),
+    ("trigger_number", "<u4"),
+    ("frame", "<u1"),
+    ("column", "<u2"),
+    ("row", "<u2"),
+    ("charge", "<u1"),
+    ("timestamp", "<i8"),
+])
+
 
 class ConfigDict(dict):
     ''' Dictionary with different value data types:
@@ -135,6 +147,39 @@ def imap_bar(func, args, n_processes=None, unit='it', unit_scale=False):
     p.close()
     p.join()
     return res_list
+
+
+@numba.njit(locals={'cluster_shape': numba.int64})
+def calc_cluster_shape(cluster_array):
+    '''Boolean 8x8 array to number.
+    '''
+    cluster_shape = 0
+    indices_x, indices_y = np.nonzero(cluster_array)
+    for index in np.arange(indices_x.size):
+        cluster_shape += 2**xy2d_morton(indices_x[index], indices_y[index])
+    return cluster_shape
+
+
+@numba.njit(numba.int64(numba.uint32, numba.uint32))
+def xy2d_morton(x, y):
+    ''' Tuple to number.
+
+    See: https://stackoverflow.com/questions/30539347/
+         2d-morton-code-encode-decode-64bits
+    '''
+    x = (x | (x << 16)) & 0x0000FFFF0000FFFF
+    x = (x | (x << 8)) & 0x00FF00FF00FF00FF
+    x = (x | (x << 4)) & 0x0F0F0F0F0F0F0F0F
+    x = (x | (x << 2)) & 0x3333333333333333
+    x = (x | (x << 1)) & 0x5555555555555555
+
+    y = (y | (y << 16)) & 0x0000FFFF0000FFFF
+    y = (y | (y << 8)) & 0x00FF00FF00FF00FF
+    y = (y | (y << 4)) & 0x0F0F0F0F0F0F0F0F
+    y = (y | (y << 2)) & 0x3333333333333333
+    y = (y | (y << 1)) & 0x5555555555555555
+
+    return x | (y << 1)
 
 
 def get_threshold(x, y, n_injections):
@@ -423,36 +468,3 @@ def fit_scurves_multithread(scurves, scan_params, n_injections=None, invert_x=Fa
     sig2D = np.reshape(sig, (512, 512))
     chi2ndf2D = np.reshape(chi2ndf, (512, 512))
     return thr2D, sig2D, chi2ndf2D
-
-def range_of_parameter(meta_data):
-    ''' Calculate the raw data word indeces of each scan parameter
-    '''
-    _, index = np.unique(meta_data['scan_param_id'], return_index=True)
-    expected_values = np.arange(np.max(meta_data['scan_param_id']) + 1)
-
-    # Check for scan parameter IDs with no data
-    sel = np.isin(expected_values, meta_data['scan_param_id'])
-    if not np.all(sel):
-        logger.warning('No words for scan parameter IDs: %s', str(expected_values[~sel]))
-
-    start = meta_data[index]['index_start']
-    stop = np.append(start[:-1] + np.diff(start), meta_data[-1]['index_stop'])
-
-    return np.column_stack((expected_values[sel], start, stop))
-
-
-def words_of_parameter(data, meta_data):
-    ''' Yield all raw data words of a scan parameter
-
-        Warning:
-        --------
-            This function can lead to high RAM usage, since no chunking is used.
-
-        Returns:
-        --------
-            Tuple: (scan parameter ID, data)
-    '''
-
-    par_range = range_of_parameter(meta_data)
-    for scan_par_id, start, stop in par_range:
-        yield scan_par_id, data[start:stop]

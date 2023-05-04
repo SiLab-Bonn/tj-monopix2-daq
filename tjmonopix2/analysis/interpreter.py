@@ -13,19 +13,10 @@ class_spec = [
     ('te', numba.int8),
     ('tj_timestamp', numba.int64),
     ('n_scan_params', numba.int32),
+    ('trigger_data_format', numba.uint8),
 
-    ('hitor_timestamp_flag', numba.uint8),
-    ('ext_timestamp_flag', numba.uint8),
-    ('inj_timestamp_flag', numba.uint8),
-    ('tlu_timestamp_flag', numba.uint8),
-    ('hitor_timestamp', numba.int64),
-    ('hitor_charge', numba.int16),
-    ('ext_timestamp', numba.int64),
-    ('inj_timestamp', numba.int64),
-    ('tlu_timestamp', numba.int64),
-
-    ('hist_occ', numba.uint32[:,:,:]),
-    ('hist_tot', numba.uint16[:,:,:,:]),
+    ('hist_occ', numba.uint32[:, :, :]),
+    ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
@@ -35,11 +26,6 @@ class_spec = [
 @numba.njit
 def is_tjmono(word):
     return (word & 0xF8000000) == 0x40000000
-
-
-@numba.njit
-def is_tjmono_timestamp(word):
-    return (word & 0xF8000000) == 0x48000000
 
 
 @numba.njit
@@ -53,13 +39,23 @@ def is_tdc(word):
 
 
 @numba.njit
-def get_tlu_number(word):
-    return word & 0xFFFF
+def is_tjmono_timestamp_msb(word):
+    return (word & 0xFC000000) == 0x4C000000
 
 
 @numba.njit
-def get_tlu_timestamp(word):
-    return (word >> 16) & 0x7FFF
+def is_tjmono_timestamp_lsb(word):
+    return (word & 0xFC000000) == 0x48000000
+
+
+@numba.njit
+def get_tlu_word(word, trigger_data_format):
+    if trigger_data_format == 2:
+        return word & 0xFFFF, (word >> 16) & 0x7FFF
+    elif trigger_data_format == 1:
+        return 0, word & 0x7FFFFFFF
+    elif trigger_data_format == 0:
+        return word & 0x7FFFFFFF, 0
 
 
 @numba.njit
@@ -69,7 +65,7 @@ def get_tdc_value(word):
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1):
+    def __init__(self, n_scan_params=1, trigger_data_format=1):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -77,11 +73,12 @@ class RawDataInterpreter(object):
         self.tj_data_flag = 0
 
         self.n_scan_params = n_scan_params
+        self.trigger_data_format = trigger_data_format
 
         self.n_triggers = 0
         self.n_tdc = 0
 
-        self.reset_histograms()
+        self.reset()
 
     def interpret(self, raw_data, hit_data, scan_param_id=0):
         hit_index = 0
@@ -90,8 +87,10 @@ class RawDataInterpreter(object):
             #############################
             # Part 1: interpret TJ word #
             #############################
-            if is_tjmono_timestamp(raw_data_word):
-                self.tj_timestamp = raw_data_word & 0x7FFFFFF
+            if is_tjmono_timestamp_msb(raw_data_word):
+                self.tj_timestamp = (raw_data_word & 0x3FFFFFF) << 26
+            elif is_tjmono_timestamp_lsb(raw_data_word):
+                self.tj_timestamp = self.tj_timestamp | (raw_data_word & 0x3FFFFFF)
             elif is_tjmono(raw_data_word):
                 dat = np.zeros(3, dtype=np.uint16)
                 dat[0] = (raw_data_word & 0x7FC0000) >> 18
@@ -151,15 +150,14 @@ class RawDataInterpreter(object):
             # Part 2: interpret TLU word #
             ##############################
             elif is_tlu(raw_data_word):
-                tlu_word = get_tlu_number(raw_data_word)
-                tlu_timestamp_low_res = get_tlu_timestamp(raw_data_word)  # TLU data contains a 15bit timestamp
+                trigger_number, trigger_ts = get_tlu_word(raw_data_word, self.trigger_data_format)
 
                 hit_data[hit_index]["col"] = 0x3FF  # 1023 as TLU identifier
                 hit_data[hit_index]["row"] = 0
                 hit_data[hit_index]["le"] = 0
                 hit_data[hit_index]["te"] = 0
-                hit_data[hit_index]["token_id"] = tlu_word
-                hit_data[hit_index]["timestamp"] = tlu_timestamp_low_res
+                hit_data[hit_index]["token_id"] = trigger_number
+                hit_data[hit_index]["timestamp"] = trigger_ts
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
                 self.n_triggers += 1
 
@@ -199,7 +197,7 @@ class RawDataInterpreter(object):
     def get_n_tdc(self):
         return self.n_tdc
 
-    def reset_histograms(self):
+    def reset(self):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
@@ -222,4 +220,3 @@ class RawDataInterpreter(object):
     def _fill_hist(self, col, row, tot, scan_param_id):
         self.hist_occ[col, row, scan_param_id] += 1
         self.hist_tot[col, row, scan_param_id, tot] += 1
-        

@@ -1,0 +1,137 @@
+##################################################################################################
+# Make sure that the 'pymosa' and 'pybar' online monitor plugins are available to online_monitor #
+# package. To do so, use the 'plugin_online_monitor' command to add e.g. the pymosa plugin like: #
+#                  'plugin_online_monitor path/to/pymosa/online_monitor'                         #
+##################################################################################################
+converter :
+    TJ2 :
+        kind : tjmonopix2_inter
+        frontend : tcp://127.0.0.1:5500
+        backend : tcp://127.0.0.1:5600
+        analyze_tdc : False  #  Enable interpretation of TDC words
+        noisy_threshold : 3  # Pixels per readout above noisy_threshold * median occupancy
+    PymosaConverter :
+        kind : pymosa_converter  # Use pymosas interpreter to interpret Mimosa data
+        frontend : tcp://127.0.0.1:6500
+        backend : tcp://127.0.0.1:6600
+    PymosaHistogrammer :
+        kind : pymosa_histogrammer  # Use pymosas interpreter to interpret Mimosa data
+        frontend : tcp://127.0.0.1:6600
+        backend : tcp://127.0.0.1:6700    
+#    FEI4 :
+#        kind : pybar_fei4  # Use pybar interpreter to interpret fei4 data
+#        frontend : tcp://127.0.0.1:7500
+#        backend : tcp://127.0.0.1:7600         
+    HitCorrelator :
+        kind : hit_correlator_converter  # Use pymosas hit correlator to correlate the DUTs
+        frontend : 
+            - tcp://127.0.0.1:5600  # Listen to TJ2 interpreter
+            - tcp://127.0.0.1:6600  # Listen to M26 interpreter
+#            - tcp://127.0.0.1:7600  # Listen to FEI4 interpreter
+        backend : tcp://127.0.0.1:8600
+        duts :
+            TJ2 :
+                n_columns : 512
+                column_size : 33.04
+                n_rows : 512
+                row_size : 33.04
+            M26 :
+                n_columns : 1152
+                column_size : 18.4
+                n_rows : 576
+                row_size : 18.4
+#            FE-I4 :
+#                n_columns : 80
+#                column_size : 250.0
+#                n_rows : 360
+#                row_size : 50.0
+        correlation_planes:
+            - name : TJ Monopix 2
+              dut_type : TJ2
+              address : tcp://127.0.0.1:5600
+            - name : Mimosa26 Plane 1
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 0  # 'id' only needed if multiple DUTs of the same type are present in stream
+            - name : Mimosa26 Plane 2
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 1
+            - name : Mimosa26 Plane 3
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 2
+            - name : Mimosa26 Plane 4
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 3
+            - name : Mimosa26 Plane 5
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 4
+            - name : Mimosa26 Plane 6
+              dut_type : M26
+              address : tcp://127.0.0.1:6600
+              id : 5          
+#            - name : FE-I4
+#              dut_type : FE-I4
+#              address : tcp://127.0.0.1:7600        
+
+receiver :
+    TJ2 :
+        kind : tjmonopix2_recv
+        frontend : tcp://127.0.0.1:5600
+    Mimosa26 :
+        kind : pymosa_receiver
+        frontend : tcp://127.0.0.1:6700
+#    FE-I4 :
+#        kind : pybar_fei4
+#        frontend : tcp://127.0.0.1:7600
+    HIT_Correlator :
+        kind : hit_correlator_receiver  # Use pymosas hit correlator to correlate the DUTs
+        frontend : tcp://127.0.0.1:8600
+        duts :
+            TJ2 :
+                n_columns : 512
+                column_size : 33.04
+                n_rows : 512
+                row_size : 33.04
+            M26 :
+                n_columns : 1152
+                column_size : 18.4
+                n_rows : 576
+                row_size : 18.4
+#            FE-I4 :
+#                n_columns : 80
+#                column_size : 250.0
+#                n_rows : 360
+#                row_size : 50.0
+        correlation_planes:
+            - name : TJ Monopix 2
+              dut_type : TJ2
+            - name : Mimosa26 Plane 1
+              dut_type : M26
+            - name : Mimosa26 Plane 2
+              dut_type : M26
+            - name : Mimosa26 Plane 3
+              dut_type : M26
+            - name : Mimosa26 Plane 4
+              dut_type : M26
+            - name : Mimosa26 Plane 5
+              dut_type : M26
+            - name : Mimosa26 Plane 6
+              dut_type : M26
+#            - name : FE-I4
+#              dut_type : FE-I4
+
+# producer_sim:
+#     TJ2 :
+#         kind : silab_default_producer
+#         backend : tcp://127.0.0.1:5500
+#         delay : 0.2
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106_224756_source_scan.h5
+#     Mimosa26 :
+#         kind : pymosa_producer_sim
+#         backend : tcp://127.0.0.1:6500
+#         delay : 0.2
+#         data_file : /home/leloup/Desktop/tj2_run33/20221106-224754_M26_TELESCOPE.h5
