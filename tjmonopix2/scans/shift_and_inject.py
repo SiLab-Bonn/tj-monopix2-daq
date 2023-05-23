@@ -11,7 +11,7 @@
 '''
 
 
-def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True):
+def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True, PulseStartCnfg=19, wait_cycles=1, latency=1400):
     ''' Regular mask shift and analog injection function.
 
     Parameters:
@@ -35,7 +35,7 @@ def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['inj
     '''
     for fe, active_pixels in chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
         if not fe == 'skipped':
-            chip.inject(PulseStartCnfg=1, PulseStopCnfg=257, repetitions=n_injections, latency=1400)
+            chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 512, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency)
         if pbar is not None:
             pbar.update(1)
 
