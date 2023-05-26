@@ -39,7 +39,7 @@ hw_drivers:
     type      : gpio
     interface : intf
     base_addr : 0x0500
-    size      : 16
+    size      : 17
 
   - name      : gpio_xadc_vpvn
     type      : gpio
@@ -87,8 +87,11 @@ registers:
   - name        : DAQ_CONTROL
     type        : StdRegister
     hw_driver   : gpio_daq_control
-    size        : 16
+    size        : 17
     fields:
+      - name    : TRIGGER_CLK_SEL
+        size    : 1
+        offset  : 16
       - name    : MGT_REF_SEL
         size    : 1
         offset  : 15

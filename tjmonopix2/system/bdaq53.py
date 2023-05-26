@@ -110,6 +110,17 @@ class BDAQ53(Dut):
                     chip_cfgs.append(v)
         return chip_cfgs
 
+    def sel_trigger_clk(self, clock='internal'):
+        """_summary_
+
+        Args:
+            clock (str, optional): _description_. Defaults to 'internal'.
+        """
+        if clock not in ["internal", "external"]:
+            raise ValueError("Invalid trigger clock selection")
+        
+        self["DAQ_CONTROL"]["TRIGGER_CLK_SEL"] = 0 if clock == 'internal' else 1
+
     def set_LEMO_MUX(self, connector='LEMO_MUX_TX0', value=0):
         '''
         Sets the multiplexer in order to select which signal is routed to LEMO ports. So far only used
@@ -128,7 +139,7 @@ class BDAQ53(Dut):
         # TODO:  LEMO_MUX_RX1 and LEMO_MUX_RX0 not yet used
         # According to FW. None means not used.
         lemo_tx0_signals = ['RJ45_CLK', 'CMD_LOOP_START_PULSE', None, None]
-        lemo_tx1_signals = ['RJ45_BUSY', None, None, None]
+        lemo_tx1_signals = ['RJ45_BUSY', 'EXT_TRIGGER_CLK', None, None]
         if connector in ('LEMO_MUX_TX1', 'LEMO_MUX_TX0') and value in range(4):
             self['DAQ_CONTROL'][connector] = value
             self['DAQ_CONTROL'].write()
