@@ -394,11 +394,11 @@ class Analysis(object):
             #                                               complevel=5,
             #                                               fletcher32=False))
 
-            if scan_id in ['threshold_scan']:
+            if scan_id in ['threshold_scan', 'calibrate_tot']:
                 n_injections = self.scan_config['n_injections']
                 hist_scurve = hist_occ.reshape((self.rows * self.columns, -1))
 
-                if scan_id in ['threshold_scan']:
+                if scan_id in ['threshold_scan', 'calibrate_tot']:
                     scan_params = [self.scan_config['VCAL_HIGH'] - v for v in range(self.scan_config['VCAL_LOW_start'],
                                                                                     self.scan_config['VCAL_LOW_stop'], self.scan_config['VCAL_LOW_step'])]
                     self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False)

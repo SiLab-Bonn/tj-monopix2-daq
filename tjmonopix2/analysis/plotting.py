@@ -115,7 +115,7 @@ class Plotting(object):
             self.HistTdcStatus = None
         self.HistOcc = root.HistOcc[:]
         self.HistTot = root.HistTot[:]
-        if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
+        if self.run_config['scan_id'] in ['threshold_scan', 'calibrate_tot', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
             self.ThresholdMap = root.ThresholdMap[:, :]
             self.Chi2Map = root.Chi2Map[:, :]
             self.Chi2Sel = (self.Chi2Map > 0) & (self.Chi2Map < SCURVE_CHI2_UPPER_LIMIT) & (~self.enable_mask)
@@ -166,12 +166,12 @@ class Plotting(object):
             self.create_occupancy_map()
             if self.run_config['scan_id'] in ['simple_scan']:
                 self.create_fancy_occupancy()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan', 'calibrate_tot']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
                 self.create_tot_plot()
-            if self.run_config['scan_id'] in ['threshold_scan']:
+            if self.run_config['scan_id'] in ['threshold_scan', 'calibrate_tot']:
                 self.create_tot_hist()
                 self.create_scurves_plot()
                 self.create_threshold_plot()
