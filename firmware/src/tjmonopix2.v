@@ -212,7 +212,7 @@ PLLE2_BASE #(
     .CLKOUT2(CLK40_PLL),
     .CLKOUT3(CLK160_PLL),
     .CLKOUT4(CLK320_PLL),
-    .CLKOUT5(),
+    .CLKOUT5(CLK800_PLL),
 
     .CLKFBOUT(PLL_FEEDBACK2),
 
@@ -247,7 +247,7 @@ IBUFDS_GTE2 IBUFDS_refclk
     .IB              (MGT_REFCLK1_N)
 );
 
-// SMA CLK input from AIDA2020 TLU
+// SMA CLK input from AIDA2020 TLU (MGT_REF_SEL has to be 0!)
 IBUFDS_GTE2 IBUFDS_aidatlu_clk  
 (
     .O               (EXT_TRIGGER_CLK),
@@ -593,6 +593,7 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
+    .CLKILA(CLK800),  // Integrated Logic analyzer sampling clock
     .EXT_TRIGGER_CLK(EXT_TRIGGER_CLK),
     .MGT_REF_SEL(MGT_REF_SEL),
 

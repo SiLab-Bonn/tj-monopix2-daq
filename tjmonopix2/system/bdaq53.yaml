@@ -7,7 +7,7 @@ transfer_layer:
   - name  : intf
     type  : SiTcp
     init:
-        ip : "192.168.10.23"
+        ip : "192.168.12.23"
         udp_port : 4660
         tcp_port : 24
         tcp_connection : True
