@@ -210,6 +210,7 @@ always @ (posedge BUS_CLK)
 wire [16:0] IO_CONTROL;
 wire TRIGGER_CLK_SEL;
 assign TRIGGER_CLK_SEL = IO_CONTROL[16];
+// assign TRIGGER_CLK_SEL = 0;
 assign MGT_REF_SEL = IO_CONTROL[15];   // Default 0, use SMA input for MGT_REF_CLK0 (=TRIGGER_CLK)
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
