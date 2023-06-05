@@ -83,7 +83,7 @@ def _fit_func(x, a, b, d):
 
 
 @numba.njit
-def _inv_fit_func(tot, a, b ,d):
+def _inv_fit_func(tot, a, b, d):
     return (np.sqrt(b**2 * (a - tot)**2 + 2 * b * d * (a + tot) + d**2) - b * a + b * tot + d) * 0.5
 
 
