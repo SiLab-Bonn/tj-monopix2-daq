@@ -19,7 +19,7 @@ scan_configuration = {
     'stop_row': 512,
 
     'scan_timeout': False,    # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
-    'max_triggers': 100000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
+    'max_triggers': 1000000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
 }
 
 
@@ -37,7 +37,7 @@ class SimpleScan(ScanBase):
         self.chip.masks.update()
 
         self.daq.configure_tlu_veto_pulse(veto_length=500)
-        self.daq.configure_tlu_module(max_triggers=max_triggers, aidamode=True)
+        self.daq.configure_tlu_module(max_triggers=max_triggers)
 
     def _scan(self, scan_timeout=10, max_triggers=False, **_):
         def timed_out():
