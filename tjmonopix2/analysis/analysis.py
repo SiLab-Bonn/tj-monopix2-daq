@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 
 class Analysis(object):
-    def __init__(self, raw_data_file=None, analyzed_data_file=None,
+    def __init__(self, raw_data_file=None, analyzed_data_file=None, tot_calib_file=None,
                  store_hits=True, cluster_hits=False, analyze_tdc=False, use_tdc_trigger_dist=False,
                  build_events=False, chunk_size=1000000, **_):
         self.log = logger.setup_derived_logger('Analysis')
@@ -32,6 +32,7 @@ class Analysis(object):
         self.chunk_size = chunk_size
         self.analyze_tdc = analyze_tdc
         self.use_tdc_trigger_dist = use_tdc_trigger_dist
+        self.tot_calib_file = tot_calib_file
 
         if self.build_events:
             self.cluster_hits = True
@@ -156,7 +157,7 @@ class Analysis(object):
                            ('frame', 'u1'),
                            ('column', 'u2'),
                            ('row', 'u2'),
-                           ('charge', 'u1'),
+                           ('charge', 'u2'),
                            ('timestamp', 'i8')]
         cluster_fields = {'event_number': 'event_number',
                           'column': 'column',
@@ -172,7 +173,7 @@ class Analysis(object):
         cluster_description = [('event_number', 'u4'),
                                ('id', '<u2'),
                                ('size', '<u2'),
-                               ('tot', '<u2'),
+                               ('tot', '<u4'),
                                ('seed_col', '<u2'),
                                ('seed_row', '<u2'),
                                ('mean_col', '<f4'),
@@ -261,7 +262,7 @@ class Analysis(object):
                 cluster_fields=cluster_fields,
                 cluster_dtype=self.cluster_dtype,
                 min_hit_charge=1,
-                max_hit_charge=128,
+                max_hit_charge=512,
                 column_cluster_distance=5,
                 row_cluster_distance=5,
                 frame_cluster_distance=1,
@@ -294,6 +295,9 @@ class Analysis(object):
                 if self.build_events:
                     trigger_n, trigger_ts, event_n = 0, 0, 0
                     event_table = self._create_table(out_file, name='Hits', title='event_data', dtype=au.event_dtype)
+                if self.tot_calib_file is not None:
+                    with tb.open_file(self.tot_calib_file, 'r') as calib_file:
+                        self.tot_calib = calib_file.root.InjTotCalibration[:]
                 if self.cluster_hits:
                     cluster_table = out_file.create_table(
                         out_file.root, name='Cluster',
@@ -303,7 +307,7 @@ class Analysis(object):
                                            complevel=5,
                                            fletcher32=False))
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
-                    hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(512, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
@@ -336,13 +340,21 @@ class Analysis(object):
                         if self.build_events:
                             data_to_clusterizer = event_dat
                         else:
+                            if self.tot_calib_file is not None:
+                                hit_dat = hit_dat[hit_dat['col'] < 1000]  # Can only call tot_calib for hit data
                             hit_data_cs_fmt = np.zeros(len(hit_dat), dtype=au.event_dtype)
                             hit_data_cs_fmt['event_number'][:] = hit_dat['timestamp'][:]
                             hit_data_cs_fmt['trigger_number'][:] = -1
                             hit_data_cs_fmt['frame'][:] = -1
                             hit_data_cs_fmt['column'][:] = hit_dat['col'][:]
                             hit_data_cs_fmt['row'][:] = hit_dat['row'][:]
-                            hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
+                            if self.tot_calib_file is None:
+                                hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
+                            else:
+                                hit_data_cs_fmt['charge'][:] = au._inv_fit_func(((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1,
+                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 0],
+                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 1],
+                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 2])
                             hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
                             data_to_clusterizer = hit_data_cs_fmt
 
@@ -350,7 +362,7 @@ class Analysis(object):
                         cluster_table.append(cluster)
                         # Create actual cluster hists
                         cs_size = np.bincount(cluster['size'], minlength=30)[:30]
-                        cs_tot = np.bincount(cluster['tot'], minlength=256)[:256]
+                        cs_tot = np.bincount(cluster['tot'], minlength=512)[:512]
                         sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
                         cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
                         # Add to total hists

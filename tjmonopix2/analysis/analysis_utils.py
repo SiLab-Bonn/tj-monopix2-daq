@@ -35,7 +35,7 @@ event_dtype = np.dtype([
     ("frame", "<u1"),
     ("column", "<u2"),
     ("row", "<u2"),
-    ("charge", "<u1"),
+    ("charge", "<u2"),
     ("timestamp", "<i8"),
 ])
 
@@ -80,6 +80,11 @@ class ConfigDict(dict):
 
 def _fit_func(x, a, b, d):
     return (a / x + 1 / b) * (x - d)
+
+
+@numba.njit
+def _inv_fit_func(tot, a, b ,d):
+    return (np.sqrt(b**2 * (a - tot)**2 + 2 * b * d * (a + tot) + d**2) - b * a + b * tot + d) * 0.5
 
 
 def scurve(x, A, mu, sigma):
