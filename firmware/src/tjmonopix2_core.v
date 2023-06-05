@@ -71,6 +71,8 @@ module tjmonopix2_core #(
     input wire CLKCMD,
     input wire EXT_TRIGGER_CLK,
     output wire MGT_REF_SEL,
+    input wire CLKILA,
+    input wire EXT_TRIGGER_CLK,
 
     // i2c
     inout wire I2C_SCL,
@@ -285,6 +287,7 @@ assign GPIO_MODE = IO[14:12];
 wire [16:0] IO_CONTROL;
 wire TRIGGER_CLK_SEL;
 assign TRIGGER_CLK_SEL = IO_CONTROL[16];
+// assign TRIGGER_CLK_SEL = 0;
 assign MGT_REF_SEL = IO_CONTROL[15];   // Default 0, use SMA input for MGT_REF_CLK0 (=TRIGGER_CLK)
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
@@ -696,5 +699,26 @@ tjmono2_rx #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR)
 );
+
+`ifdef SYNTHESIS
+    reg EXT_TRG_CLK_DBG, TLU_TRG_DBG, TLU_RST_DBG, TLU_BSY_DBG, TLU_CLK_DBG;
+    reg [63:0] TS_DBG;
+
+    always @(*) begin
+        EXT_TRG_CLK_DBG <= EXT_TRIGGER_CLK;
+        TLU_TRG_DBG <= RJ45_TRIGGER;
+        TLU_CLK_DBG <= RJ45_CLK;
+        TLU_BSY_DBG <= RJ45_BUSY;
+        TLU_RST_DBG <= RJ45_RESET;
+        TS_DBG <= TIMESTAMP;
+    end
+
+    aidamode_debugger i_aidamode_debugger (
+        .clk(CLKILA), // input wire clk
+
+        .probe0({TLU_CLK_DBG, TLU_BSY_DBG, TLU_TRG_DBG, TLU_RST_DBG, EXT_TRG_CLK_DBG}), // input wire [3:0]  probe0  
+        .probe1(TS_DBG) // input wire [63:0]  probe1
+    );
+`endif
 
 endmodule

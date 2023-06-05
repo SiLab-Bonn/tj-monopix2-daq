@@ -16,13 +16,13 @@ modules:
       send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor
 
 TLU:
-  TRIGGER_MODE: 3 # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
+  TRIGGER_MODE: 2 # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
   TRIGGER_SELECT: 0 # Selecting trigger input: HitOr (individual, TDC loop-through) (16), RX1 (multi purpose) (8), RX0 (TDC loop-trough) (4), HitOR [DP_ML_5 and mDP] (logical OR of all eight lines) (3), HitOR [mDP only] (logical OR of all four lines) (2), HitOR [DP_ML_5 only] (logical OR of all four lines) (1), disabled (0)
   TRIGGER_INVERT: 0 # Inverting trigger input: HitOr (individual, TDC loop-through) (16), RX1 (multi purpose) (8), RX0 (TDC loop-trough) (4), HitOR [DP_ML_5 and mDP] (logical OR of all eight lines) (3), HitOR [mDP only] (logical OR of all four lines) (2), HitOR [DP_ML_5 only] (logical OR of all four lines) (1), disabled (0)
-  TRIGGER_LOW_TIMEOUT: 0 # Maximum wait cycles for TLU trigger low.
+  TRIGGER_LOW_TIMEOUT: 4 # Maximum wait cycles for TLU trigger low.
   TRIGGER_VETO_SELECT: 0 # Selecting trigger veto: AZ VETO (2), RX FIFO full (1), disabled (0). Set to (2) if SYNC FE is enabled.
   TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES: 5 # TLU trigger minimum length in TLU clock cycles
-  DATA_FORMAT: 0 # Select trigger data format: only trigger number (0), only time stamp (1), combined, 15 bit time stamp + 16 bit trigger number (2)
+  DATA_FORMAT: 1 # Select trigger data format: only trigger number (0), only time stamp (1), combined, 15 bit time stamp + 16 bit trigger number (2)
   EN_TLU_VETO: 0 # Assert TLU veto when external veto. Activate this in order to VETO triggers if SYNC FE is enabled.
   TRIGGER_DATA_DELAY: 8 # Depends on the cable length and should be adjusted (run scan/tune_tlu.py)
 

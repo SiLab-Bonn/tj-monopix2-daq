@@ -58,8 +58,8 @@ proc run_bit {part xdc_file size {suffix ""}} {
     report_utilization -file "reports/report_utilization_$identifier.log"
     report_timing -file "reports/report_timing_$identifier.log"
 
-    write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_$identifier
-    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$identifier.bit" -force -file $vivado_dir/../bit/tjmonopix2_$identifier
+    write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_aida_$identifier
+    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_aida_$identifier.bit" -force -file $vivado_dir/../bit/tjmonopix2_$identifier
     close_project
 }
 
@@ -70,10 +70,10 @@ proc run_bit {part xdc_file size {suffix ""}} {
 if {$argc == 0} {
     # Standalone mode, directly calling tcl file
     #          FPGA model          constraints file    flash size  suffix
-    run_bit    xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
+#    run_bit    xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
     run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc      64          ""
-    run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
-    run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
+#    run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
+#    run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
 } else {
     # Build specific firmware by passing arguments
     # Suffix argument is not required, and default "" can not be read from command line arguments 

@@ -280,7 +280,7 @@ class BDAQ53(Dut):
     def set_trigger_data_delay(self, trigger_data_delay):
         self['tlu']['TRIGGER_DATA_DELAY'] = trigger_data_delay
 
-    def configure_tlu_module(self, max_triggers=False):
+    def configure_tlu_module(self, max_triggers=False, aidamode=False):
         self.log.info('Configuring TLU module...')
         self['tlu']['RESET'] = 1    # Reset first TLU module
         for key, value in self.configuration['TLU'].items():    # Set specified registers
@@ -291,6 +291,10 @@ class BDAQ53(Dut):
             self['tlu']['MAX_TRIGGERS'] = int(max_triggers)  # Set maximum number of triggers
         else:
             self['tlu']['MAX_TRIGGERS'] = 0  # unlimited number of triggers
+
+        # AIDA mode
+        if aidamode:
+            self['tlu']['EN_TLU_RESET_TIMESTAMP'] = 1
 
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
