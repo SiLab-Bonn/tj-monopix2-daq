@@ -27,9 +27,9 @@ class TJMonopix2(Receiver):
         dock_tot = Dock("Time over threshold values (TOT)", size=(400, 400))
         dock_tdc = Dock("TDC", size=(400, 400))
         dock_status = Dock("Status", size=(800, 40))
-        dock_area.addDock(dock_occcupancy, 'top')
-        dock_area.addDock(dock_tot, 'bottom', dock_occcupancy)
-        dock_area.addDock(dock_tdc, 'right', dock_tot)
+        dock_area.addDock(dock_occcupancy, 'left')
+        dock_area.addDock(dock_tot, 'right', dock_occcupancy)
+        dock_area.addDock(dock_tdc, 'bottom', dock_tot)
         dock_area.addDock(dock_status, 'top')
 
         # Status dock on top

@@ -1,18 +1,10 @@
 import numpy as np
 import numba
 
-# Setup dictionary for use in numba
-tdc_hist_dict = numba.typed.Dict.empty(
-    key_type=numba.core.types.unicode_type,
-    value_type=numba.uint32[:]
-)
-
-# Numba infers dict key and value types from instance
-tdc_hist_dict['lvds'] = np.arange(1, dtype=np.uint32)
-
 class_spec = [
     ('sof', numba.boolean),
     ('eof', numba.boolean),
+    ('token_id', numba.uint32),
     ('tj_data_flag', numba.uint8),
     ('error_cnt', numba.int32),
     ('col', numba.int16),
@@ -21,15 +13,14 @@ class_spec = [
     ('te', numba.int8),
     ('tj_timestamp', numba.int64),
 
-    # Common attributes not tied to method calls
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
     ('en_trigger_dist', numba.uint8),
-    ('token_id', numba.uint32),
+
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
-    ('hists_tdc', numba.typeof(tdc_hist_dict)),  # Convert to numba type instance
-    ('hists_tdc_dist', numba.typeof(tdc_hist_dict)),
+    ('hist_tdc', numba.uint32[:]),
+    ('hist_trigger_dist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
@@ -95,7 +86,7 @@ def get_tdc_word(word, en_trigger_dist):
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1, en_trigger_dist=True):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, en_trigger_dist=False):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -196,43 +187,22 @@ class RawDataInterpreter(object):
                 hit_index += 1
 
             ###################################
-            # Part 3: interpret TDC LVDS word #
+            # Part 3: interpret TDC word #
             ###################################
             elif is_tdc_lvds(raw_data_word):
                 trigger_dist, tdc_timestamp, tdc_value = get_tdc_word(raw_data_word, self.en_trigger_dist)
 
-                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC LVDS identifier
+                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
                 hit_data[hit_index]["row"] = 0
                 hit_data[hit_index]["le"] = 0
-                hit_data[hit_index]["te"] = tdc_value
-                hit_data[hit_index]["token_id"] = trigger_dist
+                hit_data[hit_index]["te"] = trigger_dist
+                hit_data[hit_index]["token_id"] = tdc_value
                 hit_data[hit_index]["timestamp"] = tdc_timestamp
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
                 self.n_tdc += 1
 
-                self.hists_tdc['lvds'][tdc_value] += 1
-                self.hists_tdc_dist['lvds'][trigger_dist] += 1
-
-                # Prepare for next data block. Increase hit index
-                hit_index += 1
-
-            ###################################
-            # Part 4: interpret TDC CMOS word #
-            ###################################
-            elif is_tdc_cmos(raw_data_word):
-                trigger_dist, tdc_timestamp, tdc_value = get_tdc_word(raw_data_word, self.en_trigger_dist)
-
-                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC LVDS identifier
-                hit_data[hit_index]["row"] = 0
-                hit_data[hit_index]["le"] = 0
-                hit_data[hit_index]["te"] = tdc_value
-                hit_data[hit_index]["token_id"] = trigger_dist
-                hit_data[hit_index]["timestamp"] = tdc_timestamp
-                hit_data[hit_index]["scan_param_id"] = scan_param_id
-                self.n_tdc += 1
-
-                self.hists_tdc['cmos'][tdc_value] += 1
-                self.hists_tdc_dist['cmos'][trigger_dist] += 1
+                self.hist_tdc[tdc_value] += 1
+                self.hist_trigger_dist[trigger_dist] += 1
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
@@ -242,7 +212,7 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hists_tdc, self.hists_tdc_dist
+        return self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_trigger_dist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -253,10 +223,8 @@ class RawDataInterpreter(object):
     def reset(self):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
-        self.hists_tdc['lvds'] = np.zeros(4096, dtype=numba.uint32)
-        self.hists_tdc['cmos'] = np.zeros(4096, dtype=numba.uint32)
-        self.hists_tdc_dist['lvds'] = np.zeros(256, dtype=numba.uint32)
-        self.hists_tdc_dist['cmos'] = np.zeros(256, dtype=numba.uint32)
+        self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_trigger_dist = np.zeros(256, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
 
