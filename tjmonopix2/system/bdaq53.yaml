@@ -41,20 +41,22 @@ hw_drivers:
     base_addr : 0x0500
     size      : 16
 
-  - name      : inj
-    type      : tjmonopix2.pulse_gen640
+  - name      : gpio_xadc_vpvn
+    type      : gpio
     interface : intf
-    base_addr : 0x0100
+    base_addr : 0x0900
+    size      : 16
+
+  - name      : gpio_xadc_fpga_temp
+    type      : gpio
+    interface : intf
+    base_addr : 0x0A00
+    size      : 16
 
   - name      : rst
     type      : pulse_gen
     interface : intf
     base_addr : 0x0400
-    
-  # - name      : direct_rx
-  #   type      : tjmonopix2.tjmono_direct_rx
-  #   interface : intf
-  #   base_addr : 0x10500
 
   - name      : tlu
     type      : tlu
