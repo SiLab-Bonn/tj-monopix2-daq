@@ -232,7 +232,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
             self.wait_for_fpga = self.GetConfigItem('WAIT_FOR_FPGA') == '1'
 
-        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'IDB', 'IDEL']
+        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL']
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
 
