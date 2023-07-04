@@ -2,6 +2,7 @@ import numpy as np
 import numba
 
 class_spec = [
+    ('low_ram', numba.boolean),
     ('sof', numba.boolean),
     ('eof', numba.boolean),
     ('token_id', numba.uint32),
@@ -9,8 +10,8 @@ class_spec = [
     ('error_cnt', numba.int32),
     ('col', numba.int16),
     ('row', numba.int16),
-    ('le', numba.int8),
-    ('te', numba.int8),
+    ('le', numba.uint8),
+    ('te', numba.uint8),
     ('tj_timestamp', numba.int64),
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
@@ -18,6 +19,7 @@ class_spec = [
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
+    ('hist_tdc_trigdist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
@@ -62,10 +64,18 @@ def get_tlu_word(word, trigger_data_format):
 def get_tdc_value(word):
     return word & 0xFFF
 
+@numba.njit
+def get_tdc_timestamp(word):
+    return (word >> 12) & 0xFF
+
+@numba.njit
+def get_tdc_trigger_dist(word):
+    return (word >> 20) & 0xFF
+
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, low_ram=False):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -77,6 +87,8 @@ class RawDataInterpreter(object):
 
         self.n_triggers = 0
         self.n_tdc = 0
+
+        self.low_ram = low_ram
 
         self.reset()
 
@@ -169,17 +181,20 @@ class RawDataInterpreter(object):
             ##############################
             elif is_tdc(raw_data_word):
                 tdc_value = get_tdc_value(raw_data_word)
+                tdc_timestamp = get_tdc_timestamp(raw_data_word)
+                tdc_trigger_dist = get_tdc_trigger_dist(raw_data_word)
 
                 hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
-                hit_data[hit_index]["row"] = 0
-                hit_data[hit_index]["le"] = 0
+                hit_data[hit_index]["row"] = tdc_trigger_dist
+                hit_data[hit_index]["le"] = tdc_trigger_dist
                 hit_data[hit_index]["te"] = 0
                 hit_data[hit_index]["token_id"] = tdc_value
-                hit_data[hit_index]["timestamp"] = 0
+                hit_data[hit_index]["timestamp"] = tdc_timestamp
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
                 self.n_tdc += 1
 
                 self.hist_tdc[tdc_value] += 1
+                self.hist_tdc_trigdist[tdc_trigger_dist] += 1
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
@@ -189,7 +204,7 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hist_tdc
+        return self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_tdc_trigdist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -198,9 +213,14 @@ class RawDataInterpreter(object):
         return self.n_tdc
 
     def reset(self):
-        self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
-        self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
+        if self.low_ram:
+            self.hist_tot = np.zeros((512, 512, 1, 128), dtype=numba.uint16)
+            self.hist_occ = np.zeros((512, 512, 1), dtype=numba.uint32)
+        else:
+            self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
+            self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_tdc_trigdist = np.zeros(256, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
 
@@ -218,5 +238,6 @@ class RawDataInterpreter(object):
         return b6 + b5 + b4 + b3 + b2 + b1 + b0
 
     def _fill_hist(self, col, row, tot, scan_param_id):
-        self.hist_occ[col, row, scan_param_id] += 1
-        self.hist_tot[col, row, scan_param_id, tot] += 1
+        if not self.low_ram:
+            self.hist_tot[col, row, scan_param_id, tot] += 1
+            self.hist_occ[col, row, scan_param_id] += 1

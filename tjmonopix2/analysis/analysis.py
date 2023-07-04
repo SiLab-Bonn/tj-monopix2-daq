@@ -149,15 +149,21 @@ class Analysis(object):
                       'column': 'column',
                       'row': 'row',
                       'charge': 'charge',
-                      'timestamp': 'timestamp'
+                      'le': 'le',
+                      'te': 'te',
+                      'token_id': 'token_id',
+                      'timestamp': 'timestamp',
                       }
         hit_description = [('event_number', 'u4'),
                            ('trigger_number', 'u4'),
                            ('frame', 'u1'),
                            ('column', 'u2'),
                            ('row', 'u2'),
+                           ('le', 'i1'),
+                           ('te', 'i1'),
                            ('charge', 'u1'),
-                           ('timestamp', 'i8')]
+                           ('timestamp', 'i8'),
+                           ('token_id', 'i4')]
         cluster_fields = {'event_number': 'event_number',
                           'column': 'column',
                           'row': 'row',
@@ -167,14 +173,20 @@ class Analysis(object):
                           'scan_param_id': 'scan_param_id',
                           'seed_col': 'seed_column',
                           'seed_row': 'seed_row',
+                          'seed_le': 'seed_le',
+                          'seed_te': 'seed_te',
+                          'seed_token_id': 'seed_token_id',
                           'mean_col': 'mean_column',
-                          'mean_row': 'mean_row'}
+                          'mean_row': 'mean_row',}
         cluster_description = [('event_number', 'u4'),
                                ('id', '<u2'),
                                ('size', '<u2'),
                                ('tot', '<u2'),
                                ('seed_col', '<u2'),
                                ('seed_row', '<u2'),
+                               ('seed_le', '<i1'),
+                               ('seed_te', '<i1'),
+                               ('seed_token_id', '<i4'),
                                ('mean_col', '<f4'),
                                ('mean_row', '<f4'),
                                ('dist_col', '<u4'),
@@ -242,6 +254,9 @@ class Analysis(object):
                 clusters[cluster_index].cluster_shape = cluster_shape
                 clusters[cluster_index].dist_col = max_col - min_col + 1
                 clusters[cluster_index].dist_row = max_row - min_row + 1
+                clusters[cluster_index].seed_le = hits[seed_hit_index].le
+                clusters[cluster_index].seed_te = hits[seed_hit_index].te
+                clusters[cluster_index].seed_token_id = hits[seed_hit_index].token_id
 
             def end_of_cluster_function(hits, clusters, cluster_size,
                                         cluster_hit_indices, cluster_index,
@@ -270,7 +285,7 @@ class Analysis(object):
             # Set end_of_cluster function for shape and distance calculation
             self.clz.set_end_of_cluster_function(end_of_cluster_function)
 
-    def analyze_data(self):
+    def analyze_data(self, low_ram=False):
         self.log.info('Analyzing data...')
         self.chunk_offset = 0
         with tb.open_file(self.raw_data_file) as in_file:
@@ -306,7 +321,7 @@ class Analysis(object):
                     hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], low_ram=low_ram)
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
@@ -342,6 +357,9 @@ class Analysis(object):
                             hit_data_cs_fmt['frame'][:] = -1
                             hit_data_cs_fmt['column'][:] = hit_dat['col'][:]
                             hit_data_cs_fmt['row'][:] = hit_dat['row'][:]
+                            hit_data_cs_fmt['le'][:] = hit_dat['le'][:]
+                            hit_data_cs_fmt['te'][:] = hit_dat['te'][:]
+                            hit_data_cs_fmt['token_id'][:] = hit_dat['token_id'][:]
                             hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
                             hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
                             data_to_clusterizer = hit_data_cs_fmt
@@ -360,7 +378,7 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                hist_occ, hist_tot, hist_tdc, hist_tdc_trigdist = interpreter.get_histograms()
 
         self._create_additional_hit_data(hist_occ, hist_tot)
         if self.cluster_hits:

@@ -29,50 +29,6 @@ hit_dtype = np.dtype([
     ("scan_param_id", "<i2"),
 ])
 
-# Word defines
-TRIGGER_HEADER = 0x80000000
-HEADER = 0xF0000000  # header for FPGA word types (TDC, TLU, AURORA)
-AURORA_HEADER = 0xFFFF0000  # high word header for AURORA words
-AURORA_HEADER_RXID_MASK = 0xFF0FFFFF  # AURORA RX_ID encoded in AURORA FPGA header
-# Created from FPGA depending on word type
-USERK_FRAME_ID = 0x01000000
-HEADER_ID = 0x00010000
-# Created by FPGA: trigger/TDC module words
-TDC_HEADER = 0x70000000
-TDC_ID_0 = 0x10000000
-TDC_ID_1 = 0x20000000
-TDC_ID_2 = 0x30000000
-TDC_ID_3 = 0x40000000
-
-# Data Masks
-BCID_MASK = 0x7FFF
-TRG_MASK = 0x7FFFFFFF  # Trigger data (number and/or time stamp)
-TDC_TRIG_DIST_MASK = 0x0FF00000
-TDC_TIMESTAMP_MASK = 0x0FFFF000
-TDC_VALUE_MASK = 0x00000FFF
-
-
-# Event status bits
-E_USER_K = 0x00000001  # event has user K words
-E_EXT_TRG = 0x00000002  # event has trigger word from RO system
-E_TDC = 0x00000004  # event has TDC word(s) from RO system
-E_BCID_INC_ERROR = 0x00000008  # BCID does not increase as expected
-E_TRG_ID_INC_ERROR = 0x00000010  # TRG ID does not increase by 1
-E_NOT_USED = 0x00000020  # not used event error
-E_EVENT_TRUNC = 0x00000040  # event data interpretation aborted
-E_UNKNOWN_WORD = 0x00000080  # unknown word occured
-# Event structure wrong (hit before header or number of data header wrong)
-E_STRUCT_WRONG = 0x00000100
-E_EXT_TRG_ERR = 0x00000200  # event has external trigger number increase error
-E_INV_RX_ID = 0x00000400  # receiver ID encoded in user K word or data word does not match receiver ID of this chip
-
-# Status bit for TDC; keep this separate in order to set it for each TDC line (per hit)
-H_HAS_TDC = 0x00000001  # Hit has TDC word
-H_TDC_OVF = 0x00000002  # TDC overflow
-H_TDC_AMBIGUOUS = 0x00000004  # unique TDC hit assignment impossible
-H_TDC_ERR = 0x00000008  # TDC error
-
-
 event_dtype = np.dtype([
     ("event_number", "<u4"),
     ("trigger_number", "<u4"),
@@ -80,6 +36,9 @@ event_dtype = np.dtype([
     ("column", "<u2"),
     ("row", "<u2"),
     ("charge", "<u1"),
+    ("le", "<i1"),
+    ("te", "<i1"),
+    ("token_id", "<i4"),
     ("timestamp", "<i8"),
 ])
 

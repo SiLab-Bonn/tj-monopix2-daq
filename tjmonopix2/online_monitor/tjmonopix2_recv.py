@@ -15,6 +15,7 @@ class TJMonopix2(Receiver):
         self.occupancy_data = None
         self.tot_data = None
         self.tdc_data = None
+        self.tdc_trigdist_data = None
         # We want to change converter settings
         self.set_bidirectional_communication()
 
@@ -26,10 +27,12 @@ class TJMonopix2(Receiver):
         dock_occcupancy = Dock("Occupancy", size=(400, 400))
         dock_tot = Dock("Time over threshold values (TOT)", size=(400, 400))
         dock_tdc = Dock("TDC", size=(400, 400))
+        dock_tdc_trigdist = Dock("TDC Trigger Distance", size=(400, 400))
         dock_status = Dock("Status", size=(800, 40))
         dock_area.addDock(dock_occcupancy, 'top')
         dock_area.addDock(dock_tot, 'bottom', dock_occcupancy)
         dock_area.addDock(dock_tdc, 'right', dock_tot)
+        dock_area.addDock(dock_tdc_trigdist, 'right', dock_tdc)
         dock_area.addDock(dock_status, 'top')
 
         # Status dock on top
@@ -90,6 +93,12 @@ class TJMonopix2(Receiver):
         tdc_widget.showGrid(y=True)
         dock_tdc.addWidget(tdc_widget)
 
+        tdc_trigdist_widget = pg.PlotWidget()
+        self.tdc_trigdist_plot = tdc_trigdist_widget.plot(np.linspace(-0.5, 500 - 0.5, 500 + 1),
+                                        np.zeros((500)), stepMode=True)
+        tdc_trigdist_widget.showGrid(y=True)
+        dock_tdc_trigdist.addWidget(tdc_trigdist_widget)
+
         self.plot_delay = 0
 
     def deserialize_data(self, data):
@@ -109,6 +118,7 @@ class TJMonopix2(Receiver):
         self.occupancy_data = data['occupancy']
         self.tot_data = data['tot_hist']
         self.tdc_data = data['tdc_hist']
+        self.tdc_trigdist_data = data['tdc_trigdist_hist']
         
         # Meta data
         self._update_rate(data['meta_data']['fps'],
@@ -134,6 +144,12 @@ class TJMonopix2(Receiver):
         if self.tdc_data is not None:
             self.tdc_plot.setData(x=np.linspace(-0.5, self.tdc_data.shape[0] - 0.5, self.tdc_data.shape[0] + 1),
                                   y=self.tdc_data,
+                                  # stepMode=True,
+                                  fillLevel=0,
+                                  brush=(0, 0, 255, 150))
+        if self.tdc_trigdist_data is not None:
+            self.tdc_trigdist_plot.setData(x=np.linspace(-0.5, self.tdc_trigdist_data.shape[0] - 0.5, self.tdc_trigdist_data.shape[0] + 1),
+                                  y=self.tdc_trigdist_data,
                                   # stepMode=True,
                                   fillLevel=0,
                                   brush=(0, 0, 255, 150))
