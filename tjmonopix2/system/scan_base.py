@@ -499,6 +499,8 @@ class ScanBase(object):
     def _init_environment(self):
         self.timestamp = time.strftime("%Y%m%d_%H%M%S")
         self.run_name = self.timestamp + '_' + self.scan_id
+        if self.run_number:
+            self.run_name = self.timestamp + f'_run_{self.run_number}_' + self.scan_id
         # self.ext_trig_num = 0  # reqired for trigger based analysis
         self.context = zmq.Context.instance()  # one context per process to manage sockets
         # Configuration with testbench and scan configuration configs (dict-like object)

@@ -65,12 +65,13 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     min_spec_occupancy = False  # needed for handle data function of ext. trigger scan
 
-    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
+    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix='', run_number=998):
         super().__init__(daq_conf, bench_config, scan_config, scan_config_per_chip, suffix)
         self.last_readout_data = None
         self.last_trigger = 0
         self.bdaq_recording = True
         self.ovflw_cnt = 0
+        self.run_number = run_number
 
     def __del__(self):
         pass
@@ -197,7 +198,7 @@ class Monopix2Producer(pyeudaq.Producer):
         #self.elog_configID = 0
         #self.elog_output_path = ''
         #self.elog_category = ''
-        self.run_number = 0
+        self.run_number = 999
         self.current_scan_register = ''
         self.comment_in_conf=''
 
@@ -213,6 +214,7 @@ class Monopix2Producer(pyeudaq.Producer):
         bdaq_conf_file = self.GetInitItem("BDAQ_CONF_FILE")
         if bdaq_conf_file:
             self.bdaq_conf_file = bdaq_conf_file
+        
 
     def DoConfigure(self):
         # EUDAQ config only available during DoConfigure, store to variables
@@ -261,6 +263,9 @@ class Monopix2Producer(pyeudaq.Producer):
         time.sleep(5)
 
     def DoStartRun(self):
+        print('requesting run number...')
+        self.run_number = self.GetRunNumber()
+        print(f'Run number: {self.run_number}')
         if self.wait_for_fpga:
             # in commbination with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
             # via network, otherwise init and config will fail
@@ -449,7 +454,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
         
 
-        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration)
+        self.scan = EudaqScan(daq_conf=bdaq_conf, bench_config=bench_conf, scan_config=scan_configuration, run_number=self.run_number)
         self.scan.skip_interpret_data = True
         cmd_clk = self.GetConfigItem('CHIP_CMD_CLK')
         if cmd_clk:
