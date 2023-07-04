@@ -232,7 +232,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
             self.wait_for_fpga = self.GetConfigItem('WAIT_FOR_FPGA') == '1'
 
-        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'IDB']
+        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'IDB', 'IDEL']
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
 
@@ -390,8 +390,6 @@ class Monopix2Producer(pyeudaq.Producer):
 
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
-
-        self.scan.chip.registers["CMOS_TX_EN_CONF"].write(1)
         
         # configure TDC in FPGA
         self.scan.daq['tdc'].EN_WRITE_TIMESTAMP = 1
@@ -402,14 +400,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
         if self.en_hitor:
             self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
-
-            for i in range(512 // 16):
-                self.scan.chip._write_register(18 + i, 0xffff)
-                self.scan.chip._write_register(50 + i, 0xffff)
-            self.scan.chip._write_register(18 + 30, 0xffff)  # cols 480 to 495
-            #self.scan.chip._write_register(18 + 31, 0xffff)  # cols 497 to 512
-
-        #self.scan.chip.masks['tdac'][0:512, 0:512] = 0b100
+            self.scan.chip.masks['hitor'][scan_configuration['start_column']:scan_configuration['stop_column'], scan_configuration['start_row']:scan_configuration['stop_row']] = True
 
         if self.masked_pixels_file:
             with open(self.masked_pixels_file) as f:

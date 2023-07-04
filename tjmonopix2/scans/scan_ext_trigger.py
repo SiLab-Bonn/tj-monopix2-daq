@@ -121,9 +121,9 @@ class ExtTriggerScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         if use_tdc:
             # Configure all four TDC modules
-            self.daq.configure_tdc_modules()
+            self.daq.configure_tdc_module()
             # Enable Hitor
-            self.chip.masks['hitbus'][:] = self.chip.masks['enable'][:]
+            #self.chip.masks['hitbus'][:] = self.chip.masks['enable'][:]
 #         self.chip.masks.load_logo_mask(masks=['enable'])
         self.chip.masks.update(force=True)
 
