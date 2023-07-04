@@ -391,11 +391,20 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
+        self.scan.chip.registers["CMOS_TX_EN_CONF"].write(1)
+        
+        # configure TDC in FPGA
+        self.scan.daq['tdc'].EN_WRITE_TIMESTAMP = 1
+        self.scan.daq['tdc'].EN_TRIGGER_DIST = 1
+        self.scan.daq['tdc'].EN_NO_WRITE_TRIG_ERR = 1
+        self.scan.daq.configure_tdc_module()
+        self.scan.daq.enable_tdc_module()
+
         if self.en_hitor:
             self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
 
             for i in range(512 // 16):
-                #self.scan.chip._write_register(18 + i, 0xffff)
+                self.scan.chip._write_register(18 + i, 0xffff)
                 self.scan.chip._write_register(50 + i, 0xffff)
             self.scan.chip._write_register(18 + 30, 0xffff)  # cols 480 to 495
             #self.scan.chip._write_register(18 + 31, 0xffff)  # cols 497 to 512
@@ -409,7 +418,14 @@ class Monopix2Producer(pyeudaq.Producer):
             for i in range(0, len(masked_pixels['masked_pixels'])):
                 row = masked_pixels['masked_pixels'][i]['row']
                 col = masked_pixels['masked_pixels'][i]['col']
-                self.scan.chip.masks['tdac'][col, row] = 0
+                self.scan.chip.masks['enable'][col, row] = False
+
+            cr = masked_pixels.get('masked_colrange', None)
+            if cr:
+                for c in cr:
+                    beg_col = c['begin']
+                    end_col = c['end']
+                    self.scan.chip.masks['enable'][beg_col:end_col, :] = False
 
         self.scan.chip.masks.apply_disable_mask()
         self.scan.chip.masks.update(force=True)
