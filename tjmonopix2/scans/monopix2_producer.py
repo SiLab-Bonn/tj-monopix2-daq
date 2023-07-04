@@ -35,7 +35,7 @@ scan_configuration = {
     'trigger_latency': 100,  # latency of trigger in units of 25 ns (BCs)
     'trigger_delay': 57,  # trigger delay in units of 25 ns (BCs)
     'trigger_length': 32,  # length of trigger command (amount of consecutive BCs are read out)
-    'veto_length': 25000,
+    'veto_length': 3200,
     # raw val (si val, 1/si val): real hitrate
     #    400 (  10 us, 100 kHz): 1.5kHz (lim by telescope)
     #  25000 ( 625 us, 1.6 kHz): 580 Hz
