@@ -416,12 +416,25 @@ class Monopix2Producer(pyeudaq.Producer):
                 col = masked_pixels['masked_pixels'][i]['col']
                 self.scan.chip.masks['enable'][col, row] = False
 
+            # Enable readout and bcid/freeze distribution only to (double-)columns we actually use
+            dcols_enable = [0] * 16
+            for c in range(scan_configuration['start_column'], scan_configuration['stop_column']):
+                dcols_enable[c // 32] |= (1 << ((c >> 1) & 15))
+            # Disabled ranges of columns
             cr = masked_pixels.get('masked_colrange', None)
             if cr:
                 for c in cr:
                     beg_col = c['begin']
                     end_col = c['end']
                     self.scan.chip.masks['enable'][beg_col:end_col, :] = False
+                    for c in range(beg_col, end_col):
+                        dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
+            # Apply disable bits to readout and bcid/freeze distribution
+            for i, v in enumerate(dcols_enable):
+                self.scan.chip._write_register(155 + i, v)  # EN_RO_CONF
+                self.scan.chip._write_register(171 + i, v)  # EN_BCID_CONF
+                self.scan.chip._write_register(187 + i, v)  # EN_RO_RST_CONF
+                self.scan.chip._write_register(203 + i, v)  # EN_FREEZE_CONF
 
         self.scan.chip.masks.apply_disable_mask()
         self.scan.chip.masks.update(force=True)
