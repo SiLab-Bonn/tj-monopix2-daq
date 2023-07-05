@@ -15,7 +15,7 @@ import pyeudaq
 #from tjmonopix2.system import logger
 from tjmonopix2.scans import scan_ext_trigger
 from tjmonopix2.analysis import analysis_utils as au
-#from report_to_elog import elog
+from report_to_elog import elog
 
 PROJECT_FOLDER = os.path.join(os.path.dirname(__file__), '..')
 BDAQ_DEFAULT_CONF_FILE = os.path.join(PROJECT_FOLDER, 'system', 'bdaq53.yaml')
@@ -194,10 +194,10 @@ class Monopix2Producer(pyeudaq.Producer):
         self.init_register_vals = {}
         self.masked_pixels_file = None
         self.wait_for_fpga = True
-        #self.elog_success = False
-        #self.elog_configID = 0
-        #self.elog_output_path = ''
-        #self.elog_category = ''
+        self.elog_success = False
+        self.elog_configID = 0
+        self.elog_output_path = ''
+        self.elog_category = ''
         self.run_number = 999
         self.current_scan_register = ''
         self.comment_in_conf=''
@@ -255,9 +255,9 @@ class Monopix2Producer(pyeudaq.Producer):
         if tmp:
             scan_configuration['stop_column'] = int(tmp)
 
-        #self.elog_configID = self.GetConfigItem('CONFIG_ID')
-        #self.elog_output_path = self.GetConfigItem('ELOG_OUTPUT_PATH')
-        #self.elog_category = self.GetConfigItem('ELOG_CATEGORY')
+        self.elog_configID = self.GetConfigItem('CONFIG_ID')
+        self.elog_output_path = self.GetConfigItem('ELOG_OUTPUT_PATH')
+        self.elog_category = self.GetConfigItem('ELOG_CATEGORY')
         self.comment_in_conf = self.GetConfigItem('COMMENT_IN_CONF')
 
         time.sleep(5)
@@ -305,11 +305,11 @@ class Monopix2Producer(pyeudaq.Producer):
         self.scan = None  # creating new scan object every time when starting, otherwise some internals are not set up
         # properly (when  _init_hardware of ScanBase is not called) and basil tcp connection fails
         # this is a workaround, TODO: do not always initialise and configure chip when just restarting a new run in eudaq
-        #try:
-        #    self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,self.current_scan_register,comment_in_conf=self.comment_in_conf,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
-        #except Exception as e:
-        #    print('{}'.format(e))
-        #    print('elog error')
+        try:
+            self.elog_success = elog(self.elog_output_path,self.elog_category,self.elog_configID,self.current_scan_register,run_number=self.GetRunNumber(),comment_in_conf=self.comment_in_conf,credFileElog='/home/bellevtx01/Documents/elog_creds.txt').uploadToElog()
+        except Exception as e:
+            print('{}'.format(e))
+            print('elog error')
 
     def DoReset(self):
         print('DoReset')

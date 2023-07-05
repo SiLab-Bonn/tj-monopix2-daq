@@ -2,7 +2,6 @@ import tables as tb
 import numpy as np
 import logging
 from argparse import ArgumentParser
-import pandas as pd
 import os
 
 
@@ -96,24 +95,6 @@ class readh5():
             self.out.append(out)
 
         return self.out
-
-    def read_DUTtoDAT(self):
-
-        try:
-            arr = np.asarray(self.h5file.root.Dut[:])
-        except Exception:
-            print("no dut")
-            return
-        arr_ascii = pd.DataFrame()
-        arr_ascii['col'] = arr['col']
-        arr_ascii['row'] = arr['row']
-        arr_ascii['tot'] = arr['te']-arr['le']
-        arr_ascii['tot'] = np.where((arr_ascii['tot'] < 0), arr_ascii['tot']+128, arr_ascii['tot'])
-        arr_ascii['timestamp'] = 0
-
-        head, tail = os.path.split(self.filePath)
-        fileName = os.path.splitext(tail)[0]
-        arr_ascii.to_csv(head+'/'+fileName+'.dat', float_format='%d', sep=" ")
 
     def readDut(self):
         arr = None
