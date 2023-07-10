@@ -234,7 +234,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
             self.wait_for_fpga = self.GetConfigItem('WAIT_FOR_FPGA') == '1'
 
-        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL']
+        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL', 'VCASC']
         for reg in configurable_regs:
             self.reg_config[reg] = self.GetConfigItem(reg)
 
@@ -271,17 +271,17 @@ class Monopix2Producer(pyeudaq.Producer):
             # via network, otherwise init and config will fail
             # time until FPGA board is reachable from the moment the PS start can vary
 
-            max_retries = 60
+            max_retries = 120
             for i in range(1, max_retries):
-                print("Ping: ", f'fping -c1 -t200 {self.board_ip}')
-                out = os.system(f'fping -c1 -t200 {self.board_ip}')
+                print("Ping: ", f'fping -c1 -t400 192.168.10.23')
+                out = os.system(f'fping -c1 -t400 192.168.10.23')
                 print("Out:", out)
                 if out == 0:
                     print('ping success')
                     break
                 else:
                     print('ping failed')
-            time.sleep(0.2)
+            time.sleep(2)
             print("Start now")
 
         self._init()
