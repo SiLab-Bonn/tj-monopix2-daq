@@ -527,18 +527,18 @@ rrp_arbiter
     .WRITE_REQ({
         ~RX_FIFO_EMPTY,
         ~TLU_FIFO_EMPTY,
-        ~TDC_FIFO_EMPTY,
+        ~TDC_FIFO_EMPTY
     }),
     .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
-        TDC_FIFO_DATA,
+        TDC_FIFO_DATA
     }),
     .READ_GRANT({
         RX_FIFO_READ,
         TLU_FIFO_READ,
-        TDC_FIFO_READ,
+        TDC_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -618,15 +618,15 @@ localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 
 // wire HITOR_FROM_TDC;
 
 tdc_s3 #(
-    .BASEADDR(TDC_LVDS_BASEADDR),
-    .HIGHADDR(TDC_LVDS_HIGHADDR),
+    .BASEADDR(TDC_BASEADDR),
+    .HIGHADDR(TDC_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .CLKDV(CLKDV),
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
     .FAST_TRIGGER(1),
     .BROADCAST(0)         // generate for LVDS TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
-) i_tdc_lvds (
+) i_tdc (
     .CLK320(CLK320),      // 320 MHz
     .CLK160(CLK160),      // 160 MHz
     .DV_CLK(CLK40),       // 40 MHz
