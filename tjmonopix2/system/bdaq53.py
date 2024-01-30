@@ -41,7 +41,7 @@ class BDAQ53(Dut):
         self.calibration = self.configuration.get('calibration', {})
         self.enable_NTC = self.configuration['hardware'].get('enable_NTC', False)
 
-        self.receivers = ['rx0']
+        self.receivers = {'rx0': 0x4000, 'rx1': 0x4100, 'rx2': 0x4200, 'rx3': 0x4300}
 
         if not conf:
             conf = os.path.join(self.proj_dir, 'system' + os.sep + 'bdaq53.yaml')
@@ -63,9 +63,18 @@ class BDAQ53(Dut):
 
         # Initialize readout (only one chip supported at the moment)
         self.rx_channels = {}
-        self.rx_channels['rx0'] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                            'base_addr': 0x0200})
-        self.rx_channels['rx0'].init()
+        for module in self.configuration['modules']:
+            print(f'module: {module}')
+            for chip in self.configuration['modules'][module]:
+                if chip.startswith('chip'):
+                    print(f'chip: {chip}')
+                    rx = self.configuration['modules'][module][chip]['receiver']
+                    self.rx_channels[rx] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
+                                                            'base_addr': self.receivers[rx]})
+                    self.rx_channels[rx].init()
+
+        # self.rx_channels['rx0'].DATA_DELAY = 11
+        # print('Done!')
 
         # self.rx_lanes = {}
         # for recv in self.receivers:
@@ -90,7 +99,8 @@ class BDAQ53(Dut):
                 clk_gen = si570.si570(self['i2c'], si570_conf)
                 self['cmd'].set_output_en(False)
                 for receiver in self.receivers:
-                    self.rx_channels[receiver].reset()
+                    if receiver in self.rx_channels.keys():
+                        self.rx_channels[receiver].reset()
                 time.sleep(0.1)
                 clk_gen.init()
                 time.sleep(0.1)

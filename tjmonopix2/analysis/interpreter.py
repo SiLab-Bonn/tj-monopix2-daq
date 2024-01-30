@@ -25,7 +25,7 @@ class_spec = [
 
 @numba.njit
 def is_tjmono(word):
-    return (word & 0xF8000000) == 0x40000000
+    return (word & 0xF8000000) == 0x60000000
 
 
 @numba.njit
