@@ -47,11 +47,20 @@ module tjmonopix2 #(
     input wire RJ45_TRIGGER,
 
     `ifdef BDAQ53
-        output wire [3:0] DP_GPIO_P, DP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
-        input wire DP_GPIO_AUX_P, DP_GPIO_AUX_N, // DATA
+        output wire [3:0] DP5_GPIO_P, DP5_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        input wire DP5_GPIO_AUX_P, DP5_GPIO_AUX_N, // DATA
 
-        // output wire [3:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
-        // input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
+        // output wire [3:0] DP1_GPIO_P, DP1_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        // input wire DP1_GPIO_AUX_P, DP1_GPIO_AUX_N, // DATA
+
+        output wire [3:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
+
+        output wire [3:1] J1C_GPIO_P, J1C_GPIO_N,  // {CMD, CMD_CLK, SER_CLK}
+        input wire J1C_GPIO_AUX_P, J1C_GPIO_AUX_N, // DATA
+
+        output wire [3:1] J1D_GPIO_P, J1D_GPIO_N,  // {CMD, CMD_CLK, SER_CLK}
+        input wire J1D_GPIO_AUX_P, J1D_GPIO_AUX_N, // DATA
 
         input wire HITOR_P, HITOR_N,             // HITOR
 
@@ -264,10 +273,10 @@ wire CLKCMD;
 IBUFDS_GTE2 IBUFDS_refclk  
 (
     .O               (CLKCMD),
-    .ODIV2           (),
-    .CEB             (1'b0),
-    .I               (MGT_REFCLK0_P),
-    .IB              (MGT_REFCLK0_N)
+.ODIV2           (),
+.CEB             (1'b0),
+.I               (MGT_REFCLK0_P),
+.IB              (MGT_REFCLK0_N)
 );
 
 // -------  LEMO TX ------- //
@@ -279,70 +288,200 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
 
 // -------  Diff buffer for BDAQ  ------- //
 `ifdef BDAQ53
-    wire LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK, LVDS_PULSE_EXT;
-    wire CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N, PULSE_EXT_P, PULSE_EXT_N;
-    wire CMD_OUT_int, CMD_CLK_int, SER_CLK_int, PULSE_EXT_int;
+    wire LVDS_CMD_DP5, LVDS_CMD_CLK_DP5, LVDS_SER_CLK_DP5, LVDS_PULSE_EXT;
+    wire LVDS_CMD_DP1, LVDS_CMD_CLK_DP1, LVDS_SER_CLK_DP1;
+    wire LVDS_CMD_mDP, LVDS_CMD_CLK_mDP, LVDS_SER_CLK_mDP;
+    wire LVDS_CMD_J1C, LVDS_CMD_CLK_J1C, LVDS_SER_CLK_J1C;
+    wire LVDS_CMD_J1D, LVDS_CMD_CLK_J1D, LVDS_SER_CLK_J1D;
 
     // CMD
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
-    ) i_OBUFDS_cmd (
-        .O(CMD_P),              // Diff_p output (connect directly to top-level port)
-        .OB(CMD_N),             // Diff_n output (connect directly to top-level port)
-        .I(LVDS_CMD)            // Buffer input
+    ) i_OBUFDS_cmd_DP5 (
+        .O(DP5_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
+        .OB(DP5_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_DP5)            // Buffer input
     );
-    assign DP_GPIO_N[3] = CMD_N;
-    assign DP_GPIO_P[3] = CMD_P;
+
+    // OBUFDS #(
+    //     .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+    //     .SLEW("FAST")           // Specify the output slew rate
+    // ) i_OBUFDS_cmd_DP1 (
+    //     .O(DP1_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
+    //     .OB(DP1_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
+    //     .I(LVDS_CMD_DP1)            // Buffer input
+    // );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_mDP (
+        .O(mDP_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
+        .OB(mDP_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_mDP)            // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_J1C (
+        .O(J1C_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
+        .OB(J1C_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_J1C)            // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_J1D (
+        .O(J1D_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
+        .OB(J1D_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_J1D)            // Buffer input
+    );
 
     // CMD CLK
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
-    ) i_OBUFDS_cmd_clk (
-        .O(CMD_CLK_P),          // Diff_p output (connect directly to top-level port)
-        .OB(CMD_CLK_N),         // Diff_n output (connect directly to top-level port)
-        .I(LVDS_CMD_CLK)        // Buffer input
+    ) i_OBUFDS_cmd_clk_DP5 (
+        .O(DP5_GPIO_P[2]),          // Diff_p output (connect directly to top-level port)
+        .OB(DP5_GPIO_N[2]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_CLK_DP5)        // Buffer input
     );
-    assign DP_GPIO_N[2] = CMD_CLK_N;
-    assign DP_GPIO_P[2] = CMD_CLK_P;
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_clk_mDP (
+        .O(mDP_GPIO_P[2]),          // Diff_p output (connect directly to top-level port)
+        .OB(mDP_GPIO_N[2]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_CLK_mDP)        // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_clk_J1C (
+        .O(J1C_GPIO_P[2]),          // Diff_p output (connect directly to top-level port)
+        .OB(J1C_GPIO_N[2]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_CLK_J1C)        // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_cmd_clk_J1D (
+        .O(J1D_GPIO_P[2]),          // Diff_p output (connect directly to top-level port)
+        .OB(J1D_GPIO_N[2]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_CMD_CLK_J1D)        // Buffer input
+    );
 
     // SER CLK
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
-    ) i_OBUFDS_ser_clk (
-        .O(SER_CLK_P),          // Diff_p output (connect directly to top-level port)
-        .OB(SER_CLK_N),         // Diff_n output (connect directly to top-level port)
-        .I(LVDS_SER_CLK)        // Buffer input
+    ) i_OBUFDS_ser_clk_DP5 (
+        .O(DP5_GPIO_P[1]),          // Diff_p output (connect directly to top-level port)
+        .OB(DP5_GPIO_N[1]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_SER_CLK_DP5)        // Buffer input
     );
-    assign DP_GPIO_N[1] = SER_CLK_N;
-    assign DP_GPIO_P[1] = SER_CLK_P;
 
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_ser_clk_mDP (
+        .O(mDP_GPIO_P[1]),          // Diff_p output (connect directly to top-level port)
+        .OB(mDP_GPIO_N[1]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_SER_CLK_mDP)        // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_ser_clk_J1C (
+        .O(J1C_GPIO_P[1]),          // Diff_p output (connect directly to top-level port)
+        .OB(J1C_GPIO_N[1]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_SER_CLK_J1C)        // Buffer input
+    );
+
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_ser_clk_J1D (
+        .O(J1D_GPIO_P[1]),          // Diff_p output (connect directly to top-level port)
+        .OB(J1D_GPIO_N[1]),         // Diff_n output (connect directly to top-level port)
+        .I(LVDS_SER_CLK_J1D)        // Buffer input
+    );
+    
     // PULSE
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
-    ) i_OBUFDS_pulse_ext (
-        .O(PULSE_EXT_P),        // Diff_p output (connect directly to top-level port)
-        .OB(PULSE_EXT_N),       // Diff_n output (connect directly to top-level port)
+    ) i_OBUFDS_pulse_ext_DP5 (
+        .O(DP5_GPIO_P[0]),        // Diff_p output (connect directly to top-level port)
+        .OB(DP5_GPIO_N[0]),       // Diff_n output (connect directly to top-level port)
         .I(LVDS_PULSE_EXT)      // Buffer input
     );
-    assign DP_GPIO_N[0] = PULSE_EXT_N;
-    assign DP_GPIO_P[0] = PULSE_EXT_P;
 
-    wire LVDS_DATA, LVDS_DATA_int, LVDS_HITOR;
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+        .SLEW("FAST")           // Specify the output slew rate
+    ) i_OBUFDS_pulse_ext_mDP (
+        .O(mDP_GPIO_P[0]),        // Diff_p output (connect directly to top-level port)
+        .OB(mDP_GPIO_N[0]),       // Diff_n output (connect directly to top-level port)
+        .I(LVDS_PULSE_EXT)      // Buffer input
+    );
+
+    wire LVDS_DATA_DP5, LVDS_DATA_int_DP5;
+    wire LVDS_DATA_mDP, LVDS_DATA_int_mDP;
+    wire LVDS_DATA_J1C, LVDS_DATA_int_J1C;
+    wire LVDS_DATA_J1D, LVDS_DATA_int_J1D;
+    wire LVDS_HITOR;
+
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
         .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
         .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
-    ) i_IBUFDS_data (
-        .O(LVDS_DATA_int),      // Buffer output
-        .I(DP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
-        .IB(DP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
+    ) i_IBUFDS_data_DP5 (
+        .O(LVDS_DATA_int_DP5),      // Buffer output
+        .I(DP5_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
+        .IB(DP5_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
     );
+    assign LVDS_DATA_DP5 = ~LVDS_DATA_int_DP5;
 
-    assign LVDS_DATA = ~LVDS_DATA_int;
+    IBUFDS #(
+        .DIFF_TERM("TRUE"),     // Differential Termination
+        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
+        .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
+    ) i_IBUFDS_data_mDP (
+        .O(LVDS_DATA_int_mDP),      // Buffer output
+        .I(mDP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
+        .IB(mDP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
+    );
+    assign LVDS_DATA_mDP = ~LVDS_DATA_int_mDP;
+
+    IBUFDS #(
+        .DIFF_TERM("TRUE"),     // Differential Termination
+        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
+        .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
+    ) i_IBUFDS_data_J1C (
+        .O(LVDS_DATA_int_J1C),      // Buffer output
+        .I(J1C_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
+        .IB(J1C_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
+    );
+    assign LVDS_DATA_J1C = ~LVDS_DATA_int_J1C;
+
+    IBUFDS #(
+        .DIFF_TERM("TRUE"),     // Differential Termination
+        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
+        .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
+    ) i_IBUFDS_data_J1D (
+        .O(LVDS_DATA_int_J1D),      // Buffer output
+        .I(J1D_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
+        .IB(J1D_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
+    );
+    assign LVDS_DATA_J1D = ~LVDS_DATA_int_J1D;
 
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
@@ -608,10 +747,25 @@ tjmonopix2_core #(
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
 
-    .LVDS_CMD(LVDS_CMD), 
-    .LVDS_CMD_CLK(LVDS_CMD_CLK), 
-    .LVDS_SER_CLK(LVDS_SER_CLK), 
-    .LVDS_DATA(LVDS_DATA), 
+    .LVDS_CMD_DP5(LVDS_CMD_DP5), 
+    .LVDS_CMD_CLK_DP5(LVDS_CMD_CLK_DP5), 
+    .LVDS_SER_CLK_DP5(LVDS_SER_CLK_DP5),
+    .LVDS_CMD_DP1(LVDS_CMD_DP1), 
+    .LVDS_CMD_CLK_DP1(LVDS_CMD_CLK_DP1), 
+    .LVDS_SER_CLK_DP1(LVDS_SER_CLK_DP1),
+    .LVDS_CMD_mDP(LVDS_CMD_mDP), 
+    .LVDS_CMD_CLK_mDP(LVDS_CMD_CLK_mDP), 
+    .LVDS_SER_CLK_mDP(LVDS_SER_CLK_mDP),
+    .LVDS_CMD_J1C(LVDS_CMD_J1C), 
+    .LVDS_CMD_CLK_J1C(LVDS_CMD_CLK_J1C),
+    .LVDS_SER_CLK_J1C(LVDS_SER_CLK_J1C),
+    .LVDS_CMD_J1D(LVDS_CMD_J1D), 
+    .LVDS_CMD_CLK_J1D(LVDS_CMD_CLK_J1D),
+    .LVDS_SER_CLK_J1D(LVDS_SER_CLK_J1D),
+    .LVDS_DATA_DP5(LVDS_DATA_DP5),
+    .LVDS_DATA_mDP(LVDS_DATA_mDP),
+    .LVDS_DATA_J1C(LVDS_DATA_J1C),
+    .LVDS_DATA_J1D(LVDS_DATA_J1D),
     .LVDS_HITOR(LVDS_HITOR),
     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
 

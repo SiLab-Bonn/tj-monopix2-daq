@@ -100,10 +100,25 @@ module tjmonopix2_core #(
     output wire RESETB_EXT,
 
     // LVDS IO
-    output wire LVDS_CMD,
-    output wire LVDS_CMD_CLK,
-    output wire LVDS_SER_CLK,
-    input wire LVDS_DATA,
+    output wire LVDS_CMD_DP5,
+    output wire LVDS_CMD_CLK_DP5,
+    output wire LVDS_SER_CLK_DP5,
+    output wire LVDS_CMD_DP1,
+    output wire LVDS_CMD_CLK_DP1,
+    output wire LVDS_SER_CLK_DP1,
+    output wire LVDS_CMD_mDP,
+    output wire LVDS_CMD_CLK_mDP,
+    output wire LVDS_SER_CLK_mDP,
+    output wire LVDS_CMD_J1C,
+    output wire LVDS_CMD_CLK_J1C,
+    output wire LVDS_SER_CLK_J1C,
+    output wire LVDS_CMD_J1D,
+    output wire LVDS_CMD_CLK_J1D,
+    output wire LVDS_SER_CLK_J1D,
+    input wire LVDS_DATA_DP5,
+    input wire LVDS_DATA_mDP,
+    input wire LVDS_DATA_J1C,
+    input wire LVDS_DATA_J1D,
     input wire LVDS_HITOR,
     output wire LVDS_PULSE_EXT,
 
@@ -161,8 +176,29 @@ localparam GPIO_HIGHADDR = 32'h0100 - 1;
 localparam PULSE_INJ_BASEADDR = 32'h0100;
 localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
 
-localparam RX_BASEADDR = 32'h0200;
-localparam RX_HIGHADDR = 32'h0300 - 1; 
+localparam RX_BASEADDR_DP5 = 32'h4000;
+localparam RX_HIGHADDR_DP5 = 32'h4100 - 1;
+
+localparam RX_BASEADDR_mDP = 32'h4100;
+localparam RX_HIGHADDR_mDP = 32'h4200 - 1;
+
+localparam RX_BASEADDR_J1C = 32'h4200;
+localparam RX_HIGHADDR_J1C = 32'h4300 - 1;
+
+localparam RX_BASEADDR_J1D = 32'h4300;
+localparam RX_HIGHADDR_J1D = 32'h4400 - 1;
+
+// localparam RX_BASEADDR_DP5 = 32'h0200;
+// localparam RX_HIGHADDR_DP5 = 32'h0300 - 1;
+
+// localparam RX_BASEADDR_mDP = 32'h0200;
+// localparam RX_HIGHADDR_mDP = 32'h0300 - 1;
+
+// localparam RX_BASEADDR_J1C = 32'h0200;
+// localparam RX_HIGHADDR_J1C = 32'h0300 - 1;
+
+// localparam RX_BASEADDR_J1D = 32'h0200;
+// localparam RX_HIGHADDR_J1D = 32'h0300 - 1;
 
 localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
 localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
@@ -466,7 +502,7 @@ cmd #(
     .CMD_OUTPUT_EN(CMD_OUTPUT_EN),
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT)
-);
+); 
 
 `ifdef MIO3
     assign LVDS_SER_CLK = EN_LVDS_IN ? ~CLK160 : 1'b0;
@@ -475,18 +511,58 @@ cmd #(
     assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
     assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
     assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
+
 `elsif BDAQ53
-    ODDR ODDR_inst_SER_CLK (
-        .Q(LVDS_SER_CLK), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    ODDR ODDR_inst_SER_CLK_DP5 (
+        .Q(LVDS_SER_CLK_DP5), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
     );
-    ODDR ODDR_inst_CMD_CLK (
-        .Q(LVDS_CMD_CLK), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    ODDR ODDR_inst_CMD_CLK_DP5 (
+        .Q(LVDS_CMD_CLK_DP5), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
     );
-    ODDR ODDR_inst_CMD (
-        .Q(LVDS_CMD), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+    ODDR ODDR_inst_CMD_DP5 (
+        .Q(LVDS_CMD_DP5), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+    );
+
+    ODDR ODDR_inst_SER_CLK_DP1 (
+        .Q(LVDS_SER_CLK_DP1), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK_DP1 (
+        .Q(LVDS_CMD_CLK_DP1), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_DP1 (
+        .Q(LVDS_CMD_DP1), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
+    );
+
+    ODDR ODDR_inst_SER_CLK_mDP (
+        .Q(LVDS_SER_CLK_mDP), .C(CLK160), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK_mDP (
+        .Q(LVDS_CMD_CLK_mDP), .C(CLKCMD), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_mDP (
+        .Q(LVDS_CMD_mDP), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
+    );
+
+    ODDR ODDR_inst_SER_CLK_J1C (
+        .Q(LVDS_SER_CLK_J1C), .C(CLK160), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK_J1C (
+        .Q(LVDS_CMD_CLK_J1C), .C(CLKCMD), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_J1C (
+        .Q(LVDS_CMD_J1C), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
+    );
+
+    ODDR ODDR_inst_SER_CLK_J1D (
+        .Q(LVDS_SER_CLK_J1D), .C(CLK160), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK_J1D (
+        .Q(LVDS_CMD_CLK_J1D), .C(CLKCMD), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_J1D (
+        .Q(LVDS_CMD_J1D), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
     );
 `endif
-
 pulse_gen #(
     .BASEADDR(PULSE_CMD_START_LOOP_BASEADDR),
     .HIGHADDR(PULSE_CMD_START_LOOP_HIGHADDR),
@@ -505,8 +581,8 @@ pulse_gen #(
 );
 
 // RX
-wire RX_FIFO_READ, RX_FIFO_EMPTY;
-wire [31:0] RX_FIFO_DATA;
+wire RX_FIFO_READ_DP5, RX_FIFO_EMPTY_DP5, RX_FIFO_READ_mDP, RX_FIFO_EMPTY_mDP, RX_FIFO_READ_J1C, RX_FIFO_EMPTY_J1C, RX_FIFO_READ_J1D, RX_FIFO_EMPTY_J1D;
+wire [31:0] RX_FIFO_DATA_DP5, RX_FIFO_DATA_mDP, RX_FIFO_DATA_J1C, RX_FIFO_DATA_J1D;
 
 // TLU
 wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
@@ -519,23 +595,32 @@ wire [31:0] TDC_FIFO_DATA;
 
 rrp_arbiter 
 #( 
-    .WIDTH(3)
+    .WIDTH(6)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
 
     .WRITE_REQ({
-        ~RX_FIFO_EMPTY,
+        ~RX_FIFO_EMPTY_DP5,
+        ~RX_FIFO_EMPTY_mDP,
+        ~RX_FIFO_EMPTY_J1C,
+        ~RX_FIFO_EMPTY_J1D,
         ~TLU_FIFO_EMPTY,
         ~TDC_FIFO_EMPTY
     }),
-    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ({4'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
-        RX_FIFO_DATA,
+        RX_FIFO_DATA_DP5,
+        RX_FIFO_DATA_mDP,
+        RX_FIFO_DATA_J1C,
+        RX_FIFO_DATA_J1D,
         TLU_FIFO_DATA,
         TDC_FIFO_DATA}),
     .READ_GRANT({
-        RX_FIFO_READ,
+        RX_FIFO_READ_DP5,
+        RX_FIFO_READ_mDP,
+        RX_FIFO_READ_J1C,
+        RX_FIFO_READ_J1D,
         TLU_FIFO_READ,
         TDC_FIFO_READ
     }),
@@ -657,26 +742,26 @@ tdc_s3 #(
 
 // fast readout
 tjmono2_rx #(
-    .BASEADDR(RX_BASEADDR),
-    .HIGHADDR(RX_HIGHADDR),
+    .BASEADDR(RX_BASEADDR_DP5),
+    .HIGHADDR(RX_HIGHADDR_DP5),
     .DATA_IDENTIFIER(4'b0100),
     .ABUSWIDTH(ABUSWIDTH),
     .USE_FIFO_CLK(0)
-) tjmono2_rx (
+) tjmono2_rx_DP5 (
     .TS_CLK(CLK40),
     .FCLK(CLK160),
     .FCLK2X(CLK320),
     .RX_CLKW(CLK16),
-    .RX_DATA(LVDS_DATA),
+    .RX_DATA(LVDS_DATA_DP5),
 
     .RX_READY(),
     .RX_8B10B_DECODER_ERR(),
     .RX_FIFO_OVERFLOW_ERR(),
 
     .FIFO_CLK(),
-    .FIFO_READ(RX_FIFO_READ),
-    .FIFO_EMPTY(RX_FIFO_EMPTY),
-    .FIFO_DATA(RX_FIFO_DATA),
+    .FIFO_READ(RX_FIFO_READ_DP5),
+    .FIFO_EMPTY(RX_FIFO_EMPTY_DP5),
+    .FIFO_DATA(RX_FIFO_DATA_DP5),
 
     .RX_FIFO_FULL(),
     .RX_ENABLED(),
@@ -690,5 +775,113 @@ tjmono2_rx #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR)
 );
+
+// assign RX_FIFO_EMPTY_mDP = 1;
+tjmono2_rx #(
+    .BASEADDR(RX_BASEADDR_mDP),
+    .HIGHADDR(RX_HIGHADDR_mDP),
+    .DATA_IDENTIFIER(4'b0101),
+    .ABUSWIDTH(ABUSWIDTH),
+    .USE_FIFO_CLK(0)
+) tjmono2_rx_mDP (
+    .TS_CLK(CLK40),
+    .FCLK(CLK160),
+    .FCLK2X(CLK320),
+    .RX_CLKW(CLK16),
+    .RX_DATA(LVDS_DATA_mDP),
+
+    .RX_READY(),
+    .RX_8B10B_DECODER_ERR(),
+    .RX_FIFO_OVERFLOW_ERR(),
+
+    .FIFO_CLK(),
+    .FIFO_READ(RX_FIFO_READ_mDP),
+    .FIFO_EMPTY(RX_FIFO_EMPTY_mDP),
+    .FIFO_DATA(RX_FIFO_DATA_mDP),
+
+    .RX_FIFO_FULL(),
+    .RX_ENABLED(),
+
+    .TIMESTAMP(TIMESTAMP[51:0]),
+
+    .BUS_CLK(BUS_CLK),
+    .BUS_RST(BUS_RST),
+    .BUS_ADD(BUS_ADD),
+    .BUS_DATA(BUS_DATA),
+    .BUS_RD(BUS_RD),
+    .BUS_WR(BUS_WR)
+);
+
+assign RX_FIFO_EMPTY_J1C = 1;
+// tjmono2_rx #(
+//     .BASEADDR(RX_BASEADDR_J1C),
+//     .HIGHADDR(RX_HIGHADDR_J1C),
+//     .DATA_IDENTIFIER(4'b0110),
+//     .ABUSWIDTH(ABUSWIDTH),
+//     .USE_FIFO_CLK(0)
+// ) tjmono2_rx_J1C (
+//     .TS_CLK(CLK40),
+//     .FCLK(CLK160),
+//     .FCLK2X(CLK320),
+//     .RX_CLKW(CLK16),
+//     .RX_DATA(LVDS_DATA_J1C),
+
+//     .RX_READY(),
+//     .RX_8B10B_DECODER_ERR(),
+//     .RX_FIFO_OVERFLOW_ERR(),
+
+//     .FIFO_CLK(),
+//     .FIFO_READ(RX_FIFO_READ_J1C),
+//     .FIFO_EMPTY(RX_FIFO_EMPTY_J1C),
+//     .FIFO_DATA(RX_FIFO_DATA_J1C),
+
+//     .RX_FIFO_FULL(),
+//     .RX_ENABLED(),
+
+//     .TIMESTAMP(TIMESTAMP[51:0]),
+
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_RST(BUS_RST),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RD(BUS_RD),
+//     .BUS_WR(BUS_WR)
+// );
+
+assign RX_FIFO_EMPTY_J1D = 1;
+// tjmono2_rx #(
+//     .BASEADDR(RX_BASEADDR_J1D),
+//     .HIGHADDR(RX_HIGHADDR_J1D),
+//     .DATA_IDENTIFIER(4'b0111),
+//     .ABUSWIDTH(ABUSWIDTH),
+//     .USE_FIFO_CLK(0)
+// ) tjmono2_rx_J1D (
+//     .TS_CLK(CLK40),
+//     .FCLK(CLK160),
+//     .FCLK2X(CLK320),
+//     .RX_CLKW(CLK16),
+//     .RX_DATA(LVDS_DATA_J1D),
+
+//     .RX_READY(),
+//     .RX_8B10B_DECODER_ERR(),
+//     .RX_FIFO_OVERFLOW_ERR(),
+
+//     .FIFO_CLK(),
+//     .FIFO_READ(RX_FIFO_READ_J1D),
+//     .FIFO_EMPTY(RX_FIFO_EMPTY_J1D),
+//     .FIFO_DATA(RX_FIFO_DATA_J1D),
+
+//     .RX_FIFO_FULL(),
+//     .RX_ENABLED(),
+
+//     .TIMESTAMP(TIMESTAMP[51:0]),
+
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_RST(BUS_RST),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RD(BUS_RD),
+//     .BUS_WR(BUS_WR)
+// );
 
 endmodule
