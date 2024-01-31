@@ -14,16 +14,16 @@ modules:
       record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
       use_good_pixels_diff: False
       send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor
-  module_1: # Arbitrary name of module, defines folder name with chip sub folders
-    identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
-    chip_1: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W08R03"
-      chip_id: 0
-      receiver: "rx1"
-      chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
-      record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
-      use_good_pixels_diff: False
-      send_data: "tcp://127.0.0.1:5501" # Socket address of online monitor
+  # module_1: # Arbitrary name of module, defines folder name with chip sub folders
+  #   identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
+  #   chip_1: # Arbitrary name of chip, defines folder name with chip data
+  #     chip_sn: "W08R03"
+  #     chip_id: 0
+  #     receiver: "rx1"
+  #     chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+  #     record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
+  #     use_good_pixels_diff: False
+  #     send_data: "tcp://127.0.0.1:5501" # Socket address of online monitor
   module_2: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_2: # Arbitrary name of chip, defines folder name with chip data

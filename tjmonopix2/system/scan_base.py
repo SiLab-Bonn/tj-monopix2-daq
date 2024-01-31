@@ -238,25 +238,29 @@ class ScanBase(object):
             if not self.initialized:
                 raise RuntimeError('Cannot call configure() before init() is called!')
             # Deactivate receiver to prevent recording useless data
-            for _ in self.iterate_chips():
+            for i in self.iterate_chips():
                 self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
+                print (f'disabling chip: {self.chip.receiver} at configure')
             for i, _ in enumerate(self.iterate_chips()):
                 with self._logging_through_handler(self.log_fh):
                     self.log.info('Configuring chip {0}...'.format(self.chip.get_sn()))
                     # Load masks from config
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
+                    print(f'enabling chip: {self.chip.receiver} at configure')
                     self._configure_masks()
                     # Scan dependent configuration step before actual scan can be started (set enable masks etc.)
                     ret_values[i] = self._configure(**self.scan_config)
                     # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
+                    print (f'disabling chip: {self.chip.receiver} at configure')
 
             # Create general FIFO readout (for all chips/modules)
             self._configure_fifo_readout()
 
             # Enable receivers
-            for _ in self.iterate_chips():
-                self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
+            # for _ in self.iterate_chips():
+            #     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
+            #     print(f'enabling chip: {self.chip.receiver} at configure !')
             # # Make sure monitor filter is blocking for all receivers before starting scan
             # self.daq.set_monitor_filter(mode='block')
 
@@ -280,17 +284,21 @@ class ScanBase(object):
                 # Enable all channels of defined chips
                 for _ in self.iterate_chips():
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
+                    print (f'enabling chip: {self.chip.receiver} at scan')
                 self.daq.reset_fifo()
                 self._scan(**self.scan_config)
                 for _ in self.iterate_chips():
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
+                    print (f'disabling chip: {self.chip.receiver} at scan')
             else:
                 self.daq.reset_fifo()
                 for i, _ in enumerate(self.iterate_chips()):
                     with self._logging_through_handler(self.log_fh):
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
+                        print (f'enabling chip: {self.chip.receiver} at scan')
                         ret_values[i] = self._scan(**self.scan_config)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
+                        print (f'disabling chip: {self.chip.receiver} at configure')
             # Finalize scan
             # Disable tlu module in case it was enabled.
             if self.daq.tlu_module_enabled:
@@ -598,6 +606,7 @@ class ScanBase(object):
                     #     self.chip.registers.check_all()
 
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
+                    print (f'disabling chip: {self.chip.receiver} at _init_hardware')
 
             self.hardware_initialized = True
         else:
