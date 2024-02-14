@@ -1074,19 +1074,21 @@ class ScanBase(object):
 
     # Readout methods
     @contextmanager
-    def readout(self, scan_param_id=0, timeout=10.0, **kwargs):
+    def readout(self, scan_param_id=0, timeout=10.0, *args, **kwargs):
 
         self.scan_param_id = scan_param_id
 
         callback = kwargs.pop('callback', self.handle_data)
-        errback = kwargs.pop('errback', self.handle_err)
-        fill_buffer = kwargs.pop('fill_buffer', False)
-        clear_buffer = kwargs.pop('clear_buffer', False)
+        # errback = kwargs.pop('errback', self.handle_err)
+        # fill_buffer = kwargs.pop('fill_buffer', False)
+        # clear_buffer = kwargs.pop('clear_buffer', False)
 
         if kwargs:
             self.store_scan_par_values(scan_param_id, **kwargs)
 
-        self.start_readout(callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer, errback=errback, **kwargs)
+        self.fifo_readout.set_callback(callback=callback)
+
+        self.start_readout(*args, **kwargs)
         try:
             yield
         finally:
@@ -1095,27 +1097,30 @@ class ScanBase(object):
                     self.daq.rx_channels[self.chip.receiver].is_done()
             self.stop_readout(timeout=timeout)
 
-    def start_readout(self, **kwargs):
+    def start_readout(self, *args, **kwargs):
         # Pop parameters for fifo_readout.start
-        callback = kwargs.pop('callback', self.handle_data)
         clear_buffer = kwargs.pop('clear_buffer', False)
+        reset_rx = kwargs.pop('reset_rx', False)
         fill_buffer = kwargs.pop('fill_buffer', False)
         reset_sram_fifo = kwargs.pop('reset_sram_fifo', True)
         errback = kwargs.pop('errback', self.handle_err)
         no_data_timeout = kwargs.pop('no_data_timeout', None)
 
-        self.fifo_readout.start(reset_sram_fifo=reset_sram_fifo, fill_buffer=fill_buffer, clear_buffer=clear_buffer,
-                                callback=callback, errback=errback, no_data_timeout=no_data_timeout)
+        self.fifo_readout.start(reset_sram_fifo=reset_sram_fifo, reset_rx=reset_rx, fill_buffer=fill_buffer, clear_buffer=clear_buffer,
+                                errback=errback, no_data_timeout=no_data_timeout)
 
     def stop_readout(self, timeout=10.0):
         self.fifo_readout.stop(timeout=timeout)
 
-    def handle_data(self, data_tuple):
+    def handle_data(self, data_tuple, receiver):
         '''
             Handling of the data.
-        '''
-        total_words = self.raw_data_earray.nrows
 
+            Called from fifo readout per readout channel
+        '''
+        self._get_chip_at_rx(receiver)
+
+        total_words = self.raw_data_earray.nrows
         self.raw_data_earray.append(data_tuple[0])
         self.raw_data_earray.flush()
 
@@ -1144,6 +1149,13 @@ class ScanBase(object):
             if issubclass(exc[0], fifo_readout.FifoError):
                 self.log.error('Aborting run...')
                 self.fifo_readout.stop_readout.set()
+
+    # @property
+    # def data_buffer(self):
+    #     '''
+    #         Access data buffer of current receiver
+    #     '''
+    #     return self.fifo_readout.get_data_buffer(self.chip.receiver)
 
 
 if __name__ == '__main__':

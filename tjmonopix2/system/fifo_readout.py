@@ -7,9 +7,11 @@
 
 import datetime
 import sys
+import threading
+import numpy as np
 from collections import deque
 from queue import Empty, Queue
-from threading import Event, Thread
+from threading import Event, Thread, Lock
 from time import mktime, sleep, time
 
 from tjmonopix2.system import logger
@@ -50,8 +52,6 @@ class FifoReadout(object):
         self.fill_buffer = False
         self.readout_interval = 0.05
         self._moving_average_time_period = 10.0
-        self._data_deque = deque()
-        self._data_buffer = deque()
         self._words_per_read = deque(maxlen=int(self._moving_average_time_period / self.readout_interval))
         self._result = Queue(maxsize=1)
         self._calculate = Event()
@@ -64,18 +64,27 @@ class FifoReadout(object):
         self.reset_sram_fifo()
         self._record_count = 0
 
+        self.chips = {4: 'rx0', 5: 'rx1', 6: 'rx2', 7: 'rx3'}
+        self.channels = ['rx0', 'rx1', 'rx2', 'rx3']
+        self._data_buffers = {'rx0': deque(), 'rx1': deque(), 'rx2': deque(), 'rx3': deque()}
+        self.data_buffer_lock = Lock()
+        self.stopped_filter_readout = threading.Event()
+
     @property
     def is_running(self):
         return self._is_running
+    
+    def set_callback(self, callback):
+        ''' Set the callback to be called with data from a receiver channel (e.g. rx0) '''
+        self.callback = callback
 
-    @property
-    def is_alive(self):
-        if self.worker_thread:
-            return self.worker_thread.is_alive()
-        else:
-            False
+    def get_data_buffer(self, receiver):
+        ''' Return and reset data buffer '''
+        with self.data_buffer_lock:
+            ret = self._data_buffers[receiver]
+            self._data_buffers[receiver] = deque()
+        return ret
 
-    @property
     def data(self):
         if self.fill_buffer:
             return self._data_buffer
@@ -93,38 +102,40 @@ class FifoReadout(object):
             return None
         return result / float(self._moving_average_time_period)
 
-    def start(self, callback=None, errback=None, reset_rx=False, reset_sram_fifo=False, clear_buffer=False, fill_buffer=False, no_data_timeout=None):
+    def start(self, errback=None, reset_rx=False, reset_sram_fifo=False, clear_buffer=False, fill_buffer=False, no_data_timeout=None):
         if self._is_running:
             raise RuntimeError('Readout already running: use stop() before start()')
 
         self._is_running = True
         self.log.debug('Starting FIFO readout...')
-        self.callback = callback
         self.errback = errback
         self.fill_buffer = fill_buffer
         self._record_count = 0
         if reset_rx:
-            self.reset_rx()
+            self.reset_rx() #(channels=self.channels)
         if reset_sram_fifo:
             self.reset_sram_fifo()
         else:
             fifo_size = self.daq['FIFO']['FIFO_SIZE']
             if fifo_size != 0:
                 self.log.warning('FIFO not empty when starting FIFO readout: size = %i', fifo_size)
+
+        self._data_queue = Queue()
         self._words_per_read.clear()
-        if clear_buffer:
-            self._data_deque.clear()
-            self._data_buffer.clear()
         self.stop_readout.clear()
         self.force_stop.clear()
+
         if self.errback:
             self.watchdog_thread = Thread(target=self.watchdog, name='WatchdogThread')
             self.watchdog_thread.daemon = True
             self.watchdog_thread.start()
-        if self.callback:
-            self.worker_thread = Thread(target=self.worker, name='WorkerThread')
-            self.worker_thread.daemon = True
-            self.worker_thread.start()
+
+        # Seperate thread to filter FIFO raw data by receiver channel
+        # If too slow should be changed to seperate process
+        self.filter_process = Thread(target=self.filter_readout_data, name='ReadoutProcess', args=(self._data_queue, self.stopped_filter_readout, ))
+        self.filter_process.daemon = True
+        self.filter_process.start()
+
         self.readout_thread = Thread(target=self.readout, name='ReadoutThread', kwargs={'no_data_timeout': no_data_timeout})
         self.readout_thread.daemon = True
         self.readout_thread.start()
@@ -148,22 +159,27 @@ class FifoReadout(object):
                 self.errback(sys.exc_info())
             else:
                 self.log.error(e)
+
+        # Close filter process
+        self.stopped_filter_readout.wait()
+        self.filter_process.join()
+        del self.filter_process
+
         if self.readout_thread.is_alive():
             self.readout_thread.join()
         if self.errback:
             self.watchdog_thread.join()
-        if self.callback:
-            self.worker_thread.join()
-        self.callback = None
         self.errback = None
         self.log.debug('Stopped FIFO readout')
+
+        del self._data_queue
 
     def print_readout_status(self):
         discard_count = self.get_rx_fifo_discard_count()
 
         if any(discard_count):
             try:
-                queue_size = len(self._data_deque)
+                queue_size = self._data_queue.qsize
             except NotImplementedError as e:
                 self.log.warning(e)
                 queue_size = -1
@@ -178,10 +194,44 @@ class FifoReadout(object):
             # self.log.warning('RX hard errors:              %s', " | ".join([repr(count).rjust(3) for count in hard_error_count]))
 
         return discard_count
+    
+    def filter_readout_data(self, input_queue, stopped_event):
+        ''' Runs in seperate process to filter raw data by receiver'''
+        stopped_event = stopped_event
+        polling_interval = 0.05
+        print('entered filter_readout_data')
+        try:
+            while True:
+                try:
+                    data = input_queue.get(block=False)
+                except Empty:
+                    sleep(polling_interval)
+                else:
+                    if data is None:    # If None then exit
+                        break
+                    else:
+                        for data_id in self.chips:
+                            raw_data = data[0]
+                            sel = (((raw_data >> 28) & 0xf == data_id) |  # Forward if data_id matches (USER_K/AURORA, (also UNKNOWN_WORD))
+                                   np.isin(((raw_data >> 28) & 0xf), list(self.chips.keys()), invert=True))
+                            filtered_data = raw_data[sel]
+                            last_time, curr_time = self.update_timestamp()
+                            status = 0
+                            if self.fill_buffer:
+                                with self.data_buffer_lock:
+                                    self._data_buffers[self.chips[data_id]].append(filtered_data, last_time, curr_time, status)
+                                    print(f'data from {self.chips[data_id]}: {filtered_data}')
+                            if self.callback:
+                                self.callback(data_tuple=(filtered_data, data[1], data[2], data[3]), receiver=self.chips[data_id])
+
+        except KeyboardInterrupt:   # Need to catch KeyboardInterrupt from main process
+            pass
+
+        stopped_event.set()
 
     def readout(self, no_data_timeout=None):
         '''
-            Readout thread continuously reading FIFO. Uses read_data() and appends data to self._data_deque (collection.deque).
+            Readout thread continuously reading FIFO. Uses read_data() and appends data to self._data_queue (collection.deque).
         '''
         self.log.debug('Starting %s', self.readout_thread.name)
         curr_time = self.get_float_time()
@@ -205,10 +255,7 @@ class FifoReadout(object):
                 n_words = data.shape[0]
                 last_time, curr_time = self.update_timestamp()
                 status = 0
-                if self.callback:
-                    self._data_deque.append((data, last_time, curr_time, status))
-                if self.fill_buffer:
-                    self._data_buffer.append((data, last_time, curr_time, status))
+                self._data_queue.put((data, last_time, curr_time, status))
                 self._words_per_read.append(n_words)
                 # FIXME: busy FE prevents scan termination? To be checked
                 if self.stop_readout.is_set():
@@ -219,29 +266,8 @@ class FifoReadout(object):
                 self._calculate.clear()
                 self._result.put(sum(self._words_per_read))
         if self.callback:
-            self._data_deque.append(None)  # last item, will stop worker
+            self._data_queue.put(None)
         self.log.debug('Stopped %s', self.readout_thread.name)
-
-    def worker(self):
-        '''
-            Worker thread continuously calling callback function when data is available.
-        '''
-        self.log.debug('Starting %s', self.worker_thread.name)
-        while True:
-            try:
-                data = self._data_deque.popleft()
-            except IndexError:
-                self.stop_readout.wait(self.readout_interval)  # sleep a little bit, reducing CPU usage
-            else:
-                if data is None:  # if None then exit
-                    break
-                else:
-                    try:
-                        self.callback(data)
-                    except Exception:
-                        self.errback(sys.exc_info())
-
-        self.log.debug('Stopped %s', self.worker_thread.name)
 
     def watchdog(self):
         self.log.debug('Starting %s', self.watchdog_thread.name)
