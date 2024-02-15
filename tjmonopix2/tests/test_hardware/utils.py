@@ -10,10 +10,10 @@ import socketserver
 import typing
 
 import basil
-import cocotb
-import tjmonopix2
 import yaml
 from basil.utils.sim.utils import cocotb_compile_and_run
+
+import tjmonopix2
 from tjmonopix2 import utils
 from tjmonopix2.system.bdaq53 import BDAQ53
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
@@ -22,9 +22,6 @@ from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 def setup_cocotb(extra_defines: list = []) -> dict:
     if "SIM" not in os.environ.keys():
         os.environ["SIM"] = "verilator"
-
-    if os.environ["SIM"] == "verilator":
-        patch_cocotb_makefile()
 
     tjmonopix2_path = os.path.dirname(tjmonopix2.__file__)  # tjmonopix2 package path
     top_dir = os.path.join(
@@ -64,15 +61,10 @@ def setup_cocotb(extra_defines: list = []) -> dict:
             "-DVERSION_PATCH={:s}".format(version[2]),
             "-LDFLAGS {:s}/tjmonopix2/tests/test_hardware/hdl/libmonopix2.a".format(top_dir),
             "--hierarchical",
+            "-Wno-fatal",
             "-Wno-COMBDLY",
             "-Wno-PINMISSING",
-            "-Wno-fatal",
-            "--output-split 15000",
-            "-O3",
-            "-CFLAGS -O3",
-        ],
-        build_args=[
-            "-j 2"
+            "-Wno-LATCH",
         ],
         extra_defines=extra_defines,
     )
@@ -98,17 +90,6 @@ def setup_cocotb(extra_defines: list = []) -> dict:
     os.environ["SiSim"] = "1"
 
     return cnfg
-
-
-def patch_cocotb_makefile() -> None:
-    makefile_path = os.path.join(
-        os.path.dirname(cocotb.__file__), "share/makefiles/simulators"
-    )
-    with open(os.path.join(makefile_path, "Makefile.verilator"), "r+") as makefile:
-        content = makefile.read()
-        makefile.seek(0)
-        makefile.truncate()
-        makefile.write(content.replace("--public-flat-rw ", ""))
 
 
 def wait_for_sim(dut: BDAQ53, repetitions=8) -> None:

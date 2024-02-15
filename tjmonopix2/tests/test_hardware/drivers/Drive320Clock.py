@@ -18,5 +18,4 @@ class Drive320Clock(BusDriver):
         BusDriver.__init__(self, entity, "", entity.CLK320)
 
     async def run(self):
-
-        cocotb.fork(Clock(self.clock, 3120).start())
+        cocotb.start_soon(Clock(self.clock, 3120).start())
