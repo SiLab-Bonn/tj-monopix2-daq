@@ -487,12 +487,11 @@ class Plotting(object):
             tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
             if tot_calib_file is not None:
                 x_axis_title = 'Cluster Charge [e⁻]'
-                hist = self.HistClusterTot[:] * self.electron_conversion
+                plot_range = plot_range * self.electron_conversion
             else:
                 x_axis_title = 'Cluster ToT [25 ns]'
-                hist = self.HistClusterTot[:]
 
-            self._plot_1d_hist(hist=hist, title='Cluster ToT',
+            self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
                                log_y=False, plot_range=plot_range,
                                x_axis_title=x_axis_title,
                                y_axis_title='# of clusters', suffix='cluster_tot')
