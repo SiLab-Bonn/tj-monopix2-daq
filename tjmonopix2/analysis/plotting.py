@@ -267,7 +267,7 @@ class Plotting(object):
                 scan_parameter_range = self.scan_parameter_range
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                electron_axis = True
                 scan_parameter_range = self.scan_parameter_range
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
@@ -295,7 +295,7 @@ class Plotting(object):
             else:
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                electron_axis = True
 
             self._plot_distribution(self.ThresholdMap[self.Chi2Sel].T,
                                     plot_range=plot_range,
@@ -319,7 +319,7 @@ class Plotting(object):
                 electron_axis = False
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                electron_axis = True
 
             self._plot_stacked_threshold(data=self.ThresholdMap[self.Chi2Sel].T,
                                          tdac_mask=self.tdac_mask[self.Chi2Sel].T,
@@ -348,8 +348,8 @@ class Plotting(object):
                 z_min = 0
                 z_max = 16
             else:
-                electron_axis = False  # TODO: True after calibration code is done
-                use_electron_offset = False  # TODO: True after calibration code is done
+                electron_axis = True
+                use_electron_offset = False
                 z_label = 'Threshold'
                 title = 'Threshold'
                 z_min = None
@@ -376,7 +376,7 @@ class Plotting(object):
             plot_range = None
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                electron_axis = True
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
                 electron_axis = False
@@ -404,7 +404,7 @@ class Plotting(object):
             mask[~sel] = True
             z_label = 'Noise'
             title = 'Noise'
-            electron_axis = False  # TODO: True after calibration code is done
+            electron_axis = True
 
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 z_label = 'Finedelay [LSB]'
@@ -562,16 +562,16 @@ class Plotting(object):
         if self.internal:
             fig.text(0.1, 1, 'Internal', fontsize=16, color='r', rotation=45, bbox=dict(boxstyle='round', facecolor='white', edgecolor='red', alpha=0.7), transform=fig.transFigure)
 
-    def _convert_to_e(self, dac, use_offset=True):
+    def _convert_to_e(self, dac, use_offset=False):
         if use_offset:
             e = dac * self.calibration['e_conversion_slope'] + self.calibration['e_conversion_offset']
             de = math.sqrt((dac * self.calibration['e_conversion_slope_error'])**2 + self.calibration['e_conversion_offset_error']**2)
         else:
-            e = dac * self.calibration['e_conversion_slope']
-            de = dac * self.calibration['e_conversion_slope_error']
+            e = dac * self.electron_conversion
+            de = dac * self.electron_conversion * 0.15  # TODO: Replace generic 15% error of conversion factor
         return e, de
 
-    def _add_electron_axis(self, fig, ax, use_electron_offset=True):
+    def _add_electron_axis(self, fig, ax, use_electron_offset=False):
         fig.subplots_adjust(top=0.75)
         ax.title.set_position([.5, 1.15])
 
