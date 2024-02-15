@@ -136,13 +136,18 @@ class Plotting(object):
             self.HistClusterShape = root.HistClusterShape[:]
             self.HistClusterTot = root.HistClusterTot[:]
             self.clustered = True
+        except tb.NoSuchNodeError:
+            pass
+
+        try:
             conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
             if self.scan_config['start_column'] in range(0, 448):  # TODO: Get rid of hardcoded values.
                 self.electron_conversion = conversion_factors['DC_coupled']
             else:
                 self.electron_conversion = conversion_factors['AC_coupled']
+            self.electron_axis = True
         except tb.NoSuchNodeError:
-            pass
+            self.electron_axis = False
 
         try:
             in_file.close()
@@ -267,7 +272,7 @@ class Plotting(object):
                 scan_parameter_range = self.scan_parameter_range
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = True
+                electron_axis = self.electron_axis
                 scan_parameter_range = self.scan_parameter_range
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
@@ -295,7 +300,7 @@ class Plotting(object):
             else:
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = True
+                electron_axis = self.electron_axis
 
             self._plot_distribution(self.ThresholdMap[self.Chi2Sel].T,
                                     plot_range=plot_range,
@@ -319,7 +324,7 @@ class Plotting(object):
                 electron_axis = False
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = True
+                electron_axis = self.electron_axis
 
             self._plot_stacked_threshold(data=self.ThresholdMap[self.Chi2Sel].T,
                                          tdac_mask=self.tdac_mask[self.Chi2Sel].T,
@@ -348,7 +353,7 @@ class Plotting(object):
                 z_min = 0
                 z_max = 16
             else:
-                electron_axis = True
+                electron_axis = self.electron_axis
                 use_electron_offset = False
                 z_label = 'Threshold'
                 title = 'Threshold'
@@ -376,7 +381,7 @@ class Plotting(object):
             plot_range = None
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = True
+                electron_axis = self.electron_axis
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
                 electron_axis = False
@@ -404,7 +409,7 @@ class Plotting(object):
             mask[~sel] = True
             z_label = 'Noise'
             title = 'Noise'
-            electron_axis = True
+            electron_axis = self.electron_axis
 
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 z_label = 'Finedelay [LSB]'
