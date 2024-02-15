@@ -137,7 +137,7 @@ class Plotting(object):
             self.HistClusterTot = root.HistClusterTot[:]
             self.clustered = True
             conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
-            if np.any(self.enable_mask[0:448, :]):  # TODO: Get rid of hardcoded values.
+            if self.scan_config['start_column'] in range(0, 448):  # TODO: Get rid of hardcoded values.
                 self.electron_conversion = conversion_factors['DC_coupled']
             else:
                 self.electron_conversion = conversion_factors['AC_coupled']
