@@ -20,6 +20,8 @@ scan_configuration = {
 
     'scan_timeout': False,    # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
     'max_triggers': 1000000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
+
+    'tot_calib_file': None    # path to ToT calibration file for charge to e⁻ conversion, if None no conversion will be done
 }
 
 
@@ -89,7 +91,11 @@ class SimpleScan(ScanBase):
         self.log.success('Scan finished')
 
     def _analyze(self):
-        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', **self.configuration['bench']['analysis']) as a:
+        tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
+        if tot_calib_file is not None:
+            self.configuration['bench']['analysis']['cluster_hits'] = True
+
+        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', tot_calib_file=tot_calib_file, **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
         if self.configuration['bench']['analysis']['create_pdf']:

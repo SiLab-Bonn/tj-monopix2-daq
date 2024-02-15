@@ -479,9 +479,15 @@ class Plotting(object):
             else:
                 plot_range = range(0, np.max(np.nonzero(self.HistClusterTot)))
 
+            tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
+            if tot_calib_file is not None:
+                x_axis_title = 'Electrons [e⁻]'
+            else:
+                x_axis_title = 'Cluster ToT [25 ns]'
+
             self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
                                log_y=False, plot_range=plot_range,
-                               x_axis_title='Cluster ToT [25 ns]',
+                               x_axis_title=x_axis_title,
                                y_axis_title='# of clusters', suffix='cluster_tot')
         except Exception:
             self.log.error('Could not create cluster TOT plot!')
