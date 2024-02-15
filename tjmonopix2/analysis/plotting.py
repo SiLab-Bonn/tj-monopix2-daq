@@ -136,6 +136,11 @@ class Plotting(object):
             self.HistClusterShape = root.HistClusterShape[:]
             self.HistClusterTot = root.HistClusterTot[:]
             self.clustered = True
+            conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
+            if np.any(self.enable_mask[0:448, :]):  # TODO: Get rid of hardcoded values.
+                self.electron_conversion = conversion_factors['DC_coupled']
+            else:
+                self.electron_conversion = conversion_factors['AC_coupled']
         except tb.NoSuchNodeError:
             pass
 
@@ -481,11 +486,13 @@ class Plotting(object):
 
             tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
             if tot_calib_file is not None:
-                x_axis_title = 'Electrons [e⁻]'
+                x_axis_title = 'Cluster Charge [e⁻]'
+                hist = self.HistClusterTot[:] * self.electron_conversion
             else:
                 x_axis_title = 'Cluster ToT [25 ns]'
+                hist = self.HistClusterTot[:]
 
-            self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
+            self._plot_1d_hist(hist=hist, title='Cluster ToT',
                                log_y=False, plot_range=plot_range,
                                x_axis_title=x_axis_title,
                                y_axis_title='# of clusters', suffix='cluster_tot')
