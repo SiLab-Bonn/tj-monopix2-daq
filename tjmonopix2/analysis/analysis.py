@@ -255,6 +255,10 @@ class Analysis(object):
                                          noisy_pixels, disabled_pixels,
                                          seed_hit_index)
 
+            if self.tot_calib_file:
+                max_hit_charge = 2048
+            else:
+                max_hit_charge = 128
             # Initialize clusterizer with custom hit/cluster fields
             self.clz = HitClusterizer(
                 hit_fields=hit_fields,
@@ -262,7 +266,7 @@ class Analysis(object):
                 cluster_fields=cluster_fields,
                 cluster_dtype=self.cluster_dtype,
                 min_hit_charge=1,
-                max_hit_charge=512,
+                max_hit_charge=max_hit_charge,
                 column_cluster_distance=5,
                 row_cluster_distance=5,
                 frame_cluster_distance=1,
@@ -306,8 +310,12 @@ class Analysis(object):
                         filters=tb.Filters(complib='blosc',
                                            complevel=5,
                                            fletcher32=False))
+                    if self.tot_calib_file:
+                        cs_tot_size = 2048
+                    else:
+                        cs_tot_size = 256
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
-                    hist_cs_tot = np.zeros(shape=(512, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
@@ -340,23 +348,24 @@ class Analysis(object):
                         if self.build_events:
                             data_to_clusterizer = event_dat
                         else:
-                            if self.tot_calib_file is not None:
-                                hit_dat = hit_dat[hit_dat['col'] < 1000]  # Can only call tot_calib for hit data
+                            hit_dat = hit_dat[hit_dat['col'] < 1000]  # Can only call tot_calib for hit data
                             hit_data_cs_fmt = np.zeros(len(hit_dat), dtype=au.event_dtype)
                             hit_data_cs_fmt['event_number'][:] = hit_dat['timestamp'][:]
                             hit_data_cs_fmt['trigger_number'][:] = -1
                             hit_data_cs_fmt['frame'][:] = -1
                             hit_data_cs_fmt['column'][:] = hit_dat['col'][:]
                             hit_data_cs_fmt['row'][:] = hit_dat['row'][:]
-                            if self.tot_calib_file is None:
-                                hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
-                            else:
-                                hit_data_cs_fmt['charge'][:] = au._inv_fit_func(((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1,
-                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 0],
-                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 1],
-                                                                                self.tot_calib[hit_dat[:]['col'], hit_dat[:]['row']][:, 2])
+                            hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
                             hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
                             data_to_clusterizer = hit_data_cs_fmt
+
+                        if self.tot_calib_file:
+                            data_to_clusterizer['charge'][:] = au._inv_tot_response_func(
+                                data_to_clusterizer['charge'][:],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 0],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 1],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 2]
+                            )
 
                         _, cluster = self.clz.cluster_hits(data_to_clusterizer)
                         cluster_table.append(cluster)
