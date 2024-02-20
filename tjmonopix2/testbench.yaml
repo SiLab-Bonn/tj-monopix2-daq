@@ -37,6 +37,9 @@ hardware: # Setup-specific hardware settings
   enable_NTC: False # Only enable if you know you have the correct resistors mounted on the BDAQ board!
 
 calibration: # Setup-specific calibration constants
+  electron_conversion: # Charge conversion from DAC to e⁻, typically 8.8 for DC and 13.3 for AC (slightly chip dependent!)
+    DC_coupled: 8.8
+    AC_coupled: 13.3
   bdaq_ntc: # Resistors on BDAQ board for NTC readout
     R16: 412.00e3
     R17: 13.00e3
@@ -50,7 +53,7 @@ analysis:
   create_pdf: True # Create analysis summary pdf
   # module_plotting: True  # Create combined plots for chip in a module
   store_hits: True # store hit table
-  # cluster_hits: False # store cluster data
+  cluster_hits: False # store cluster data
   # analyze_tdc: False # analyze TDC words
   # use_tdc_trigger_dist: False # analyze TDC to TRG distance
   # align_method: 0 # how to detect new events
