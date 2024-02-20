@@ -78,12 +78,12 @@ class ConfigDict(dict):
             return key, val
 
 
-def _fit_func(x, a, b, d):
+def _tot_response_func(x, a, b, d):
     return (a / x + 1 / b) * (x - d)
 
 
 @numba.njit
-def _inv_fit_func(tot, a, b, d):
+def _inv_tot_response_func(tot, a, b, d):
     return (np.sqrt(b**2 * (a - tot)**2 + 2 * b * d * (a + tot) + d**2) - b * a + b * tot + d) * 0.5
 
 
@@ -435,12 +435,12 @@ def fit_scurves_multithread(scurves, scan_params, n_injections=None, invert_x=Fa
     return thr2D, sig2D, chi2ndf2D
 
 
-def fit_tot_inj_multithread(tot_avg, scan_params):
+def fit_tot_response_multithread(tot_avg, scan_params):
 
     scurves_masked = np.ma.masked_array(tot_avg)
 
     logger.info("Start injection ToT calibration fit on %d CPU core(s)", mp.cpu_count())
-    partialfit_tot_inj_func = partial(_fit_tot_inj, scan_params=scan_params)
+    partialfit_tot_inj_func = partial(_fit_tot_response, scan_params=scan_params)
 
     result_list = imap_bar(partialfit_tot_inj_func, scurves_masked.tolist(), unit=' Fits', unit_scale=True)  # Masked array entries to list leads to NaNs
     result_array = np.array(result_list)
@@ -448,7 +448,7 @@ def fit_tot_inj_multithread(tot_avg, scan_params):
     return np.reshape(result_array, (512, 512, 4))
 
 
-def _fit_tot_inj(data, scan_params):
+def _fit_tot_response(data, scan_params):
     '''
         Fit one pixel data with injection Tot calibration function.
         Has to be global function for the multiprocessing module.
@@ -476,10 +476,10 @@ def _fit_tot_inj(data, scan_params):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", OptimizeWarning)
-            popt = curve_fit(f=lambda x, a, b, d: _fit_func(x, a, b, d),
+            popt = curve_fit(f=lambda x, a, b, d: _tot_response_func(x, a, b, d),
                              xdata=x[y > 0], ydata=y[y > 0], p0=p0, sigma=yerr[y > 0],
                              absolute_sigma=True)[0]
-            chi2 = np.sum((y - _fit_func(x, *popt)) ** 2)
+            chi2 = np.sum((y - _tot_response_func(x, *popt)) ** 2)
     except RuntimeError:  # fit failed
         return (0., 0., 0., 0.)
 
