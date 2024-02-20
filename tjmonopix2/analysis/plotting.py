@@ -148,9 +148,9 @@ class Plotting(object):
             else:
                 self.log.warning('Both DC and AC coupled pixels enabled. Choose ambiguous electron conversion factor of DC falvors!')
                 self.electron_conversion = conversion_factors['DC_coupled']
-            self.electron_axis = True
+            self.plot_electron_axis = True
         except tb.NoSuchNodeError:
-            self.electron_axis = False
+            self.plot_electron_axis = False
 
         try:
             in_file.close()
@@ -267,19 +267,20 @@ class Plotting(object):
         try:
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 scan_parameter_name = 'Finedelay [LSB]'
-                self.electron_axis = False
+                plot_electron_axis = False
                 scan_parameter_range = range(0, 16)
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                self.electron_axis = False
+                plot_electron_axis = False
                 scan_parameter_range = self.scan_parameter_range
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
                 scan_parameter_range = self.scan_parameter_range
+                plot_electron_axis = self.plot_electron_axis
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
                        'scan_parameters': scan_parameter_range,
-                       'electron_axis': self.electron_axis,
+                       'electron_axis': plot_electron_axis,
                        'scan_parameter_name': scan_parameter_name}]
 
             for param in params:
@@ -292,20 +293,21 @@ class Plotting(object):
             title = 'Threshold distribution for enabled pixels'
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 scan_parameter_name = 'Finedelay [LSB]'
-                self.electron_axis = False
+                plot_electron_axis = False
                 plot_range = range(0, 16)
                 title = 'Fine delay distribution for enabled pixels'
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = self.scan_config['VTH_name']
-                self.electron_axis = False
+                plot_electron_axis = False
             else:
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = '$\\Delta$ VCAL'
+                plot_electron_axis = self.plot_electron_axis
 
             self._plot_distribution(self.ThresholdMap[self.Chi2Sel].T,
                                     plot_range=plot_range,
-                                    electron_axis=self.electron_axis,
+                                    electron_axis=plot_electron_axis,
                                     x_axis_title=scan_parameter_name,
                                     title=title,
                                     log_y=logscale,
@@ -322,14 +324,15 @@ class Plotting(object):
             plot_range = self.scan_parameter_range
             if self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                self.electron_axis = False
+                plot_electron_axis = False
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
+                plot_electron_axis = self.plot_electron_axis
 
             self._plot_stacked_threshold(data=self.ThresholdMap[self.Chi2Sel].T,
                                          tdac_mask=self.tdac_mask[self.Chi2Sel].T,
                                          plot_range=plot_range,
-                                         electron_axis=self.electron_axis,
+                                         electron_axis=plot_electron_axis,
                                          x_axis_title=scan_parameter_name,
                                          y_axis_title='# of pixels',
                                          title='Threshold distribution for enabled pixels',
@@ -346,13 +349,14 @@ class Plotting(object):
             sel = self.Chi2Map[:] > 0.  # Mask not converged fits (chi2 = 0)
             mask[~sel] = True
             if self.run_config['scan_id'] == 'injection_delay_scan':
-                self.electron_axis = False
+                plot_electron_axis = False
                 use_electron_offset = False
                 z_label = 'Finedelay [LSB]'
                 title = 'Injection Delay'
                 z_min = 0
                 z_max = 16
             else:
+                plot_electron_axis = self.plot_electron_axis
                 use_electron_offset = False
                 z_label = 'Threshold'
                 title = 'Threshold'
@@ -360,7 +364,7 @@ class Plotting(object):
                 z_max = None
 
             self._plot_occupancy(hist=np.ma.masked_array(self.ThresholdMap, mask).T,
-                                 electron_axis=self.electron_axis,
+                                 electron_axis=plot_electron_axis,
                                  z_label=z_label,
                                  title=title,
                                  use_electron_offset=use_electron_offset,
@@ -380,17 +384,18 @@ class Plotting(object):
             plot_range = None
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
                 scan_parameter_name = '$\\Delta$ VCAL'
+                plot_electron_axis = self.plot_electron_axis
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                self.electron_axis = False
+                plot_electron_axis = False
             elif self.run_config['scan_id'] == 'injection_delay_scan':
-                self.electron_axis = False
                 scan_parameter_name = 'Finedelay [LSB]'
+                plot_electron_axis = False
 
             self._plot_distribution(np.ma.masked_array(self.NoiseMap, mask).T,
                                     title='Noise distribution for enabled pixels',
                                     plot_range=plot_range,
-                                    electron_axis=self.electron_axis,
+                                    electron_axis=plot_electron_axis,
                                     use_electron_offset=False,
                                     x_axis_title=scan_parameter_name,
                                     y_axis_title='# of pixels',
@@ -407,13 +412,14 @@ class Plotting(object):
             mask[~sel] = True
             z_label = 'Noise'
             title = 'Noise'
+            plot_electron_axis = self.plot_electron_axis
 
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 z_label = 'Finedelay [LSB]'
                 title = 'Injection Delay Noise'
-                self.electron_axis = False
+                plot_electron_axis = False
             self._plot_occupancy(hist=np.ma.masked_array(self.NoiseMap, mask).T,
-                                 electron_axis=self.electron_axis,
+                                 electron_axis=plot_electron_axis,
                                  use_electron_offset=False,
                                  z_label=z_label,
                                  z_max='median',
