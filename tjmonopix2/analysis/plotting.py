@@ -141,9 +141,9 @@ class Plotting(object):
 
         try:
             conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
-            if self.scan_config['start_column'] and self.scan_config['stop']  in range(0, 448):  # TODO: Get rid of hardcoded values.
+            if self.scan_config['start_column'] and self.scan_config['stop'] in range(0, 448):  # TODO: Get rid of hardcoded values.
                 self.electron_conversion = conversion_factors['DC_coupled']
-            elif self.scan_config['start_column'] and self.scan_config['stop']  in range(448, 512):
+            elif self.scan_config['start_column'] and self.scan_config['stop'] in range(448, 512):
                 self.electron_conversion = conversion_factors['AC_coupled']
             else:
                 self.log.warning('Both DC and AC coupled pixels enabled. Choose ambiguous electron conversion factor of DC falvors!')
