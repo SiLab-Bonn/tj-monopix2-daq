@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 
 class Analysis(object):
-    def __init__(self, raw_data_file=None, analyzed_data_file=None,
+    def __init__(self, raw_data_file=None, analyzed_data_file=None, tot_calib_file=None,
                  store_hits=True, cluster_hits=False, analyze_tdc=False, use_tdc_trigger_dist=False,
                  build_events=False, chunk_size=1000000, **_):
         self.log = logger.setup_derived_logger('Analysis')
@@ -32,6 +32,7 @@ class Analysis(object):
         self.chunk_size = chunk_size
         self.analyze_tdc = analyze_tdc
         self.use_tdc_trigger_dist = use_tdc_trigger_dist
+        self.tot_calib_file = tot_calib_file
 
         if self.build_events:
             self.cluster_hits = True
@@ -156,7 +157,7 @@ class Analysis(object):
                            ('frame', 'u1'),
                            ('column', 'u2'),
                            ('row', 'u2'),
-                           ('charge', 'u1'),
+                           ('charge', 'u2'),
                            ('timestamp', 'i8')]
         cluster_fields = {'event_number': 'event_number',
                           'column': 'column',
@@ -172,7 +173,7 @@ class Analysis(object):
         cluster_description = [('event_number', 'u4'),
                                ('id', '<u2'),
                                ('size', '<u2'),
-                               ('tot', '<u2'),
+                               ('tot', '<u4'),
                                ('seed_col', '<u2'),
                                ('seed_row', '<u2'),
                                ('mean_col', '<f4'),
@@ -254,6 +255,10 @@ class Analysis(object):
                                          noisy_pixels, disabled_pixels,
                                          seed_hit_index)
 
+            if self.tot_calib_file:
+                max_hit_charge = 2048
+            else:
+                max_hit_charge = 128
             # Initialize clusterizer with custom hit/cluster fields
             self.clz = HitClusterizer(
                 hit_fields=hit_fields,
@@ -261,7 +266,7 @@ class Analysis(object):
                 cluster_fields=cluster_fields,
                 cluster_dtype=self.cluster_dtype,
                 min_hit_charge=1,
-                max_hit_charge=128,
+                max_hit_charge=max_hit_charge,
                 column_cluster_distance=5,
                 row_cluster_distance=5,
                 frame_cluster_distance=1,
@@ -294,6 +299,9 @@ class Analysis(object):
                 if self.build_events:
                     trigger_n, trigger_ts, event_n = 0, 0, 0
                     event_table = self._create_table(out_file, name='Hits', title='event_data', dtype=au.event_dtype)
+                if self.tot_calib_file is not None:
+                    with tb.open_file(self.tot_calib_file, 'r') as calib_file:
+                        self.tot_calib = calib_file.root.InjTotCalibration[:]
                 if self.cluster_hits:
                     cluster_table = out_file.create_table(
                         out_file.root, name='Cluster',
@@ -302,8 +310,12 @@ class Analysis(object):
                         filters=tb.Filters(complib='blosc',
                                            complevel=5,
                                            fletcher32=False))
+                    if self.tot_calib_file:
+                        cs_tot_size = 2048
+                    else:
+                        cs_tot_size = 256
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
-                    hist_cs_tot = np.zeros(shape=(256, ), dtype=np.uint32)
+                    hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
@@ -336,6 +348,7 @@ class Analysis(object):
                         if self.build_events:
                             data_to_clusterizer = event_dat
                         else:
+                            hit_dat = hit_dat[hit_dat['col'] < 1000]  # Can only call tot_calib for hit data
                             hit_data_cs_fmt = np.zeros(len(hit_dat), dtype=au.event_dtype)
                             hit_data_cs_fmt['event_number'][:] = hit_dat['timestamp'][:]
                             hit_data_cs_fmt['trigger_number'][:] = -1
@@ -346,11 +359,19 @@ class Analysis(object):
                             hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
                             data_to_clusterizer = hit_data_cs_fmt
 
+                        if self.tot_calib_file:
+                            data_to_clusterizer['charge'][:] = au._inv_tot_response_func(
+                                data_to_clusterizer['charge'][:],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 0],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 1],
+                                self.tot_calib[data_to_clusterizer[:]['column'], data_to_clusterizer[:]['row']][:, 2]
+                            )
+
                         _, cluster = self.clz.cluster_hits(data_to_clusterizer)
                         cluster_table.append(cluster)
                         # Create actual cluster hists
                         cs_size = np.bincount(cluster['size'], minlength=30)[:30]
-                        cs_tot = np.bincount(cluster['tot'], minlength=256)[:256]
+                        cs_tot = np.bincount(cluster['tot'], minlength=512)[:512]
                         sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
                         cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
                         # Add to total hists
@@ -394,11 +415,11 @@ class Analysis(object):
             #                                               complevel=5,
             #                                               fletcher32=False))
 
-            if scan_id in ['threshold_scan']:
+            if scan_id in ['threshold_scan', 'calibrate_tot']:
                 n_injections = self.scan_config['n_injections']
                 hist_scurve = hist_occ.reshape((self.rows * self.columns, -1))
 
-                if scan_id in ['threshold_scan']:
+                if scan_id in ['threshold_scan', 'calibrate_tot']:
                     scan_params = [self.scan_config['VCAL_HIGH'] - v for v in range(self.scan_config['VCAL_LOW_start'],
                                                                                     self.scan_config['VCAL_LOW_stop'], self.scan_config['VCAL_LOW_step'])]
                     self.threshold_map, self.noise_map, self.chi2_map = au.fit_scurves_multithread(hist_scurve, scan_params, n_injections, optimize_fit_range=False)
