@@ -39,6 +39,11 @@ event_dtype = np.dtype([
     ("timestamp", "<i8"),
 ])
 
+# Word defines
+TRIGGER_HEADER = 0x80000000
+
+# Data Masks
+TRG_MASK = 0x7FFFFFFF  # Trigger data (number and/or time stamp)
 
 class ConfigDict(dict):
     ''' Dictionary with different value data types:

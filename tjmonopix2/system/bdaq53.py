@@ -82,6 +82,12 @@ class BDAQ53(Dut):
         #     for _ in range(100):
         #         self.rx_channels['rx0'].get_rx_ready()
 
+    def enable_ext_trigger(self):
+        self['cmd'].set_ext_trigger(True)
+
+    def disable_ext_trigger(self):
+        self['cmd'].set_ext_trigger(False)
+
     def set_cmd_clk(self, frequency=160.0, force=False):
         if self.board_version in {'BDAQ53', 'MIO3'}:
             if self['system']['SI570_IS_CONFIGURED'] == 0 or force is True:
