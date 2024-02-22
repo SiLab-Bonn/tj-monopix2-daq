@@ -691,7 +691,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix='parameter_page')
 
-    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=True, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
+    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=False, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
         if z_max == 'median':
             z_max = 2 * np.ma.median(hist)
         elif z_max == 'maximum':
@@ -1074,7 +1074,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=True, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
+    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=False, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
         if plot_range is None:
             diff = np.amax(data) - np.amin(data)
             median = np.ma.median(data)
