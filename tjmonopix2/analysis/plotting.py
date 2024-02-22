@@ -140,7 +140,7 @@ class Plotting(object):
             pass
 
         try:
-            conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
+            conversion_factors = au.ConfigDict(root.configuration_in.bench.electron_conversion[:])
             if self.scan_config['start_column'] in range(0, 448) and self.scan_config['stop_column'] in range(0, 448):  # TODO: Get rid of hardcoded values.
                 self.electron_conversion = conversion_factors['DC_coupled']
             elif self.scan_config['start_column'] in range(448, 512) and self.scan_config['stop_column'] in range(448, 512):
