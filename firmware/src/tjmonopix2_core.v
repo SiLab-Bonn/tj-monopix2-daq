@@ -60,7 +60,6 @@ module tjmonopix2_core #(
     input wire EXT_TRIGGER_CLK,
     output wire MGT_REF_SEL,
     input wire CLKILA,
-    input wire EXT_TRIGGER_CLK,
 
     // I2C
     inout wire I2C_SCL,
@@ -376,7 +375,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK160),
+    .PULSE_CLK(CLKCMD),
     .EXT_START(CMD_LOOP_START),
     .PULSE(CMD_LOOP_START_PULSE)
 );
@@ -422,7 +421,8 @@ rrp_arbiter #(
 
 // ----- TLU ----- //
 wire TRIGGER_CLK;
-assign TRIGGER_CLK = TRIGGER_CLK_SEL ? EXT_TRIGGER_CLK : CLK40;
+// assign TRIGGER_CLK = TRIGGER_CLK_SEL ? EXT_TRIGGER_CLK : CLK40;
+assign TRIGGER_CLK = EXT_TRIGGER_CLK;
 
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
@@ -470,11 +470,7 @@ assign EXT_START_PULSE_VETO = TRIGGER_ACCEPTED_FLAG;
 wire VETO_TLU_PULSE;
 
 // set acknowledge when veto returns to low
-pulse_gen_rising i_pulse_gen_rising_tlu_veto(
-    .clk_in(CLK40),
-    .in(~VETO_TLU_PULSE),
-    .out(TRIGGER_ACKNOWLEDGE_FLAG)
-);
+pulse_gen_rising i_pulse_gen_rising_tlu_veto(.clk_in(TRIGGER_CLK), .in(~VETO_TLU_PULSE), .out(TRIGGER_ACKNOWLEDGE_FLAG));
 
 pulse_gen #(
     .BASEADDR(PULSER_VETO_BASEADDR),
@@ -488,7 +484,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK40),
+    .PULSE_CLK(TRIGGER_CLK),
     .EXT_START(EXT_START_PULSE_VETO),
     .PULSE(VETO_TLU_PULSE)
 );
@@ -577,25 +573,25 @@ generate
     end
 endgenerate
 
-`ifdef SYNTHESIS
-    reg EXT_TRG_CLK_DBG, TLU_TRG_DBG, TLU_RST_DBG, TLU_BSY_DBG, TLU_CLK_DBG;
-    reg [63:0] TS_DBG;
+// `ifdef SYNTHESIS
+//     reg EXT_TRG_CLK_DBG, TLU_TRG_DBG, TLU_RST_DBG, TLU_BSY_DBG, TLU_CLK_DBG;
+//     reg [63:0] TS_DBG;
 
-    always @(*) begin
-        EXT_TRG_CLK_DBG <= EXT_TRIGGER_CLK;
-        TLU_TRG_DBG <= RJ45_TRIGGER;
-        TLU_CLK_DBG <= RJ45_CLK;
-        TLU_BSY_DBG <= RJ45_BUSY;
-        TLU_RST_DBG <= RJ45_RESET;
-        TS_DBG <= TIMESTAMP;
-    end
+//     always @(*) begin
+//         EXT_TRG_CLK_DBG <= EXT_TRIGGER_CLK;
+//         TLU_TRG_DBG <= RJ45_TRIGGER;
+//         TLU_CLK_DBG <= RJ45_CLK;
+//         TLU_BSY_DBG <= RJ45_BUSY;
+//         TLU_RST_DBG <= RJ45_RESET;
+//         TS_DBG <= TIMESTAMP;
+//     end
 
-    aidamode_debugger i_aidamode_debugger (
-        .clk(CLKILA), // input wire clk
+//     aidamode_debugger i_aidamode_debugger (
+//         .clk(CLKILA), // input wire clk
 
-        .probe0({TLU_CLK_DBG, TLU_BSY_DBG, TLU_TRG_DBG, TLU_RST_DBG, EXT_TRG_CLK_DBG}), // input wire [3:0]  probe0  
-        .probe1(TS_DBG) // input wire [63:0]  probe1
-    );
-`endif
+//         .probe0({TLU_CLK_DBG, TLU_BSY_DBG, TLU_TRG_DBG, TLU_RST_DBG, EXT_TRG_CLK_DBG}), // input wire [3:0]  probe0  
+//         .probe1(TS_DBG) // input wire [63:0]  probe1
+//     );
+// `endif
 
 endmodule
