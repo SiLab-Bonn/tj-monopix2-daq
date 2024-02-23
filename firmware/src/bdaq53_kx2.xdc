@@ -23,14 +23,15 @@
 # Clock inputs
 create_clock -period 10.000 -name CLK_SYS -add [get_ports FCLK_IN]
 create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
-create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK0_P]
+create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK1_P]
+create_clock -period 25.000 -name CLK_SMA -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
 create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKOUT0] -divide_by 1600 [get_pins i_tjmonopix2_core/i_clock_divisor_i2c/CLOCK_reg/Q]
 create_generated_clock -name rgmii_txc -source [get_pins rgmii/ODDR_inst/C] -divide_by 1 [get_ports rgmii_txc]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
+set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK640_PLL CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group [get_clocks -include_generated_clocks CLK_SMA] -group CLK_RGMII_RX
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000
