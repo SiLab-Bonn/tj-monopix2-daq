@@ -236,7 +236,7 @@ BUFG BUFG_inst_CLK160  ( .O(CLK160),  .I(CLK160_PLL)  );
 BUFG BUFG_inst_CLK320  ( .O(CLK320),  .I(CLK320_PLL)  );
 
 // MGT CLK (from Si570 or SMA input)
-wire CLKCMD, EXT_TRIGGER_CLK;
+wire CLKCMD, CLK_SMA, EXT_TRIGGER_CLK;
 
 IBUFDS_GTE2 IBUFDS_refclk
 (
@@ -248,9 +248,11 @@ IBUFDS_GTE2 IBUFDS_refclk
 );
 
 // SMA CLK input from AIDA2020 TLU (MGT_REF_SEL has to be 0!)
+assign MGT_REF_SEL = 1'b0;
+
 IBUFDS_GTE2 IBUFDS_aidatlu_clk  
 (
-    .O               (EXT_TRIGGER_CLK),
+    .O               (CLK_SMA),
     .ODIV2           (),
     .CEB             (1'b0),
     .I               (MGT_REFCLK0_P),
@@ -593,9 +595,9 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
-    .CLKILA(CLK800),  // Integrated Logic analyzer sampling clock
+    // .CLKILA(CLK40),  // Integrated Logic analyzer sampling clock
     .EXT_TRIGGER_CLK(EXT_TRIGGER_CLK),
-    .MGT_REF_SEL(MGT_REF_SEL),
+    .MGT_REF_SEL(),
 
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),
