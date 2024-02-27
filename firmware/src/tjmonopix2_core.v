@@ -188,18 +188,6 @@ localparam RX_HIGHADDR_J1C = 32'h4300 - 1;
 localparam RX_BASEADDR_J1D = 32'h4300;
 localparam RX_HIGHADDR_J1D = 32'h4400 - 1;
 
-// localparam RX_BASEADDR_DP5 = 32'h0200;
-// localparam RX_HIGHADDR_DP5 = 32'h0300 - 1;
-
-// localparam RX_BASEADDR_mDP = 32'h0200;
-// localparam RX_HIGHADDR_mDP = 32'h0300 - 1;
-
-// localparam RX_BASEADDR_J1C = 32'h0200;
-// localparam RX_HIGHADDR_J1C = 32'h0300 - 1;
-
-// localparam RX_BASEADDR_J1D = 32'h0200;
-// localparam RX_HIGHADDR_J1D = 32'h0300 - 1;
-
 localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
 localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
 
@@ -776,7 +764,6 @@ tjmono2_rx #(
     .BUS_WR(BUS_WR)
 );
 
-// assign RX_FIFO_EMPTY_mDP = 1;
 tjmono2_rx #(
     .BASEADDR(RX_BASEADDR_mDP),
     .HIGHADDR(RX_HIGHADDR_mDP),
@@ -812,7 +799,6 @@ tjmono2_rx #(
     .BUS_WR(BUS_WR)
 );
 
-// assign RX_FIFO_EMPTY_J1C = 1;
 tjmono2_rx #(
     .BASEADDR(RX_BASEADDR_J1C),
     .HIGHADDR(RX_HIGHADDR_J1C),
@@ -848,7 +834,6 @@ tjmono2_rx #(
     .BUS_WR(BUS_WR)
 );
 
-// assign RX_FIFO_EMPTY_J1D = 1;
 tjmono2_rx #(
     .BASEADDR(RX_BASEADDR_J1D),
     .HIGHADDR(RX_HIGHADDR_J1D),
