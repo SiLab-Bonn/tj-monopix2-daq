@@ -304,15 +304,6 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
         .I(LVDS_CMD_DP5)            // Buffer input
     );
 
-    // OBUFDS #(
-    //     .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-    //     .SLEW("FAST")           // Specify the output slew rate
-    // ) i_OBUFDS_cmd_DP1 (
-    //     .O(DP1_GPIO_P[3]),              // Diff_p output (connect directly to top-level port)
-    //     .OB(DP1_GPIO_N[3]),             // Diff_n output (connect directly to top-level port)
-    //     .I(LVDS_CMD_DP1)            // Buffer input
-    // );
-
     OBUFDS #(
         .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
         .SLEW("FAST")           // Specify the output slew rate
