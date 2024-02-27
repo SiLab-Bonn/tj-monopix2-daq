@@ -115,7 +115,7 @@ class Plotting(object):
             self.HistTdcStatus = None
         self.HistOcc = root.HistOcc[:]
         self.HistTot = root.HistTot[:]
-        if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
+        if self.run_config['scan_id'] in ['threshold_scan', 'calibrate_tot', 'fast_threshold_scan', 'global_threshold_tuning', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
             self.ThresholdMap = root.ThresholdMap[:, :]
             self.Chi2Map = root.Chi2Map[:, :]
             self.Chi2Sel = (self.Chi2Map > 0) & (self.Chi2Map < SCURVE_CHI2_UPPER_LIMIT) & (~self.enable_mask)
@@ -131,13 +131,26 @@ class Plotting(object):
             self.log.warning('Disabled {} noisy pixels in total.'.format(len(noisy_pixels[0])))
 
         try:
-            _ = root.Cluster[:]  # FIXME: This line of code does not take chunking into account
+            _ = root.Cluster
             self.HistClusterSize = root.HistClusterSize[:]
             self.HistClusterShape = root.HistClusterShape[:]
             self.HistClusterTot = root.HistClusterTot[:]
             self.clustered = True
         except tb.NoSuchNodeError:
             pass
+
+        try:
+            conversion_factors = au.ConfigDict(root.configuration_in.bench.electron_conversion[:])
+            if self.scan_config['start_column'] in range(0, 448) and self.scan_config['stop_column'] in range(0, 448):  # TODO: Get rid of hardcoded values.
+                self.electron_conversion = conversion_factors['DC_coupled']
+            elif self.scan_config['start_column'] in range(448, 512) and self.scan_config['stop_column'] in range(448, 512):
+                self.electron_conversion = conversion_factors['AC_coupled']
+            else:
+                self.log.warning('Both DC and AC coupled pixels enabled. Choose ambiguous electron conversion factor of DC falvors!')
+                self.electron_conversion = conversion_factors['DC_coupled']
+            self.plot_electron_axis = True
+        except tb.NoSuchNodeError:
+            self.plot_electron_axis = False
 
         try:
             in_file.close()
@@ -164,14 +177,14 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['simple_scan']:
+            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan']:
                 self.create_fancy_occupancy()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'calibrate_tot']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
                 self.create_tot_plot()
-            if self.run_config['scan_id'] in ['threshold_scan']:
+            if self.run_config['scan_id'] in ['threshold_scan', 'calibrate_tot']:
                 self.create_tot_hist()
                 self.create_scurves_plot()
                 self.create_threshold_plot()
@@ -254,20 +267,20 @@ class Plotting(object):
         try:
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 scan_parameter_name = 'Finedelay [LSB]'
-                electron_axis = False
+                plot_electron_axis = False
                 scan_parameter_range = range(0, 16)
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                electron_axis = False
+                plot_electron_axis = False
                 scan_parameter_range = self.scan_parameter_range
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
                 scan_parameter_range = self.scan_parameter_range
+                plot_electron_axis = self.plot_electron_axis
 
             params = [{'scurves': self.HistOcc[:].ravel().reshape((self.rows * self.cols, -1)).T,
                        'scan_parameters': scan_parameter_range,
-                       'electron_axis': electron_axis,
+                       'electron_axis': plot_electron_axis,
                        'scan_parameter_name': scan_parameter_name}]
 
             for param in params:
@@ -280,21 +293,21 @@ class Plotting(object):
             title = 'Threshold distribution for enabled pixels'
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 scan_parameter_name = 'Finedelay [LSB]'
-                electron_axis = False
+                plot_electron_axis = False
                 plot_range = range(0, 16)
                 title = 'Fine delay distribution for enabled pixels'
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = self.scan_config['VTH_name']
-                electron_axis = False
+                plot_electron_axis = False
             else:
                 plot_range = self.scan_parameter_range
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                plot_electron_axis = self.plot_electron_axis
 
             self._plot_distribution(self.ThresholdMap[self.Chi2Sel].T,
                                     plot_range=plot_range,
-                                    electron_axis=electron_axis,
+                                    electron_axis=plot_electron_axis,
                                     x_axis_title=scan_parameter_name,
                                     title=title,
                                     log_y=logscale,
@@ -311,15 +324,15 @@ class Plotting(object):
             plot_range = self.scan_parameter_range
             if self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                electron_axis = False
+                plot_electron_axis = False
             else:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                plot_electron_axis = self.plot_electron_axis
 
             self._plot_stacked_threshold(data=self.ThresholdMap[self.Chi2Sel].T,
                                          tdac_mask=self.tdac_mask[self.Chi2Sel].T,
                                          plot_range=plot_range,
-                                         electron_axis=electron_axis,
+                                         electron_axis=plot_electron_axis,
                                          x_axis_title=scan_parameter_name,
                                          y_axis_title='# of pixels',
                                          title='Threshold distribution for enabled pixels',
@@ -336,22 +349,22 @@ class Plotting(object):
             sel = self.Chi2Map[:] > 0.  # Mask not converged fits (chi2 = 0)
             mask[~sel] = True
             if self.run_config['scan_id'] == 'injection_delay_scan':
-                electron_axis = False
+                plot_electron_axis = False
                 use_electron_offset = False
                 z_label = 'Finedelay [LSB]'
                 title = 'Injection Delay'
                 z_min = 0
                 z_max = 16
             else:
-                electron_axis = False  # TODO: True after calibration code is done
-                use_electron_offset = False  # TODO: True after calibration code is done
+                plot_electron_axis = self.plot_electron_axis
+                use_electron_offset = False
                 z_label = 'Threshold'
                 title = 'Threshold'
                 z_min = None
                 z_max = None
 
             self._plot_occupancy(hist=np.ma.masked_array(self.ThresholdMap, mask).T,
-                                 electron_axis=electron_axis,
+                                 electron_axis=plot_electron_axis,
                                  z_label=z_label,
                                  title=title,
                                  use_electron_offset=use_electron_offset,
@@ -371,18 +384,18 @@ class Plotting(object):
             plot_range = None
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'in_time_threshold_scan', 'autorange_threshold_scan', 'crosstalk_scan']:
                 scan_parameter_name = '$\\Delta$ VCAL'
-                electron_axis = False  # TODO: True after calibration code is done
+                plot_electron_axis = self.plot_electron_axis
             elif self.run_config['scan_id'] == 'global_threshold_tuning':
                 scan_parameter_name = self.scan_config['VTH_name']
-                electron_axis = False
+                plot_electron_axis = False
             elif self.run_config['scan_id'] == 'injection_delay_scan':
-                electron_axis = False
                 scan_parameter_name = 'Finedelay [LSB]'
+                plot_electron_axis = False
 
             self._plot_distribution(np.ma.masked_array(self.NoiseMap, mask).T,
                                     title='Noise distribution for enabled pixels',
                                     plot_range=plot_range,
-                                    electron_axis=electron_axis,
+                                    electron_axis=plot_electron_axis,
                                     use_electron_offset=False,
                                     x_axis_title=scan_parameter_name,
                                     y_axis_title='# of pixels',
@@ -399,14 +412,14 @@ class Plotting(object):
             mask[~sel] = True
             z_label = 'Noise'
             title = 'Noise'
-            electron_axis = False  # TODO: True after calibration code is done
+            plot_electron_axis = self.plot_electron_axis
 
             if self.run_config['scan_id'] == 'injection_delay_scan':
                 z_label = 'Finedelay [LSB]'
                 title = 'Injection Delay Noise'
-                electron_axis = False
+                plot_electron_axis = False
             self._plot_occupancy(hist=np.ma.masked_array(self.NoiseMap, mask).T,
-                                 electron_axis=electron_axis,
+                                 electron_axis=plot_electron_axis,
                                  use_electron_offset=False,
                                  z_label=z_label,
                                  z_max='median',
@@ -479,9 +492,16 @@ class Plotting(object):
             else:
                 plot_range = range(0, np.max(np.nonzero(self.HistClusterTot)))
 
+            tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
+            if tot_calib_file is not None:
+                x_axis_title = 'Cluster charge [e⁻]'
+                plot_range = plot_range * self.electron_conversion
+            else:
+                x_axis_title = 'Cluster ToT [25 ns]'
+
             self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
                                log_y=False, plot_range=plot_range,
-                               x_axis_title='Cluster ToT [25 ns]',
+                               x_axis_title=x_axis_title,
                                y_axis_title='# of clusters', suffix='cluster_tot')
         except Exception:
             self.log.error('Could not create cluster TOT plot!')
@@ -550,16 +570,16 @@ class Plotting(object):
         if self.internal:
             fig.text(0.1, 1, 'Internal', fontsize=16, color='r', rotation=45, bbox=dict(boxstyle='round', facecolor='white', edgecolor='red', alpha=0.7), transform=fig.transFigure)
 
-    def _convert_to_e(self, dac, use_offset=True):
+    def _convert_to_e(self, dac, use_offset=False):
         if use_offset:
             e = dac * self.calibration['e_conversion_slope'] + self.calibration['e_conversion_offset']
             de = math.sqrt((dac * self.calibration['e_conversion_slope_error'])**2 + self.calibration['e_conversion_offset_error']**2)
         else:
-            e = dac * self.calibration['e_conversion_slope']
-            de = dac * self.calibration['e_conversion_slope_error']
+            e = dac * self.electron_conversion
+            de = dac * self.electron_conversion * 0.15  # TODO: Assume generic 15% error of conversion factor, need precise measurement.
         return e, de
 
-    def _add_electron_axis(self, fig, ax, use_electron_offset=True):
+    def _add_electron_axis(self, fig, ax, use_electron_offset=False):
         fig.subplots_adjust(top=0.75)
         ax.title.set_position([.5, 1.15])
 
@@ -671,7 +691,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix='parameter_page')
 
-    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=True, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
+    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=False, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
         if z_max == 'median':
             z_max = 2 * np.ma.median(hist)
         elif z_max == 'maximum':
@@ -1054,7 +1074,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=True, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
+    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=False, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
         if plot_range is None:
             diff = np.amax(data) - np.amin(data)
             median = np.ma.median(data)
