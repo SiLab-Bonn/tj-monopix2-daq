@@ -140,7 +140,7 @@ class Plotting(object):
             pass
 
         try:
-            conversion_factors = au.ConfigDict(root.configuration_in.bench.calibration['electron_conversion'])
+            conversion_factors = au.ConfigDict(root.configuration_in.bench.electron_conversion[:])
             if self.scan_config['start_column'] in range(0, 448) and self.scan_config['stop_column'] in range(0, 448):  # TODO: Get rid of hardcoded values.
                 self.electron_conversion = conversion_factors['DC_coupled']
             elif self.scan_config['start_column'] in range(448, 512) and self.scan_config['stop_column'] in range(448, 512):
@@ -177,9 +177,9 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['simple_scan']:
+            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan']:
                 self.create_fancy_occupancy()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'simple_scan', 'calibrate_tot']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'calibrate_tot']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
@@ -691,7 +691,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix='parameter_page')
 
-    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=True, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
+    def _plot_occupancy(self, hist, electron_axis=False, use_electron_offset=False, title='Occupancy', z_label='# of hits', z_min=None, z_max=None, show_sum=True, suffix=None, extend_upper_bound=True):
         if z_max == 'median':
             z_max = 2 * np.ma.median(hist)
         elif z_max == 'maximum':
@@ -1074,7 +1074,7 @@ class Plotting(object):
 
         self._save_plots(fig, suffix=suffix)
 
-    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=True, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
+    def _plot_distribution(self, data, plot_range=None, x_axis_title=None, electron_axis=False, use_electron_offset=False, y_axis_title='# of hits', log_y=False, align='edge', title=None, print_failed_fits=False, fit_gauss=True, plot_legend=True, suffix=None):
         if plot_range is None:
             diff = np.amax(data) - np.amin(data)
             median = np.ma.median(data)
