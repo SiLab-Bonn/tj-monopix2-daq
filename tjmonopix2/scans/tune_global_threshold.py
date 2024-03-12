@@ -18,16 +18,16 @@ from tjmonopix2.analysis import online as oa
 
 
 scan_configuration = {
-    'start_column': 32,
-    'stop_column': 64,
+    'start_column': 448,
+    'stop_column': 460,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
 
     # Target threshold
-    'VCAL_LOW': 1,
-    'VCAL_HIGH': 35,
+    'VCAL_LOW': 10,
+    'VCAL_HIGH': 10+30,
 
     # This setting does not have to be changed, it only allows (slightly) faster retuning
     # E.g.: gdac_value_bits = [3, 2, 1, 0] uses the 4th, 3rd, 2nd, and 1st GDAC value bit.
@@ -68,6 +68,9 @@ class GDACTuning(ScanBase):
 
         self.chip.registers["VL"].write(VCAL_LOW)
         self.chip.registers["VH"].write(VCAL_HIGH)
+
+        self.chip.registers["VRESET"].write(30)
+        self.chip.registers["ITUNE"].write(200)
 
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
@@ -165,10 +168,10 @@ class GDACTuning(ScanBase):
 
         return occupancy
 
-    def analyze_data_online(self, data_tuple):
+    def analyze_data_online(self, data_tuple, receiver):
         raw_data = data_tuple[0]
         self.data.hist_occ.add(raw_data)
-        super(GDACTuning, self).handle_data(data_tuple)
+        super(GDACTuning, self).handle_data(data_tuple, receiver)
 
     def analyze_data_online_no_save(self, data_tuple):
         raw_data = data_tuple[0]

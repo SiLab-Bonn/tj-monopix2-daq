@@ -61,20 +61,16 @@ class BDAQ53(Dut):
         if self.fw_version != VERSION.split('.')[0] + '.' + VERSION.split('.')[1]:  # Compare only the first two blocks
             raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
-        # Initialize readout (only one chip supported at the moment)
         self.rx_channels = {}
         for module in self.configuration['modules']:
-            print(f'module: {module}')
             for chip in self.configuration['modules'][module]:
                 if chip.startswith('chip'):
-                    print(f'chip: {chip}')
                     rx = self.configuration['modules'][module][chip]['receiver']
                     self.rx_channels[rx] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
                                                             'base_addr': self.receivers[rx]})
                     self.rx_channels[rx].init()
 
         # self.rx_channels['rx0'].DATA_DELAY = 11
-        # print('Done!')
 
         # self.rx_lanes = {}
         # for recv in self.receivers:

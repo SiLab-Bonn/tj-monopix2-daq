@@ -14,9 +14,11 @@ from tqdm import tqdm
 import os
 IDEL = int(os.environ.get('IDEL', 88))
 
+import time
+
 scan_configuration = {
-    'start_column': 100,
-    'stop_column': 150,
+    'start_column': 460,
+    'stop_column': 480,
     'start_row': 0,
     'stop_row': 512,
 }

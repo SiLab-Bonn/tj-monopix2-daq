@@ -199,7 +199,6 @@ class FifoReadout(object):
         ''' Runs in seperate process to filter raw data by receiver'''
         stopped_event = stopped_event
         polling_interval = 0.05
-        print('entered filter_readout_data')
         try:
             while True:
                 try:
@@ -223,6 +222,10 @@ class FifoReadout(object):
                                     print(f'data from {self.chips[data_id]}: {filtered_data}')
                             if self.callback:
                                 self.callback(data_tuple=(filtered_data, data[1], data[2], data[3]), receiver=self.chips[data_id])
+                        # try:
+                        #     self.callback(data, receiver=None)
+                        # except Exception:
+                        #     self.errback(sys.exc_info())
 
         except KeyboardInterrupt:   # Need to catch KeyboardInterrupt from main process
             pass

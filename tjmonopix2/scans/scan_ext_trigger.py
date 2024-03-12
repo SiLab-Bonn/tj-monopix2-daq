@@ -265,7 +265,7 @@ class ExtTriggerScan(ScanBase):
 
     def handle_data(self, data_tuple, receiver=None):
         ''' Check recorded trigger number '''
-        super(ExtTriggerScan, self).handle_data(data_tuple)
+        super(ExtTriggerScan, self).handle_data(data_tuple, receiver)
 
         raw_data = data_tuple[0]
 

@@ -104,7 +104,8 @@ class RegisterTable(tb.IsDescription):
 
 
 class ScanData:
-    ''' Class to store data created in the scan.
+    ''' 
+        Class to store data created in the scan.
 
         Shared between the configure(), scan() and analyze() steps
     '''
@@ -240,19 +241,16 @@ class ScanBase(object):
             # Deactivate receiver to prevent recording useless data
             for i in self.iterate_chips():
                 self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
-                print (f'disabling chip: {self.chip.receiver} at configure')
             for i, _ in enumerate(self.iterate_chips()):
                 with self._logging_through_handler(self.log_fh):
                     self.log.info('Configuring chip {0}...'.format(self.chip.get_sn()))
                     # Load masks from config
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
-                    print(f'enabling chip: {self.chip.receiver} at configure')
                     self._configure_masks()
                     # Scan dependent configuration step before actual scan can be started (set enable masks etc.)
                     ret_values[i] = self._configure(**self.scan_config)
                     # self.periphery.get_module_power(module=self.module_settings['name'], log=True)
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
-                    print (f'disabling chip: {self.chip.receiver} at configure')
 
             # Create general FIFO readout (for all chips/modules)
             self._configure_fifo_readout()
@@ -260,7 +258,6 @@ class ScanBase(object):
             # Enable receivers
             # for _ in self.iterate_chips():
             #     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
-            #     print(f'enabling chip: {self.chip.receiver} at configure !')
             # # Make sure monitor filter is blocking for all receivers before starting scan
             # self.daq.set_monitor_filter(mode='block')
 
@@ -284,21 +281,17 @@ class ScanBase(object):
                 # Enable all channels of defined chips
                 for _ in self.iterate_chips():
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
-                    print (f'enabling chip: {self.chip.receiver} at scan')
                 self.daq.reset_fifo()
                 self._scan(**self.scan_config)
                 for _ in self.iterate_chips():
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
-                    print (f'disabling chip: {self.chip.receiver} at scan')
             else:
                 self.daq.reset_fifo()
                 for i, _ in enumerate(self.iterate_chips()):
                     with self._logging_through_handler(self.log_fh):
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=True)
-                        print (f'enabling chip: {self.chip.receiver} at scan')
                         ret_values[i] = self._scan(**self.scan_config)
                         self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
-                        print (f'disabling chip: {self.chip.receiver} at configure')
             # Finalize scan
             # Disable tlu module in case it was enabled.
             if self.daq.tlu_module_enabled:
@@ -604,9 +597,7 @@ class ScanBase(object):
                     # # Check if chip is configured properly
                     # if self.daq.board_version != 'SIMULATION':
                     #     self.chip.registers.check_all()
-
                     self._set_receiver_enabled(receiver=self.chip.receiver, enabled=False)
-                    print (f'disabling chip: {self.chip.receiver} at _init_hardware')
 
             self.hardware_initialized = True
         else:
@@ -784,7 +775,6 @@ class ScanBase(object):
                     while os.path.isfile(output_filename + '.h5'):
                         output_filename = os.path.join(output_dir, self.run_name + '_%d' % i)  # append an index
                         i += 1
-
                     self.chips[mod_name + '_' + k] = ChipContainer(name=name, chip_settings=chip_settings, chip_conf=chip_conf, module_settings=module_settings,
                                                                    output_filename=output_filename, output_dir=output_dir, log_fh=chip_fh, scan_config=scan_config, suffix=self.suffix)
         with self._logging_through_handlers():

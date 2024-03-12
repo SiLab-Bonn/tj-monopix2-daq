@@ -7,43 +7,47 @@ modules:
   # module_0: # Arbitrary name of module, defines folder name with chip sub folders
   #   identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
   #   chip_0: # Arbitrary name of chip, defines folder name with chip data
-  #     chip_sn: "W18R03"
+  #     chip_sn: "W02R01"
   #     chip_id: 0
   #     receiver: "rx0"
-  #     chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+  #     chip_config_file: /home/rd50/tjmonopix2/2024_03_MAUS_Tuning/W02R01/20240222_173545_threshold_scan_interpreted.h5 # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
   #     record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
   #     use_good_pixels_diff: False
   #     send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor
+  #     disable_columns: []
   # module_1: # Arbitrary name of module, defines folder name with chip sub folders
   #   identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
   #   chip_1: # Arbitrary name of chip, defines folder name with chip data
-  #     chip_sn: "W08R03"
-  #     chip_id: 0
+  #     chip_sn: "W08R19"
+  #     chip_id: 1
   #     receiver: "rx1"
-  #     chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+  #     chip_config_file:  # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
   #     record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
   #     use_good_pixels_diff: False
   #     send_data: "tcp://127.0.0.1:5501" # Socket address of online monitor
+  #     disable_columns: []
   module_2: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_2: # Arbitrary name of chip, defines folder name with chip data
       chip_sn: "W14R18"
-      chip_id: 0
+      chip_id: 2
       receiver: "rx2"
-      chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+      chip_config_file: /home/rd50/tjmonopix2/2024_03_MAUS_Tuning/W14R18/20240222_163239_threshold_scan_interpreted.h5 # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
       record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
       use_good_pixels_diff: False
       send_data: "tcp://127.0.0.1:5502" # Socket address of online monitor
-  module_3: # Arbitrary name of module, defines folder name with chip sub folders
-    identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
-    chip_3: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W14R10"
-      chip_id: 0
-      receiver: "rx3"
-      chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
-      record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
-      use_good_pixels_diff: False
-      send_data: "tcp://127.0.0.1:5503" # Socket address of online monitor
+      disable_columns: [484, 485]
+  # module_3: # Arbitrary name of module, defines folder name with chip sub folders
+  #   identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
+  #   chip_3: # Arbitrary name of chip, defines folder name with chip data
+  #     chip_sn: "W18R03"
+  #     chip_id: 3
+  #     receiver: "rx3"
+  #     chip_config_file: /home/rd50/tjmonopix2/2024_03_MAUS_Tuning/W18R03/20240222_182107_threshold_scan_interpreted.h5 # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+  #     record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
+  #     use_good_pixels_diff: False
+  #     send_data: "tcp://127.0.0.1:5503" # Socket address of online monitor
+  #     disable_columns: [456, 457]
 
 TLU:
   TRIGGER_MODE: 3 # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)

@@ -12,15 +12,15 @@ from tjmonopix2.system.scan_base import ScanBase
 from tqdm import tqdm
 
 scan_configuration = {
-    'start_column': 0,
-    'stop_column': 32,
+    'start_column': 448,
+    'stop_column': 458,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
-    'VCAL_HIGH': 80,
-    'VCAL_LOW_start': 80,
-    'VCAL_LOW_stop': 40,
+    'VCAL_HIGH': 140,
+    'VCAL_LOW_start': 140-20,
+    'VCAL_LOW_stop': 140-40,
     'VCAL_LOW_step': -1
 }
 

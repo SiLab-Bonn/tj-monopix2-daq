@@ -34,7 +34,7 @@ scan_configuration = {
     'trigger_latency': 100,  # latency of trigger in units of 25 ns (BCs)
     'trigger_delay': 57,  # trigger delay in units of 25 ns (BCs)
     'trigger_length': 32,  # length of trigger command (amount of consecutive BCs are read out)
-    'veto_length': 3200,
+    'veto_length': 50,
     # raw val (si val, 1/si val): real hitrate
     #    400 (  10 us, 100 kHz): 1.5kHz (lim by telescope)
     #  25000 ( 625 us, 1.6 kHz): 580 Hz
@@ -83,9 +83,6 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
         self.last_readout_data = np.array([], dtype=np.uint32)
 
     def handle_data(self, data_tuple, receiver=None):
-
-        #print('handle data')
-
         if self.bdaq_recording:
             super(EudaqScan, self).handle_data(data_tuple, receiver=None)
 
@@ -382,7 +379,8 @@ class Monopix2Producer(pyeudaq.Producer):
                     self.scan.chip.registers[reg].write(int(float(reg_val)))
 
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
-        self.scan.daq.rx_channels['rx0']['DATA_DELAY'] = 14
+        for rx in self.scan.daq.rx_channels.keys():
+            self.scan.daq.rx_channels[rx]['DATA_DELAY'] = 14
         
         # configure TDC in FPGA
         self.scan.daq['tdc'].EN_WRITE_TIMESTAMP = 1
@@ -395,40 +393,49 @@ class Monopix2Producer(pyeudaq.Producer):
             self.scan.chip.registers['CMOS_TX_EN_CONF'].write(1)
             self.scan.chip.masks['hitor'][scan_configuration['start_column']:scan_configuration['stop_column'], scan_configuration['start_row']:scan_configuration['stop_row']] = True
 
-        # Enable readout and bcid/freeze distribution only to (double-)columns we actually use
-        dcols_enable = [0] * 16
-        for c in range(scan_configuration['start_column'], scan_configuration['stop_column']):
-            dcols_enable[c // 32] |= (1 << ((c >> 1) & 15))
+        for _ in self.scan.iterate_chips():
+            # Enable readout and bcid/freeze distribution only to (double-)columns we actually use
+            dcols_enable = [0] * 16
+            for c in range(scan_configuration['start_column'], scan_configuration['stop_column']):
+                dcols_enable[c // 32] |= (1 << ((c >> 1) & 15))
 
-        if self.masked_pixels_file:
-            with open(self.masked_pixels_file) as f:
-                masked_pixels = yaml.full_load(f)
+            # if self.masked_pixels_file:
+            #     with open(self.masked_pixels_file) as f:
+            #         masked_pixels = yaml.full_load(f)
 
-            for i in range(0, len(masked_pixels['masked_pixels'])):
-                row = masked_pixels['masked_pixels'][i]['row']
-                col = masked_pixels['masked_pixels'][i]['col']
-                self.scan.chip.masks['enable'][col, row] = False
-            
-            # Disabled ranges of columns
-            cr = masked_pixels.get('masked_colrange', None)
-            if cr:
-                for c in cr:
-                    beg_col = c['begin']
-                    end_col = c['end']
-                    self.scan.chip.masks['enable'][beg_col:end_col, :] = False
-                    for c in range(beg_col, end_col):
-                        dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
-            
-        # Apply disable bits to readout and bcid/freeze distribution
-        print("Double-cols readout bits: " + " ".join(f"{x:04X}" for x in dcols_enable))
-        for i, v in enumerate(dcols_enable):
-            self.scan.chip._write_register(155 + i, v)  # EN_RO_CONF
-            self.scan.chip._write_register(171 + i, v)  # EN_BCID_CONF
-            self.scan.chip._write_register(187 + i, v)  # EN_RO_RST_CONF
-            self.scan.chip._write_register(203 + i, v)  # EN_FREEZE_CONF
+                # for i in range(0, len(masked_pixels['masked_pixels'])):
+                #     row = masked_pixels['masked_pixels'][i]['row']
+                #     col = masked_pixels['masked_pixels'][i]['col']
+                #     self.scan.chip.masks['enable'][col, row] = False
+                
+                # Disabled ranges of columns
+                # cr = masked_pixels.get('masked_colrange', None)
+                # if cr:
+                #     for c in cr:
+                #         beg_col = c['begin']
+                #         end_col = c['end']
+                #         self.scan.chip.masks['enable'][beg_col:end_col, :] = False
+                #         for c in range(beg_col, end_col):
+                #             dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
 
-        self.scan.chip.masks.apply_disable_mask()
-        self.scan.chip.masks.update(force=True)
+            for module in self.scan.configuration['bench']['modules']:
+                for chip in self.scan.configuration['bench']['modules'][module]:
+                    if chip.startswith('chip'):
+                        if self.scan.chip.chip_id == self.scan.configuration['bench']['modules'][module][chip]['chip_id']:
+                            disable_columns = self.scan.configuration['bench']['modules'][module][chip]['disable_columns']
+                            for c in disable_columns:
+                                dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
+
+            # Apply disable bits to readout and bcid/freeze distribution
+            print("Double-cols readout bits: " + " ".join(f"{x:04X}" for x in dcols_enable))
+            for i, v in enumerate(dcols_enable):
+                self.scan.chip._write_register(155 + i, v)  # EN_RO_CONF
+                self.scan.chip._write_register(171 + i, v)  # EN_BCID_CONF
+                self.scan.chip._write_register(187 + i, v)  # EN_RO_RST_CONF
+                self.scan.chip._write_register(203 + i, v)  # EN_FREEZE_CONF
+
+            self.scan.chip.masks.apply_disable_mask()
+            self.scan.chip.masks.update(force=True)
 
     def _init(self):
 
