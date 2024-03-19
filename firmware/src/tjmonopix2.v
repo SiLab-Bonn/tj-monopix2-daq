@@ -53,7 +53,7 @@ module tjmonopix2 #(
         // output wire [3:0] DP1_GPIO_P, DP1_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
         // input wire DP1_GPIO_AUX_P, DP1_GPIO_AUX_N, // DATA
 
-        output wire [3:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
+        output wire [3:1] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK, PULSE_EXT}
         input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
 
         output wire [3:1] J1C_GPIO_P, J1C_GPIO_N,  // {CMD, CMD_CLK, SER_CLK}
@@ -415,14 +415,14 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
         .I(LVDS_PULSE_EXT)      // Buffer input
     );
 
-    OBUFDS #(
-        .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-        .SLEW("FAST")           // Specify the output slew rate
-    ) i_OBUFDS_pulse_ext_mDP (
-        .O(mDP_GPIO_P[0]),        // Diff_p output (connect directly to top-level port)
-        .OB(mDP_GPIO_N[0]),       // Diff_n output (connect directly to top-level port)
-        .I(LVDS_PULSE_EXT)      // Buffer input
-    );
+    // OBUFDS #(
+    //     .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+    //     .SLEW("FAST")           // Specify the output slew rate
+    // ) i_OBUFDS_pulse_ext_mDP (
+    //     .O(mDP_GPIO_P[0]),        // Diff_p output (connect directly to top-level port)
+    //     .OB(mDP_GPIO_N[0]),       // Diff_n output (connect directly to top-level port)
+    //     .I(LVDS_PULSE_EXT)      // Buffer input
+    // );
 
     wire LVDS_DATA_DP5, LVDS_DATA_int_DP5;
     wire LVDS_DATA_mDP, LVDS_DATA_int_mDP;

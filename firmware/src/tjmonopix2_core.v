@@ -525,7 +525,7 @@ cmd #(
         .Q(LVDS_SER_CLK_mDP), .C(CLK160), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
     );
     ODDR ODDR_inst_CMD_CLK_mDP (
-        .Q(LVDS_CMD_CLK_mDP), .C(CLKCMD), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
+        .Q(LVDS_CMD_CLK_mDP), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
     );
     ODDR ODDR_inst_CMD_mDP (
         .Q(LVDS_CMD_mDP), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
