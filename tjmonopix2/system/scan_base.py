@@ -789,7 +789,7 @@ class ScanBase(object):
                 row['attribute'] = attr
                 try:
                     row['value'] = val
-                except TypeError:  # value cannot be implicitly converted to string
+                except (TypeError, ValueError):  # value cannot be implicitly converted to string
                     row['value'] = str(val)
                 row.append()
             node.flush()
