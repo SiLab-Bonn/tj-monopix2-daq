@@ -139,10 +139,10 @@ class TDACTuning(ScanBase):
         self.log.success('Mean TDAC is {0:1.2f}.'.format(mean_tdac))
         self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = self.data.tdac_map[start_column:stop_column, start_row:stop_row]
 
-    def analyze_data_online(self, data_tuple):
+    def analyze_data_online(self, data_tuple, receiver):
         raw_data = data_tuple[0]
         self.data.hist_occ.add(raw_data)
-        super(TDACTuning, self).handle_data(data_tuple)
+        super(TDACTuning, self).handle_data(data_tuple, receiver)
 
     def analyze_data_online_no_save(self, data_tuple):
         raw_data = data_tuple[0]
