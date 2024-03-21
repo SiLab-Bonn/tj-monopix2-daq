@@ -204,6 +204,8 @@ class ScanBase(object):
         self.bench_config_par = bench_config
         self.scan_config_par = scan_config
         self.scan_config_per_chip_par = scan_config_per_chip
+        self.run_name = None
+        self.run_number = None
 
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.ana_proc = None  # analysis process for non-blocking analysis
@@ -497,6 +499,8 @@ class ScanBase(object):
     def _init_environment(self):
         self.timestamp = time.strftime("%Y%m%d_%H%M%S")
         self.run_name = self.timestamp + '_' + self.scan_id
+        if self.run_number:
+            self.run_name = self.timestamp + f'_' + self.scan_id + f'_run{self.run_number:04d}'
         # self.ext_trig_num = 0  # reqired for trigger based analysis
         self.context = zmq.Context.instance()  # one context per process to manage sockets
         # Configuration with testbench and scan configuration configs (dict-like object)

@@ -64,7 +64,7 @@ class EudaqScan(scan_ext_trigger.ExtTriggerScan):
 
     min_spec_occupancy = False  # needed for handle data function of ext. trigger scan
 
-    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix='', run_number=998):
+    def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix='', run_number=0):
         super().__init__(daq_conf, bench_config, scan_config, scan_config_per_chip, suffix)
         self.last_readout_data = None
         self.last_trigger = 0
@@ -190,7 +190,7 @@ class Monopix2Producer(pyeudaq.Producer):
         self.init_register_vals = {}
         self.masked_pixels_file = None
         self.wait_for_fpga = True
-        self.run_number = 999
+        self.run_number = 0
         self.current_scan_register = ''
         self.comment_in_conf=''
 
@@ -253,8 +253,7 @@ class Monopix2Producer(pyeudaq.Producer):
 
     def DoStartRun(self):
         print('requesting run number...')
-        # self.run_number = self.GetRunNumber()
-        self.run_number = 0
+        self.run_number = self.GetRunNumber()
         print(f'Run number: {self.run_number}')
         if self.wait_for_fpga:
             # in commbination with the hameg_producer (PS) it is important to wait for the FPGA board to be reachable
