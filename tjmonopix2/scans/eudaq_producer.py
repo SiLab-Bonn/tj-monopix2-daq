@@ -482,15 +482,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='monopix2_producer',
                                      description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-r', metavar='address',
-                        help='Destination address',
+    parser.add_argument('-r', '--runcontrol', metavar='address',
+                        help='Destination address for runcontrol',
                         default='tcp://localhost:44000',
+                        nargs='?')
+
+    parser.add_argument('-t', '--tname', metavar='producer_name',
+                        help='Name for the producer (default: tjmonopix2)',
+                        default='tjmonopix2',
                         nargs='?')
 
     args = parser.parse_args()
 
-    producer = Monopix2Producer('monopix2', args.r)
-    print('connecting to runcontrol in ', args.r)
+    producer = Monopix2Producer(args.tname, args.runcontrol)
+    print('connecting to runcontrol in ', args.runcontrol)
     producer.Connect()
     time.sleep(2)
     while producer.IsConnected():
