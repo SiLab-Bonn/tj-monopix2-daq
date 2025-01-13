@@ -7,7 +7,7 @@ from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
 
-def IsHostReachable(host="192.168.10.23",port=24,timeout=5) -> bool:
+def IsHostReachable(host="192.168.10.23",port=24,timeout=20) -> bool:
         try:
             socket.setdefaulttimeout(timeout)
             with socket.create_connection((host, port)):
@@ -36,7 +36,8 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def DoInitialise(self):
         #self.ini = self.GetInitConfiguration()
-        if IsHostReachable("192.168.10.23",24,20):
+        """
+            if IsHostReachable("192.168.10.23",24,self.BDAQBoardTimeout):
             try:
                 self.scan = ExtTriggerScan() 
                 self.scan.init()    
@@ -47,12 +48,29 @@ class EudaqProducerAida(pyeudaq.Producer):
         else:
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
+        """
+        self.log.info("Initialization completed")
 
     def DoConfigure(self):
-
+        self.log.info("Probing if power is up")
+        time.sleep(2)
+        if IsHostReachable("192.168.10.23",24,self.BDAQBoardTimeout):
+            try:
+                self.log.info("Power is up")
+                self.scan = ExtTriggerScan() 
+                self.scan.init()    
+            except Exception as e:
+                raise e
+            self.SetStatusTag("TriggerN", "0")
+            self.log.info("Initialization completed")
+        else:
+            self.log.error("Initialization failed")
+            raise RuntimeError("BDAQ board unreachable")
+        
+        """
         if self.scan==None:  # check if already initialized, if not DoInitialize
             self.DoInitialise()
-
+        """
         eudaqConfig = self.GetConfiguration() 
 
         self.conf["start_column"]=int(eudaqConfig.Get("start_column","0"))
