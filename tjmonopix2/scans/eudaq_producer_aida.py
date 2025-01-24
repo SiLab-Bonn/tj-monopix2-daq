@@ -7,7 +7,7 @@ from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
 
-def IsHostReachable(host="192.168.10.23",port=24,timeout=20) -> bool:
+def IsHostReachable(host="192.168.10.23",port=24,timeout=20) -> bool: #:TODO komentar
         try:
             socket.setdefaulttimeout(timeout)
             with socket.create_connection((host, port)):
@@ -28,6 +28,9 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.scan = None
         self.conf = {}
         self.thread_scan = None
+        self.reg_config = {}
+        self.init_register_vals = {}
+        self.BDAQBoardTimeout=10
 
 
     def __del__(self):
@@ -36,24 +39,10 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def DoInitialise(self):
         #self.ini = self.GetInitConfiguration()
-        """
-            if IsHostReachable("192.168.10.23",24,self.BDAQBoardTimeout):
-            try:
-                self.scan = ExtTriggerScan() 
-                self.scan.init()    
-            except Exception as e:
-                raise e
-            self.SetStatusTag("TriggerN", "0")
-            self.log.info("Initialization completed")
-        else:
-            self.log.error("Initialization failed")
-            raise RuntimeError("BDAQ board unreachable")
-        """
         self.log.info("Initialization completed")
 
     def DoConfigure(self):
         self.log.info("Probing if power is up")
-        time.sleep(2)
         if IsHostReachable("192.168.10.23",24,self.BDAQBoardTimeout):
             try:
                 self.log.info("Power is up")
@@ -67,10 +56,6 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
         
-        """
-        if self.scan==None:  # check if already initialized, if not DoInitialize
-            self.DoInitialise()
-        """
         eudaqConfig = self.GetConfiguration() 
 
         self.conf["start_column"]=int(eudaqConfig.Get("start_column","0"))
@@ -88,19 +73,43 @@ class EudaqProducerAida(pyeudaq.Producer):
         elif eudaqConfig.Get("scan_timeout").lower() == "true":
             self.conf["scan_timeout"]=True
         
-        if eudaqConfig.Get("tot_calib_file").lower()=="none":
-            self.conf["tot_calib_file"]=None
+        if eudaqConfig.Get("chip_config_file").lower()=="none":
+            self.conf["chip_config_file"]=None
         else:
-            self.conf["tot_calib_file"]=eudaqConfig.Get("tot_calib_file")
+            pass
+        
+        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL', 'VCASC']
+        for reg in configurable_regs:
+            self.reg_config[reg] = self.GetConfigItem(reg)
+        
 
         self.scan.scan_config=self.conf
-        #print(self.conf)
+        print(self.reg_config)
         try:
             self.scan.configure()
             self.log.info("Configuration completed")
         except Exception as e:
             raise e
+        
+        for reg in self.reg_config.keys():            
+            reg_val = self.reg_config[reg]
+            reg_val = reg_val.replace(',', '.')
+            if reg_val:
+                reg_val_int = int(float(reg_val))
+                reg_val_float = float(reg_val)
+                
+                if (reg_val_float - reg_val_int) > 0.001:
+                    print('Contains, ', reg_val, ' in ', reg)
+                    self.current_scan_register = reg
 
+                print('After, repl ', reg_val, ' in ', reg)
+                self.init_register_vals[reg] = self.scan.chip.registers[reg].read()
+
+                if reg_val:
+                    self.scan.chip.registers[reg].write(int(float(reg_val)))
+
+        self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
+        
 
     def DoStartRun(self):
         try:
