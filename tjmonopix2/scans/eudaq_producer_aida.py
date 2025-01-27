@@ -53,7 +53,7 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
 
-        eudaqConfig = self.GetConfiguration() 
+        eudaqConfig = self.GetConfiguration()
 
         self.conf["start_column"] = int(eudaqConfig.Get("start_column", "0"))
         self.conf["stop_column"] = int(eudaqConfig.Get("stop_column", "512"))
@@ -71,7 +71,10 @@ class EudaqProducerAida(pyeudaq.Producer):
 
         configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL', 'VCASC']
         for reg in configurable_regs:
-            self.reg_config[reg] = self.GetConfigItem(reg)
+            try:
+                self.reg_config[reg] = eudaqConfig.Get(reg, None)
+            except:
+                pass
 
         self.scan.scan_config = self.conf
         print(self.reg_config)
