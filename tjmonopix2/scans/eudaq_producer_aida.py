@@ -55,10 +55,10 @@ class EudaqProducerAida(pyeudaq.Producer):
 
         eudaqConfig = self.GetConfiguration() 
 
-        self.conf["start_column"] = int(eudaqConfig.Get("start_column", "0"))
-        self.conf["stop_column"] = int(eudaqConfig.Get("stop_column", "512"))
-        self.conf["start_row"] = int(eudaqConfig.Get("start_row", "0")) 
-        self.conf["stop_row"] = int(eudaqConfig.Get("stop_row", "512"))
+        self.conf["start_column"] = int(eudaqConfig.Get("START_COLUMN", "0"))
+        self.conf["stop_column"] = int(eudaqConfig.Get("STOP_COLUMN", "512"))
+        self.conf["start_row"] = int(eudaqConfig.Get("START_ROW", "0")) 
+        self.conf["stop_row"] = int(eudaqConfig.Get("STOP_ROW", "512"))
         self.conf["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
         self.conf["run_nmb_zfill"] = int(eudaqConfig.Get("run_nmb_zfill", "6"))
 
