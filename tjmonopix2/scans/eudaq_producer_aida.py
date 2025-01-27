@@ -111,6 +111,15 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
         
 
+    def DoStatus(self):
+        if self.last_exception is not None:
+            exception = self.last_exception[1]
+            self.last_exception = None  # Clear exception
+            raise exception
+        #self.SetStatusTag('StatusEv
+        #self.SetStatusTag('DataEventN'  ,'%d'%self.idev)
+
+
     def DoStartRun(self):
         try:
             self.scan.fifo_readout   # check if already configured
