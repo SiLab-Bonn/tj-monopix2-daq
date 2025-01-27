@@ -2,8 +2,8 @@ import argparse
 import socket
 import threading
 import time
-
 import pyeudaq
+import os
 from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
@@ -53,13 +53,14 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
 
-        eudaqConfig = self.GetConfiguration()
+        eudaqConfig = self.GetConfiguration() 
 
         self.conf["start_column"] = int(eudaqConfig.Get("start_column", "0"))
         self.conf["stop_column"] = int(eudaqConfig.Get("stop_column", "512"))
         self.conf["start_row"] = int(eudaqConfig.Get("start_row", "0")) 
         self.conf["stop_row"] = int(eudaqConfig.Get("stop_row", "512"))
-        self.conf["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000")) 
+        self.conf["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
+        self.conf["run_nmb_zfill"] = int(eudaqConfig.Get("run_nmb_zfill", "6"))
 
         if eudaqConfig.Get("scan_timeout").lower() == "false":
             self.conf["scan_timeout"] = False
@@ -132,7 +133,19 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.scan.stop_scan.set()
             self.thread_scan.join()
             self.thread_trigger.join()
+
+            # rename output file to include the run number in the file name
+            # much more convenient when doing analysis
+            origFile = self.scan.output_filename + '.h5'
+
             self.scan.close()
+
+            run_number = self.GetRunNumber()
+            orig_base = os.path.basename(origFile)
+            orig_dir = os.path.dirname(origFile)
+            newFile = f'{orig_dir}/run{str(run_number).zfill(self.conf["run_nmb_zfill"])}_{orig_base}'
+            os.rename(origFile, newFile)
+            
             self.scan = None
             self.SetStatusTag("TriggerN", "0")
             self.log.info("Scan was stopped")
