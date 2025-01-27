@@ -10,6 +10,7 @@ import collections
 import inspect
 import multiprocessing
 import os
+import sys
 import time
 import traceback
 from collections import OrderedDict
@@ -1018,6 +1019,7 @@ class ScanBase(object):
 
     def _on_exception(self):
         ''' Called when exception occurs in main process '''
+        self.last_exception = sys.exc_info()
         self.errors_occured = traceback.format_exc()
         self.close()
 
