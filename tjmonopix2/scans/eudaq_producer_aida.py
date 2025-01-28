@@ -123,15 +123,15 @@ class EudaqProducerAida(pyeudaq.Producer):
         if not self.scan.scan_config["max_triggers"]:
             self.scan.daq.configure_tlu_module(max_triggers=False, aidamode=True)
 
-        self.is_running = 1
+        self.is_running = True
         self.thread_scan = threading.Thread(target=self.scan.scan)
-        self.thread_trigger = threading.Thread(target=self.SendTriggerNumber)
+        self.thread_trigger = threading.Thread(target=self.send_trigger_number)
         self.thread_scan.start()
         self.thread_trigger.start()
 
     def DoStopRun(self):
         if self.is_running: 
-            self.is_running = 0                    
+            self.is_running = False
             self.scan.stop_scan.set()
             self.thread_scan.join()
             self.thread_trigger.join()
@@ -154,7 +154,7 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def DoReset(self):
         if self.is_running:
-            self.is_running=0
+            self.is_running = False
             self.scan.stop_scan.set()
             self.thread_scan.join()
             self.thread_trigger.join()
@@ -166,7 +166,7 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def DoTerminate(self):
         if self.is_running:
-            self.is_running = 0
+            self.is_running = False
             self.scan.stop_scan.set()
             self.thread_scan.join()
             self.thread_trigger.join()
@@ -174,7 +174,7 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.scan = None
         self.log.info("Terminated")
 
-    def SendTriggerNumber(self):
+    def send_trigger_number(self):
         while self.is_running:
             self.SetStatusTag("TriggerN", str(self.scan.daq.get_trigger_counter()))
             time.sleep(1)
