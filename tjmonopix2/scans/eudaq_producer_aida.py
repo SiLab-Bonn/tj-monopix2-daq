@@ -42,15 +42,20 @@ class EudaqProducerAida(pyeudaq.Producer):
     def DoConfigure(self):
         eudaqConfig = self.GetConfiguration() 
         proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # Overwrite DAQ board ip and chip_config_file from eudaq configuration file
         with open(os.path.join(proj_dir, os.path.join("system", "bdaq53.yaml")), "r") as daq_conf_file:
             daq_conf = yaml.safe_load(daq_conf_file)
         daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.Get("daqboard_ip", "192.168.10.23")
+        with open(os.path.join(proj_dir, "testbench.yaml"), "r") as bench_conf_file:
+            bench_conf = yaml.safe_load(bench_conf_file)
+        bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = eudaqConfig.Get("chip_configfile", None)
 
         self.log.debug("Probing if DAQ board is up")
         if host_reachable(eudaqConfig.Get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
             try:
                 self.log.debug("DAQ board is powered up")
-                self.scan = ExtTriggerScan(daq_conf=daq_conf)
+                self.scan = ExtTriggerScan(daq_conf=daq_conf, bench_config=bench_conf)
                 self.scan.init()
             except Exception as e:
                 raise e
