@@ -117,7 +117,7 @@ class EudaqProducerAida(pyeudaq.Producer):
             exception = self.scan.last_exception[1]
             self.scan.last_exception = None  # Clear exception
             raise exception
-        #self.SetStatusTag('DataEventN'  ,'%d'%self.idev)
+        self.SetStatusTag("NDataWords", self.scan.raw_data_earray.nrows)
 
     def DoStartRun(self) -> None:
         try:
@@ -152,8 +152,9 @@ class EudaqProducerAida(pyeudaq.Producer):
             orig_dir = os.path.dirname(origFile)
             newFile = f'{orig_dir}/run{str(run_number).zfill(self.conf["run_nmb_zfill"])}_{orig_base}'
             os.rename(origFile, newFile)
-            
+
             self.scan = None
+            self.SetStatusTag("NDataWords", "0")
             self.SetStatusTag("TriggerN", "0")
             self.log.info("Scan was stopped")
 
