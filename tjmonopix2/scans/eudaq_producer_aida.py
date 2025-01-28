@@ -4,6 +4,7 @@ import threading
 import time
 import pyeudaq
 import os
+import yaml
 from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
@@ -40,13 +41,17 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def DoConfigure(self):
         eudaqConfig = self.GetConfiguration() 
+        proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(proj_dir, os.path.join("system", "bdaq53.yaml")), "r") as daq_conf_file:
+            daq_conf = yaml.safe_load(daq_conf_file)
+        daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.Get("daqboard_ip", "192.168.10.23")
 
         self.log.debug("Probing if DAQ board is up")
         if host_reachable(eudaqConfig.Get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
             try:
                 self.log.debug("DAQ board is powered up")
-                self.scan = ExtTriggerScan() 
-                self.scan.init()    
+                self.scan = ExtTriggerScan(daq_conf=daq_conf)
+                self.scan.init()
             except Exception as e:
                 raise e
             self.SetStatusTag("TriggerN", "0")
