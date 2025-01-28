@@ -118,7 +118,7 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.scan.last_exception = None  # Clear exception
             raise exception
         if self.scan:
-            self.SetStatusTag("NDataWords", self.scan.raw_data_earray.nrows)
+            self.SetStatusTag("NDataWords", str(self.scan.raw_data_earray.nrows))
 
     def DoStartRun(self) -> None:
         try:
@@ -156,7 +156,7 @@ class EudaqProducerAida(pyeudaq.Producer):
 
             self.scan = None
             self.SetStatusTag("NDataWords", "0")
-            self.SetStatusTag("TriggerN", "0")
+            self.SetStatusTag("NTriggers", "0")
             self.log.info("Scan was stopped")
 
     def DoReset(self) -> None:
@@ -165,7 +165,8 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.scan.stop_scan.set()
             self.thread_scan.join()
             self.thread_trigger.join()
-            self.SetStatusTag("TriggerN", "0")
+            self.SetStatusTag("NDataWords", "0")
+            self.SetStatusTag("NTriggers", "0")
         if self.scan is not None:
             self.scan.close()
         self.scan = None
@@ -183,7 +184,7 @@ class EudaqProducerAida(pyeudaq.Producer):
 
     def send_trigger_number(self) -> None:
         while self.is_running:
-            self.SetStatusTag("TriggerN", str(self.scan.daq.get_trigger_counter()))
+            self.SetStatusTag("NTriggers", str(self.scan.daq.get_trigger_counter()))
             time.sleep(1)
 
 
