@@ -8,7 +8,7 @@ from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
 
-def host_reachable(host="192.168.10.23", port=24, timeout=20):
+def host_reachable(host, port=24, timeout=20):
     try:
         socket.setdefaulttimeout(timeout)
         with socket.create_connection((host, port)):
@@ -39,10 +39,12 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.log.info("Initialization completed")
 
     def DoConfigure(self):
-        self.log.info("Probing if power is up")
-        if host_reachable("192.168.10.23", 24, self.BDAQBoardTimeout):
+        eudaqConfig = self.GetConfiguration() 
+
+        self.log.debug("Probing if DAQ board is up")
+        if host_reachable(eudaqConfig.Get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
             try:
-                self.log.info("Power is up")
+                self.log.debug("DAQ board is powered up")
                 self.scan = ExtTriggerScan() 
                 self.scan.init()    
             except Exception as e:
