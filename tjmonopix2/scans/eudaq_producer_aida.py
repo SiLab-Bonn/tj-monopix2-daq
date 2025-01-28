@@ -19,7 +19,7 @@ def host_reachable(host, port=24, timeout=20):
 
 
 class EudaqProducerAida(pyeudaq.Producer):
-    scan_id = 'eudaq_scan' 
+    scan_id = "eudaq_scan"
 
     def __init__(self, name, runctrl):
         pyeudaq.Producer.__init__(self, name, runctrl)
