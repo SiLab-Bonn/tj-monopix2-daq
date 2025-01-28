@@ -70,13 +70,13 @@ class EudaqProducerAida(pyeudaq.Producer):
 
         # Scan stop conditions, only use one or another. Explicit cast since eudaqConfig returns strings
         self.scan.scan_config["scan_timeout"] = int(eudaqConfig.get("scan_timeout", 0))
-        self.scan.scan_config["max_triggers"] = int(eudaqConfig.get("max_triggers", 1000))
+        self.scan.scan_config["max_triggers"] = int(eudaqConfig.get("max_triggers", 0))
 
         # Matrix configuration
-        self.scan.scan_config["start_column"] = int(eudaqConfig.get("start_column", 0))
-        self.scan.scan_config["stop_column"] = int(eudaqConfig.get("stop_column", 512))
-        self.scan.scan_config["start_row"] = int(eudaqConfig.get("start_row", 0))
-        self.scan.scan_config["stop_row"] = int(eudaqConfig.get("stop_row", 512))
+        self.scan.scan_config["start_column"] = int(eudaqConfig.get("start_column"))
+        self.scan.scan_config["stop_column"] = int(eudaqConfig.get("stop_column"))
+        self.scan.scan_config["start_row"] = int(eudaqConfig.get("start_row"))
+        self.scan.scan_config["stop_row"] = int(eudaqConfig.get("stop_row"))
 
         configurable_regs = ["VL", "VH", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET", "VCLIP", "IDB", "IDEL", "VCASC"]
         for reg in configurable_regs:
