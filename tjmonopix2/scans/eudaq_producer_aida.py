@@ -69,7 +69,7 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.conf["run_nmb_zfill"] = int(eudaqConfig.get("run_nmb_zfill", 6))
 
         # Scan stop conditions, only use one or another. Explicit cast since eudaqConfig returns strings
-        self.scan.scan_config["scan_timeout"] = int(eudaqConfig.get("scan_timeout", None))
+        self.scan.scan_config["scan_timeout"] = int(eudaqConfig.get("scan_timeout", 0))
         self.scan.scan_config["max_triggers"] = int(eudaqConfig.get("max_triggers", 1000))
 
         # Matrix configuration
