@@ -9,6 +9,27 @@ from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
 
+'''
+This is the script for running a EUDAQ2 producer for TJ Monopix2
+
+You need a EUDAQ2 installation with EUDAQ_BUILD_PYTHON enabled, and
+/path/to/eudaq/lib in your pythonpath.
+
+Options for eudaq config file:
+
+option               needed       default-value       description
+---------------------------------------------------------------------------------------------------------
+start_column         mandatory                        define the window where the matrix is enabled
+stop_column          mandatory                        define the window where the matrix is enabled
+start_row            mandatory                        define the window where the matrix is enabled
+stop_row             mandatory                        define the window where the matrix is enabled
+daqboard_ip          optional     192.168.10.23       IP address of the bdaq53 board
+...
+
+'''
+
+
+
 def host_reachable(host, port=24, timeout=20):
     try:
         socket.setdefaulttimeout(timeout)
