@@ -81,7 +81,10 @@ class EudaqProducerAida(pyeudaq.Producer):
         configurable_regs = ["VL", "VH", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET", "VCLIP", "IDB", "IDEL", "VCASC"]
         for reg in configurable_regs:
             try:
-                self.scan.chip.registers[reg].write(int(eudaqConfig.get(reg, False)))
+                reg_val = int(eudaqConfig.get(reg, -1))
+                if reg_val >= 0:
+                    self.log.info(f"Override register {reg} to value {reg_val}")
+                    self.scan.chip.registers[reg].write(reg_val)
             except:
                 pass
 
