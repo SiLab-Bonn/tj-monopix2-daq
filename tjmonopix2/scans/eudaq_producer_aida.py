@@ -74,15 +74,17 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.conf["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
         self.conf["run_nmb_zfill"] = int(eudaqConfig.Get("run_nmb_zfill", "6"))
 
-        if eudaqConfig.Get("scan_timeout").lower() == "false":
-            self.conf["scan_timeout"] = False
-        elif eudaqConfig.Get("scan_timeout").lower() == "true":
-            self.conf["scan_timeout"] = True
+        # Scan stop conditions, only use one or another
+        scan_timeout = eudaqConfig.Get("scan_timeout", None)
+        self.scan.scan_config["scan_timeout"] = True if scan_timeout == "true" else False
+        self.scan.scan_config["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
 
-        if eudaqConfig.Get("chip_config_file").lower() == "none":
-            self.conf["chip_config_file"] = None
+        # Matrix configuration
+        self.scan.scan_config["start_column"] = int(eudaqConfig.Get("start_column", "0"))
+        self.scan.scan_config["stop_column"] = int(eudaqConfig.Get("stop_column", "512"))
+        self.scan.scan_config["start_row"] = int(eudaqConfig.Get("start_row", "0"))
+        self.scan.scan_config["stop_row"] = int(eudaqConfig.Get("stop_row", "512"))
 
-        configurable_regs = ['VL', 'VH', 'ITHR', 'IBIAS', 'VCASP', 'ICASN', 'VRESET', 'VCLIP', 'IDB', 'IDEL', 'VCASC']
         for reg in configurable_regs:
             try:
                 self.reg_config[reg] = eudaqConfig.Get(reg, None)
