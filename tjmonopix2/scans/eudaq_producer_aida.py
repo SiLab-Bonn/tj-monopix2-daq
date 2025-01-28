@@ -49,8 +49,8 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.BDAQBoardTimeout = 10
 
     def __del__(self):
-         if self.is_running:
-             self.scan.close()
+        if self.is_running:
+            self.scan.close()
 
     def DoInitialise(self) -> None:
         self.log.info("Initialization successful")
@@ -117,7 +117,8 @@ class EudaqProducerAida(pyeudaq.Producer):
             exception = self.scan.last_exception[1]
             self.scan.last_exception = None  # Clear exception
             raise exception
-        self.SetStatusTag("NDataWords", self.scan.raw_data_earray.nrows)
+        if self.scan:
+            self.SetStatusTag("NDataWords", self.scan.raw_data_earray.nrows)
 
     def DoStartRun(self) -> None:
         try:
