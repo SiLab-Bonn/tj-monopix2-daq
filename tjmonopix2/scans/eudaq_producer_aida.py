@@ -9,28 +9,7 @@ from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
 
 
-'''
-This is the script for running a EUDAQ2 producer for TJ Monopix2
-
-You need a EUDAQ2 installation with EUDAQ_BUILD_PYTHON enabled, and
-/path/to/eudaq/lib in your pythonpath.
-
-Options for eudaq config file:
-
-option               needed       default-value       description
----------------------------------------------------------------------------------------------------------
-start_column         mandatory                        define the window where the matrix is enabled
-stop_column          mandatory                        define the window where the matrix is enabled
-start_row            mandatory                        define the window where the matrix is enabled
-stop_row             mandatory                        define the window where the matrix is enabled
-daqboard_ip          optional     192.168.10.23       IP address of the bdaq53 board
-...
-
-'''
-
-
-
-def host_reachable(host, port=24, timeout=20):
+def host_reachable(host, port: int = 24, timeout: int = 20) -> bool:
     try:
         socket.setdefaulttimeout(timeout)
         with socket.create_connection((host, port)):
@@ -40,6 +19,22 @@ def host_reachable(host, port=24, timeout=20):
 
 
 class EudaqProducerAida(pyeudaq.Producer):
+    """EUDAQ producer for TJ-Monopix2 testbeam measurements in aidamode.
+
+    You need a EUDAQ2 installation with EUDAQ_BUILD_PYTHON enabled, and
+    /path/to/eudaq/lib in your PYTHONPATH.
+
+    Options for eudaq config file:
+
+    option                  needed      default-value   description
+    ---------------------------------------------------------------------------------------------------------
+    start_column            mandatory                   define the window where the matrix is enabled
+    stop_column             mandatory                   define the window where the matrix is enabled
+    start_row               mandatory                   define the window where the matrix is enabled
+    stop_row                mandatory                   define the window where the matrix is enabled
+    daqboard_ip             optional    192.168.10.23   ip address of the bdaq53 board
+    <chip_register_name>    optional                   
+    """
     scan_id = "eudaq_scan"
 
     def __init__(self, name, runctrl):
@@ -57,10 +52,10 @@ class EudaqProducerAida(pyeudaq.Producer):
          if self.is_running:
              self.scan.close()
 
-    def DoInitialise(self):
-        self.log.info("Initialization completed")
+    def DoInitialise(self) -> None:
+        self.log.info("Initialization successful")
 
-    def DoConfigure(self):
+    def DoConfigure(self) -> None:
         eudaqConfig = self.GetConfiguration().as_dict()
         proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -117,15 +112,14 @@ class EudaqProducerAida(pyeudaq.Producer):
 
         self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
 
-    def DoStatus(self):
+    def DoStatus(self) -> None:
         if self.scan is not None and self.scan.last_exception is not None:
             exception = self.scan.last_exception[1]
             self.scan.last_exception = None  # Clear exception
             raise exception
         #self.SetStatusTag('DataEventN'  ,'%d'%self.idev)
 
-
-    def DoStartRun(self):
+    def DoStartRun(self) -> None:
         try:
             self.scan.fifo_readout   # check if already configured
         except AttributeError:
@@ -140,8 +134,8 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.thread_scan.start()
         self.thread_trigger.start()
 
-    def DoStopRun(self):
-        if self.is_running: 
+    def DoStopRun(self) -> None:
+        if self.is_running:
             self.is_running = False
             self.scan.stop_scan.set()
             self.thread_scan.join()
@@ -163,7 +157,7 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.SetStatusTag("TriggerN", "0")
             self.log.info("Scan was stopped")
 
-    def DoReset(self):
+    def DoReset(self) -> None:
         if self.is_running:
             self.is_running = False
             self.scan.stop_scan.set()
@@ -175,7 +169,7 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.scan = None
         self.log.info("Reset completed")
 
-    def DoTerminate(self):
+    def DoTerminate(self) -> None:
         if self.is_running:
             self.is_running = False
             self.scan.stop_scan.set()
@@ -185,7 +179,7 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.scan = None
         self.log.info("Terminated")
 
-    def send_trigger_number(self):
+    def send_trigger_number(self) -> None:
         while self.is_running:
             self.SetStatusTag("TriggerN", str(self.scan.daq.get_trigger_counter()))
             time.sleep(1)
