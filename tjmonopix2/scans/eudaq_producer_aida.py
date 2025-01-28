@@ -40,20 +40,20 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.log.info("Initialization completed")
 
     def DoConfigure(self):
-        eudaqConfig = self.GetConfiguration() 
+        eudaqConfig = self.GetConfiguration().as_dict()
         proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         # Overwrite DAQ board ip and chip_config_file from eudaq configuration file
         with open(os.path.join(proj_dir, os.path.join("system", "bdaq53.yaml")), "r") as daq_conf_file:
             daq_conf = yaml.safe_load(daq_conf_file)
-        daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.Get("daqboard_ip", "192.168.10.23")
+        daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.get("daqboard_ip", "192.168.10.23")
         with open(os.path.join(proj_dir, "testbench.yaml"), "r") as bench_conf_file:
             bench_conf = yaml.safe_load(bench_conf_file)
-        bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.Get("chip_configfile", None)
-        bench_conf["modules"]["general"]["output_directory"] = eudaqConfig.Get("output_drectory", None)
+        bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.get("chip_config_file", None)
+        bench_conf["general"]["output_directory"] = eudaqConfig.get("output_directory", None)
 
         self.log.debug("Probing if DAQ board is up")
-        if host_reachable(eudaqConfig.Get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
+        if host_reachable(eudaqConfig.get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
             try:
                 self.log.debug("DAQ board is powered up")
                 self.scan = ExtTriggerScan(daq_conf=daq_conf, bench_config=bench_conf)
@@ -66,37 +66,29 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
 
-        eudaqConfig = self.GetConfiguration() 
+        self.conf["run_nmb_zfill"] = int(eudaqConfig.get("run_nmb_zfill", 6))
 
-        self.conf["start_column"] = int(eudaqConfig.Get("START_COLUMN", "0"))
-        self.conf["stop_column"] = int(eudaqConfig.Get("STOP_COLUMN", "512"))
-        self.conf["start_row"] = int(eudaqConfig.Get("START_ROW", "0")) 
-        self.conf["stop_row"] = int(eudaqConfig.Get("STOP_ROW", "512"))
-        self.conf["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
-        self.conf["run_nmb_zfill"] = int(eudaqConfig.Get("run_nmb_zfill", "6"))
-
-        # Scan stop conditions, only use one or another
-        scan_timeout = eudaqConfig.Get("scan_timeout", None)
-        self.scan.scan_config["scan_timeout"] = True if scan_timeout == "true" else False
-        self.scan.scan_config["max_triggers"] = int(eudaqConfig.Get("max_triggers", "1000"))
+        # Scan stop conditions, only use one or another. Explicit cast since eudaqConfig returns strings
+        self.scan.scan_config["scan_timeout"] = int(eudaqConfig.get("scan_timeout", None))
+        self.scan.scan_config["max_triggers"] = int(eudaqConfig.get("max_triggers", 1000))
 
         # Matrix configuration
-        self.scan.scan_config["start_column"] = int(eudaqConfig.Get("start_column", "0"))
-        self.scan.scan_config["stop_column"] = int(eudaqConfig.Get("stop_column", "512"))
-        self.scan.scan_config["start_row"] = int(eudaqConfig.Get("start_row", "0"))
-        self.scan.scan_config["stop_row"] = int(eudaqConfig.Get("stop_row", "512"))
+        self.scan.scan_config["start_column"] = int(eudaqConfig.get("start_column", 0))
+        self.scan.scan_config["stop_column"] = int(eudaqConfig.get("stop_column", 512))
+        self.scan.scan_config["start_row"] = int(eudaqConfig.get("start_row", 0))
+        self.scan.scan_config["stop_row"] = int(eudaqConfig.get("stop_row", 512))
 
+        # TODO: Make all registers overwriteable
+        configurable_regs = ["VL", "VH", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET", "VCLIP", "IDB", "IDEL", "VCASC"]
         for reg in configurable_regs:
             try:
-                self.reg_config[reg] = eudaqConfig.Get(reg, None)
+                self.reg_config[reg] = eudaqConfig.get(reg, False)
             except:
                 pass
 
-        self.scan.scan_config = self.conf
-        print(self.reg_config)
         try:
             self.scan.configure()
-            self.log.info("Configuration completed")
+            self.log.info("Configuration successful")
         except Exception as e:
             raise e
 
