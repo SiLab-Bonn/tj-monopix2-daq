@@ -49,7 +49,8 @@ class EudaqProducerAida(pyeudaq.Producer):
         daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.Get("daqboard_ip", "192.168.10.23")
         with open(os.path.join(proj_dir, "testbench.yaml"), "r") as bench_conf_file:
             bench_conf = yaml.safe_load(bench_conf_file)
-        bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = eudaqConfig.Get("chip_configfile", None)
+        bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.Get("chip_configfile", None)
+        bench_conf["modules"]["general"]["output_directory"] = eudaqConfig.Get("output_drectory", None)
 
         self.log.debug("Probing if DAQ board is up")
         if host_reachable(eudaqConfig.Get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
