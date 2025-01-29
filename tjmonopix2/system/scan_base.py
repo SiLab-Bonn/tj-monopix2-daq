@@ -29,7 +29,6 @@ from tjmonopix2.analysis import analysis_utils as au
 from tjmonopix2.system import fifo_readout, logger
 from tjmonopix2.system.bdaq53 import BDAQ53
 from tjmonopix2.system.fifo_readout import FifoReadout
-from tjmonopix2.system.mio3 import MIO3
 from tjmonopix2.system.tjmonopix2 import TJMonoPix2
 
 # Compression for data files
@@ -521,9 +520,6 @@ class ScanBase(object):
                     readout_system = self.configuration['bench']['general']['readout_system'].lower()
                 else:
                     readout_system = 'bdaq53'
-                if readout_system == "mio3":
-                    self.daq = MIO3(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
-                else:
                     self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
 
         # Instantiate TJ-Monopix2 chip

@@ -585,7 +585,6 @@ class TJMonoPix2(object):
     """ Map hardware IDs for board identification """
     hw_map = {
         0: 'SIMULATION',
-        1: 'MIO3',
     }
 
     cmd_data_map = {
@@ -677,27 +676,9 @@ class TJMonoPix2(object):
         # super(TJMonoPix2, self).init()
         self.daq['cmd'].set_chip_type(1)  # ITkpixV1-like
 
-        # power on
-        if self.daq.board_version == 'mio3':
-            self.daq['CONF']['RESET_EXT'] = 1
-            self.daq['CONF']['GPIO_MODE'] = 0x0
-            self.daq['CONF']['SEL_DIRECT'] = 1
-            self.daq['CONF'].write()
-            self.power_on()
-            # Start chip in LVDS command mode
-            self.daq['CONF']['INPUT_SEL'] = 0
-            self.daq['CONF']['EN_LVDS_IN'] = 1
-            self.daq['CONF'].write()
-            # Release RESET
-            self.daq['CONF']['RESET_EXT'] = 0
-            self.daq['CONF'].write()
-
         self.write_command(self.write_sync(write=False) * 32)
         self.reset()
         self.configure_rx(delay=40, rd_frz_dly=40)
-
-        if self.daq.board_version == 'mio3':
-            self.log.info(str(self.get_power_status()))
 
     def power_on(self, VDDA=1.8, VDDP=1.8, VDDA_DAC=1.8, VDDD=1.8, VPC=1.6):
         # Set power
