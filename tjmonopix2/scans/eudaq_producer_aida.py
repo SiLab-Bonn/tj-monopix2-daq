@@ -110,7 +110,7 @@ class EudaqScan(pyeudaq.Producer):
                 if reg_val >= 0:
                     self.log.info(f"Override register {reg} to value {reg_val}")
                     self.scan.chip.registers[reg].write(reg_val)
-            except:
+            except Exception:
                 pass
 
         try:
