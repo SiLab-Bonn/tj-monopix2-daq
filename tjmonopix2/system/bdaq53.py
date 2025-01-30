@@ -83,7 +83,7 @@ class BDAQ53(Dut):
         #         self.rx_channels['rx0'].get_rx_ready()
 
     def set_cmd_clk(self, frequency=160.0, force=False):
-        if self.board_version in {'BDAQ53', 'MIO3'}:
+        if self.board_version in {'BDAQ53'}:
             if self['system']['SI570_IS_CONFIGURED'] == 0 or force is True:
                 from basil.HL import si570
                 si570_conf = {'name': 'si570', 'type': 'si570', 'interface': 'intf', 'base_addr': 0xba, 'init': {'frequency': frequency}}

@@ -26,7 +26,6 @@ class DAQBoard(RegisterHardwareLayer):
     hw_map = {
         0: 'SIMULATION',
         1: 'BDAQ53',
-        2: 'MIO3',
     }
 
     # hw_con_map = {

@@ -1,5 +1,5 @@
 general: # General configuration
-  readout_system: # Readout system, available platforms are BDAQ53 or MIO3 (+ GPAC). BDAQ53 is default
+  readout_system: # Readout system, available platforms are BDAQ53. BDAQ53 is default
   output_directory: #'/media/raid/data/tjmonopix2/2021-10-25_elsa/tuning' # Top-level output data directory, default is the current folder where the script is started
 
 # Connected Modules
