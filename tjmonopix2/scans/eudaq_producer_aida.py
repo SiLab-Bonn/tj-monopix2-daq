@@ -18,11 +18,11 @@ def host_reachable(host, port: int = 24, timeout: int = 20) -> bool:
         return False
 
 
-class EudaqProducerAida(pyeudaq.Producer):
+class EudaqScan(pyeudaq.Producer):
     """EUDAQ producer for TJ-Monopix2 testbeam measurements in aidamode.
 
     You need a EUDAQ2 installation with EUDAQ_BUILD_PYTHON enabled, and
-    /path/to/eudaq/lib in your PYTHONPATH.
+    ``/path/to/eudaq/lib`` in your PYTHONPATH.
 
     Options for eudaq config file:
 
@@ -33,11 +33,20 @@ class EudaqProducerAida(pyeudaq.Producer):
     start_row               mandatory                   define the window where the matrix is enabled
     stop_row                mandatory                   define the window where the matrix is enabled
     daqboard_ip             optional    192.168.10.23   ip address of the bdaq53 board
-    <chip_register_name>    optional                   
+    chip_config_file        optional    None            use specific config file, default is latest file
+    <chip_register_name>    optional    n/a             overwrite chip register
     """
     scan_id = "eudaq_scan"
 
-    def __init__(self, name, runctrl):
+    def __init__(self, name: str = "TJ-Monopix2Producer", runctrl: str = 'tcp://localhost:44000') -> None:
+        """
+        Parameters
+        ----------
+        name : str, optional
+            Producer name for identification in eudaq, by default "TJ-Monopix2Producer"
+        runctrl : str, optional
+            Connection string to the eudaq run control, by default 'tcp://localhost:44000'
+        """
         pyeudaq.Producer.__init__(self, name, runctrl)
         self.log = logger.setup_derived_logger(self.__class__.__name__)
         self.is_running = 0
@@ -48,7 +57,7 @@ class EudaqProducerAida(pyeudaq.Producer):
         self.init_register_vals = {}
         self.BDAQBoardTimeout = 10
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.is_running:
             self.scan.close()
 
@@ -143,7 +152,6 @@ class EudaqProducerAida(pyeudaq.Producer):
             self.thread_trigger.join()
 
             # rename output file to include the run number in the file name
-            # much more convenient when doing analysis
             origFile = self.scan.output_filename + '.h5'
 
             self.scan.close()
@@ -202,7 +210,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    producer = EudaqProducerAida(args.n, args.r)
+    producer = EudaqScan(args.n, args.r)
     print(f'producer {args.n} connecting to runcontrol in {args.r}')
     producer.Connect()
     time.sleep(2)
