@@ -105,13 +105,11 @@ class EudaqScan(pyeudaq.Producer):
 
         configurable_regs = ["VL", "VH", "ITHR", "IBIAS", "VCASP", "ICASN", "VRESET", "VCLIP", "IDB", "IDEL", "VCASC"]
         for reg in configurable_regs:
-            try:
-                reg_val = int(eudaqConfig.get(reg, -1))
-                if reg_val >= 0:
-                    self.log.info(f"Override register {reg} to value {reg_val}")
-                    self.scan.chip.registers[reg].write(reg_val)
-            except Exception:
-                pass
+            reg_val = int(eudaqConfig.get(reg, -1))
+            if reg_val >= 0:
+                self.log.info(f"Override register {reg} to value {reg_val}")
+                self.scan.chip.registers[reg].write(reg_val)
+
 
         try:
             self.scan.configure()
