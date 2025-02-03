@@ -71,14 +71,15 @@ class EudaqScan(pyeudaq.Producer):
         # Overwrite DAQ board ip and chip_config_file from eudaq configuration file
         with open(os.path.join(proj_dir, os.path.join("system", "bdaq53.yaml")), "r") as daq_conf_file:
             daq_conf = yaml.safe_load(daq_conf_file)
-        daq_conf["transfer_layer"][0]["init"]["ip"] = eudaqConfig.get("daqboard_ip", "192.168.10.23")
+        daqboard_ip = eudaqConfig.get("daqboard_ip", "192.168.10.23")
+        daq_conf["transfer_layer"][0]["init"]["ip"] = daqboard_ip
         with open(os.path.join(proj_dir, "testbench.yaml"), "r") as bench_conf_file:
             bench_conf = yaml.safe_load(bench_conf_file)
         bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.get("chip_config_file", None)
         bench_conf["general"]["output_directory"] = eudaqConfig.get("output_directory", None)
 
         self.log.debug("Probing if DAQ board is up")
-        if host_reachable(eudaqConfig.get("daqboard_ip", "192.168.10.23"), 24, self.BDAQBoardTimeout):
+        if host_reachable(daqboard_ip, 24, self.BDAQBoardTimeout):
             try:
                 self.log.debug("DAQ board is powered up")
                 self.scan = ExtTriggerScan(daq_conf=daq_conf, bench_config=bench_conf)
