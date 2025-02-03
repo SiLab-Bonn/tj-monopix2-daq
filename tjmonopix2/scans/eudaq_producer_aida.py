@@ -49,12 +49,10 @@ class EudaqScan(pyeudaq.Producer):
         """
         pyeudaq.Producer.__init__(self, name, runctrl)
         self.log = logger.setup_derived_logger(self.__class__.__name__)
-        self.is_running = 0
+        self.is_running = False
         self.scan = None
         self.conf = {}
         self.thread_scan = None
-        self.reg_config = {}
-        self.init_register_vals = {}
         self.BDAQBoardTimeout = 10
 
     def __del__(self) -> None:
