@@ -109,14 +109,11 @@ class EudaqScan(pyeudaq.Producer):
                 self.log.info(f"Override register {reg} to value {reg_val}")
                 self.scan.chip.registers[reg].write(reg_val)
 
-
         try:
             self.scan.configure()
-            self.log.info("Configuration successful")
         except Exception as e:
             raise e
-
-        self.scan.chip.registers['SEL_PULSE_EXT_CONF'].write(0)
+        self.log.info("Configuration successful")
 
     def DoStatus(self) -> None:
         if self.scan is not None and self.scan.last_exception is not None:
