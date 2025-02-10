@@ -972,7 +972,7 @@ class TJMonoPix2(object):
                 indata : binarray
                     Boolean representation of register write command.
         '''
-        if type(address) == str:
+        if type(address) is str:
             address = self.register_name_map[address]
 
         indata = [self.CMD_RDREG]
