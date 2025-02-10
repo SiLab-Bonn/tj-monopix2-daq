@@ -516,11 +516,7 @@ class ScanBase(object):
         with self._logging_through_handlers():
             self.log.info('Initializing %s...', self.__class__.__name__)
             if not self.daq:  # create daq object only once
-                if self.configuration['bench']['general']['readout_system'] is not None:
-                    readout_system = self.configuration['bench']['general']['readout_system'].lower()
-                else:
-                    readout_system = 'bdaq53'
-                    self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
 
         # Instantiate TJ-Monopix2 chip
         for _ in self.iterate_chips():
