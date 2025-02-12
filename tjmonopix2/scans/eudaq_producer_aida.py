@@ -35,6 +35,7 @@ class EudaqScan(pyeudaq.Producer):
     daqboard_ip             optional    192.168.10.23   ip address of the bdaq53 board
     chip_config_file        optional    None            use specific config file, default is latest file
     <chip_register_name>    optional    n/a             overwrite chip register
+    chip_sn                 optional    None            specify the chip serial number, default is extracted from the config file
     """
     scan_id = "eudaq_scan"
 
@@ -75,6 +76,7 @@ class EudaqScan(pyeudaq.Producer):
             bench_conf = yaml.safe_load(bench_conf_file)
         bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.get("chip_config_file", None)
         bench_conf["general"]["output_directory"] = eudaqConfig.get("output_directory", None)
+        bench_conf["modules"]["module_0"]["chip_0"]["chip_sn"] = eudaqConfig.get("chip_sn", None)
 
         self.log.debug("Probing if DAQ board is up")
         if host_reachable(daqboard_ip, 24, self.BDAQBoardTimeout):
