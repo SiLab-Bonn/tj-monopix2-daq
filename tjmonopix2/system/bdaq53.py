@@ -281,6 +281,17 @@ class BDAQ53(Dut):
         else:
             self['tlu']['MAX_TRIGGERS'] = 0  # unlimited number of triggers
 
+        # AIDA mode
+        if aidamode:
+            self['tlu']["TRIGGER_MODE"] = 2
+            self['tlu']["TRIGGER_LOW_TIMEOUT"] = 4
+            self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 1 
+            self['tlu']['EN_TLU_RESET_TIMESTAMP'] = 1
+        else:
+            self['tlu']["TRIGGER_MODE"] = 3
+            self['tlu']["TRIGGER_LOW_TIMEOUT"] = 0
+            self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 5 
+
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
 

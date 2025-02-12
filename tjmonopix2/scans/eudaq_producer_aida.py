@@ -36,6 +36,7 @@ class EudaqScan(pyeudaq.Producer):
     chip_config_file        optional    None            use specific config file, default is latest file
     <chip_register_name>    optional    n/a             overwrite chip register
     chip_sn                 optional    None            specify the chip serial number, default is extracted from the config file
+    handshake_mode          optional    aida            define the TLU handshake mode, either aida or eudet
     """
     scan_id = "eudaq_scan"
 
@@ -91,6 +92,14 @@ class EudaqScan(pyeudaq.Producer):
         else:
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
+
+         # Handshake Modes 
+        if eudaqConfig.get("handshake_mode","aida").lower() == "eudet":
+            self.scan.daq.configure_tlu_module(aidamode=False)
+        elif eudaqConfig.get("handshake_mode","aida").lower() == "aida":
+            self.scan.daq.configure_tlu_module(aidamode=True)
+        else:
+            raise ValueError("Invalid or unsupported handshake mode")
 
         self.conf["run_nmb_zfill"] = int(eudaqConfig.get("run_nmb_zfill", 6))
 
