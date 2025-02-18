@@ -20,8 +20,12 @@
 `include "tlu/tlu_controller_core.v"
 `include "tlu/tlu_controller_fsm.v"
 
+// "slow" TDC with 640 MHz (320 MHz DDR) sampling
 `include "tdc_s3/tdc_s3.v"
 `include "tdc_s3/tdc_s3_core.v"
+
+// "Fast" TDC (~35ps resolution) with tapped delay line
+`include "tdl_tdc/tdl_tdc.v"
 
 `include "timestamp/timestamp.v"
 `include "timestamp/timestamp_core.v"
@@ -62,12 +66,16 @@ module tjmonopix2_core #(
     input wire BUS_WR,
     input wire BUS_RST,
 
+    // TODO: sort, add comments
     // clocks
     input wire CLK16,
     input wire CLK32,
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
+    input wire CLK160_TDC,   // from Si570 CLK
+    input wire CLK480_TDC,   // derived from Si570 CLK
+    input wire CLKTDC_CALIB, // uncorrelated to CLK160 and CLK480
     input wire CLKCMD,
     output wire MGT_REF_SEL,
 
@@ -178,6 +186,9 @@ localparam TLU_HIGHADDR = 32'h0700 - 1;
 
 localparam TDC_BASEADDR = 32'h0700;
 localparam TDC_HIGHADDR = 32'h0800 - 1;
+
+localparam TDL_TDC_BASEADDR = 32'h4000;
+localparam TDL_TDC_HIGHADDR = 32'h4100;
 
 localparam PULSER_VETO_BASEADDR = 32'h0800;
 localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
@@ -527,17 +538,21 @@ rrp_arbiter
     .WRITE_REQ({
         ~RX_FIFO_EMPTY,
         ~TLU_FIFO_EMPTY,
-        ~TDC_FIFO_EMPTY
+        // ~TDC_FIFO_EMPTY,
+        ~ptdc_fifo_empty
     }),
     .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
-        TDC_FIFO_DATA}),
+        // TDC_FIFO_DATA,
+        ptdc_fifo_data
+    }),
     .READ_GRANT({
         RX_FIFO_READ,
         TLU_FIFO_READ,
-        TDC_FIFO_READ
+        // TDC_FIFO_READ,
+        ptdc_fifo_read
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -611,49 +626,82 @@ pulse_gen #(
 );
 
 // ----- TDC ----- //
-localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
-wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
-// wire LEMO_RX0_FROM_TDC;
-// wire HITOR_FROM_TDC;
+// localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
+// wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
+// // wire LEMO_RX0_FROM_TDC;
+// // wire HITOR_FROM_TDC;
 
-tdc_s3 #(
-    .BASEADDR(TDC_BASEADDR),
-    .HIGHADDR(TDC_HIGHADDR),
-    .ABUSWIDTH(ABUSWIDTH),
-    .CLKDV(CLKDV),
-    .DATA_IDENTIFIER(4'b0010),
-    .FAST_TDC(1),
-    .FAST_TRIGGER(1),
-    .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
-) i_tdc (
-    .CLK320(CLK320),      // 320 MHz
-    .CLK160(CLK160),      // 160 MHz
-    .DV_CLK(CLK40),       // 40 MHz
-    .TDC_IN(LVDS_HITOR),  // HITOR
-    .TDC_OUT(),
-    .TRIG_IN(LEMO_RX[0]),
-    .TRIG_OUT(),
+// tdc_s3 #(
+//     .BASEADDR(TDC_BASEADDR),
+//     .HIGHADDR(TDC_HIGHADDR),
+//     .ABUSWIDTH(ABUSWIDTH),
+//     .CLKDV(CLKDV),
+//     .DATA_IDENTIFIER(4'b0010),
+//     .FAST_TDC(1),
+//     .FAST_TRIGGER(1),
+//     .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+// ) i_tdc (
+//     .CLK320(CLK320),      // 320 MHz
+//     .CLK160(CLK160),      // 160 MHz
+//     .DV_CLK(CLK40),       // 40 MHz
+//     .TDC_IN(LVDS_HITOR),  // HITOR
+//     .TDC_OUT(),
+//     .TRIG_IN(LEMO_RX[0]),
+//     .TRIG_OUT(),
 
-    // input/output trigger signals for broadcasting mode
-    .FAST_TRIGGER_IN(16'b0),
-    .FAST_TRIGGER_OUT(),  // collect 640 MHz sampled trigger signal to pass it to other modules
+//     // input/output trigger signals for broadcasting mode
+//     .FAST_TRIGGER_IN(16'b0),
+//     .FAST_TRIGGER_OUT(),  // collect 640 MHz sampled trigger signal to pass it to other modules
 
-    .FIFO_READ(TDC_FIFO_READ),
-    .FIFO_EMPTY(TDC_FIFO_EMPTY),
-    .FIFO_DATA(TDC_FIFO_DATA),
+//     .FIFO_READ(TDC_FIFO_READ),
+//     .FIFO_EMPTY(TDC_FIFO_EMPTY),
+//     .FIFO_DATA(TDC_FIFO_DATA),
 
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
+//     .BUS_CLK(BUS_CLK),
+//     .BUS_RST(BUS_RST),
+//     .BUS_ADD(BUS_ADD),
+//     .BUS_DATA(BUS_DATA),
+//     .BUS_RD(BUS_RD),
+//     .BUS_WR(BUS_WR),
 
-    .ARM_TDC(1'b0),
-    .EXT_EN(1'b0),
+//     .ARM_TDC(1'b0),
+//     .EXT_EN(1'b0),
 
-    .TIMESTAMP(TIMESTAMP[15:0])
+//     .TIMESTAMP(TIMESTAMP[15:0])
+// );
+
+// ----- FAST TDC ----- //
+wire [31:0] ptdc_fifo_data;
+
+tdl_tdc #(
+	.BASEADDR(TDL_TDC_BASEADDR),
+	.HIGHADDR(TDL_TDC_HIGHADDR),
+	.ABUSWIDTH(32),
+	.DATA_IDENTIFIER(4'b0110) // TODO: change identifier
+) i_tdl_tdc (
+	.BUS_CLK(BUS_CLK),
+	.bus_add(BUS_ADD),
+	.bus_data(BUS_DATA),
+	.bus_rst(BUS_RST),
+	.bus_wr(BUS_WR),
+	.bus_rd(BUS_RD),
+
+	.CLK480(CLK480PLL),
+	.CLK160(CLK160PLL),
+	.CALIB_CLK(CLK125RX), // Must be uncorrelated to CLK160 & CLK480
+	.tdc_in(LVDS_HITOR), // (sig_out_buf), // (sig_in),
+	.trig_in(LEMO_RX[0]), // (trig_out_buf), // (trig_in),
+
+	.timestamp(TIMESTAMP[24:0]),
+	.ext_en(1'b0),
+	.arm_tdc(1'b0),
+	.fifo_read(ptdc_fifo_read),
+
+	.fifo_empty(ptdc_fifo_empty),
+	.fifo_data(ptdc_fifo_data)
 );
+
+wire ptdc_fifo_read, ptdc_fifo_empty;
 
 // fast readout
 tjmono2_rx #(
