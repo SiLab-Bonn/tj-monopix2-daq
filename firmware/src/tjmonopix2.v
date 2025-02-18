@@ -654,7 +654,7 @@ tjmonopix2_core #(
     // TDL TDC clocks
     .CLK160_TDC(CLK160_TDC),
     .CLK480_TDC(CLK480_TDC),
-    .CLKTDC_CALIB(CLK125RX)
+    .CLKTDC_CALIB(CLK125RX),
     // CLK MUX setting
     .MGT_REF_SEL(MGT_REF_SEL),
 
