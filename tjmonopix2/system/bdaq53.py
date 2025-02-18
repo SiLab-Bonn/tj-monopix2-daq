@@ -255,6 +255,28 @@ class BDAQ53(Dut):
     def disable_tdc_module(self):
         self['tdc'].ENABLE = 0
 
+    def configure_ptdc_module(self):
+        self.log.info('Configuring TDC module')
+        self['pTDC'].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
+        self['pTDC'].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
+        # self['pTDC'].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
+        # self['pTDC'].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
+        # self['pTDC'].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
+
+    def calibrate_ptdc_module(self):
+        # Run calibration for one second. FPGA should be up and running for some time ideally
+        self.reset_fifo()
+        self['pTDC'].EN_CALIBRATION_MOD = 1
+        time.sleep(1)
+        self['pTDC'].EN_CALIBRATION_MOD = 0
+        # TODO: Figure out where and how to store TDC calibration words...
+
+    def enable_ptdc_module(self):
+        self['pTDC'].ENABLE = 1
+
+    def disable_ptdc_module(self):
+        self['pTDC'].ENABLE = 0
+
     def enable_tlu_module(self):
         self['tlu']['TRIGGER_ENABLE'] = True
         self.tlu_module_enabled = True
