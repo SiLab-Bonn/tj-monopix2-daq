@@ -510,7 +510,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK160),
+    .PULSE_CLK(CLKCMD),
     .EXT_START(CMD_LOOP_START),
     .PULSE(CMD_LOOP_START_PULSE)
 );
@@ -688,7 +688,7 @@ tdl_tdc #(
 
 	.CLK480(CLK480_TDC),
 	.CLK160(CLK160_TDC),
-	.CALIB_CLK(CLK125RX), // Must be uncorrelated to CLK160 & CLK480
+	.CALIB_CLK(CLKTDC_CALIB), // Must be uncorrelated to CLK160 & CLK480
 	.tdc_in(LVDS_HITOR), // (sig_out_buf), // (sig_in),
 	.trig_in(LEMO_RX[0]), // (trig_out_buf), // (trig_in),
 
