@@ -260,7 +260,7 @@ BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
 
 // ------ CLK TDL TDC -------- //
 // Si570 without muxing, directly connected to MGT_REFCLK1
-wire CLK160_TDC_Si570_in;
+wire CLK160_TDC_Si570_in, CLK160_TDC_Si570;
 
 IBUFDS_GTE2 IBUFDS_tdcclk  
 (
@@ -289,7 +289,7 @@ PLLE2_BASE #(
 	.CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
 	.CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-	.CLKOUT1_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT1_DIVIDE(2),       // Divide amount for CLKOUT0 (1-128)
 	.CLKOUT1_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
 	.CLKOUT1_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
@@ -320,7 +320,7 @@ PLLE2_BASE_TDC (
 	.LOCKED(LOCKED_PLL_TDC),
 	.CLKIN1(CLK160_TDC_Si570),
 	.PWRDWN(0),
-	.RST(!RESET_N),
+	.RST(!RESET_BUTTON),
 	.CLKFBIN(PLL_TDC_FEEDBACK)
 );
 
