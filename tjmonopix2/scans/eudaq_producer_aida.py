@@ -78,6 +78,7 @@ class EudaqScan(pyeudaq.Producer):
         bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.get("chip_config_file", None)
         bench_conf["general"]["output_directory"] = eudaqConfig.get("output_directory", None)
         bench_conf["modules"]["module_0"]["chip_0"]["chip_sn"] = eudaqConfig.get("chip_sn", None)
+        bench_conf["modules"]["module_0"]["chip_0"]["send_data"] = "tcp://127.0.0.1:"+(eudaqConfig.get("online_monitor_port", "5500"))
 
         # Handshake Modes 
         if eudaqConfig.get("handshake_mode","aida") == "eudet":
@@ -142,12 +143,12 @@ class EudaqScan(pyeudaq.Producer):
     def DoStartRun(self) -> None:
         try:
             self.scan.fifo_readout   # check if already configured
-        except AttributeError:
-            self.DoInitialise()
-            self.DoConfigure()
+        except AttributeError as e:
+            self.log.error("Please configure before start")
+            raise e 
         if not self.scan.scan_config["max_triggers"]:
             self.scan.daq.configure_tlu_module(max_triggers=False, aidamode=True)
-
+       
         self.is_running = True
         self.thread_scan = threading.Thread(target=self.scan.scan)
         self.thread_trigger = threading.Thread(target=self.send_trigger_number)
