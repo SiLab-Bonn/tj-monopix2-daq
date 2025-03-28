@@ -637,6 +637,11 @@ class TJMonoPix2(object):
         self.daq = daq
         self.proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+        # # GRizzo forced to use the default.cfg.yaml so it keeps the masked pixel from there always
+        # self.log.warning("Forced to use 'default.cfg.yaml'!")
+        # with open(os.path.join(os.path.dirname(__file__), 'default.cfg.yaml'), 'r') as f:
+        #     self.configuration = yaml.full_load(f)
+
         if config is None or len(config) == 0:
             self.log.warning("No explicit configuration supplied. Using 'default.cfg.yaml'!")
             with open(os.path.join(os.path.dirname(__file__), 'default.cfg.yaml'), 'r') as f:
@@ -1040,8 +1045,11 @@ class TJMonoPix2(object):
                 - CAL_aux_dly is counted in cycles of the 160MHz clock and sets the delay before the edge of the signal
             {Cal,ChipId[4:0]}-{PulseStartCnfg[5:1]},{PulseStartCnfg[0], PulseStopCnfg[13:10]}}-{{PulseStopCnfg[9:0]} [Cal +DD +DD]
         '''
-        indata = self._write_register(146, 0b100, write=False)
+        indata = []
+        #GR comment these 2 line below to avoid the reset of the BCID
+        indata += self._write_register(146, 0b100, write=False)
         indata += self._write_register(146, 0b000, write=False)
+
         indata += self.write_sync(write=False) * wait_cycles
         indata += [self.CMD_CAL]
         indata += [self.cmd_data_map[self.chip_id]]

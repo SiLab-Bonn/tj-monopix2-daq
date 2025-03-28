@@ -35,7 +35,8 @@ def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['inj
     '''
     for fe, active_pixels in chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
         if not fe == 'skipped':
-            chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 512, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency)
+            chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 900, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency)
+            # chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 512, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency) --> default in dev branch
         if pbar is not None:
             pbar.update(1)
 

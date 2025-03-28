@@ -23,19 +23,30 @@ def find_latest_file(path: str, index: str):
         key=lambda item: item.stat().st_ctime,
     )
 
-folder_path = ''
+# # Standard usage
+folder_path = 'output_data/module_0/chip_0/'
 filepath_in = find_latest_file(folder_path, 'noise_occupancy_scan_interpreted.h5')
+
+# # Select the wanted file -- COMMENT FOR STANDARD USAGE
+# filepath_in = "/home/labb2/tj-monopix2-daq-development/tjmonopix2/scans/output_data/module_0_2025-02-07/chip_0/20250207_173454_threshold_scan_interpreted.h5"
+
 
 print('Using File: %s' %filepath_in)
 
 with tb.open_file(filepath_in, "r") as in_file:
     pixel_mask = in_file.root.configuration_out.chip.use_pixel[:]
- 
-print('--- Disabled Pixels ---')   
+    # pixel_mask = in_file.root.configuration_out.chip.masks.enable[:]
+
+print('--- Disabled Pixels ---')
 disabled_pixels = np.array(np.where(pixel_mask==False))
 print(disabled_pixels)
 
+# Standard usage
 with open(folder_path + '/masked_pixels.yaml', 'w') as file:
-    file.write('rows , cols\n')
+    file.write('cols , rows\n')
     for i in range(np.shape(disabled_pixels)[1]):
         file.write(str(disabled_pixels[:,i]))
+
+# # Enumerating only usage -- COMMENT FOR STANDARD USAGE
+# for i in range(np.shape(disabled_pixels)[1]):
+#     print(i,str(disabled_pixels[:,i]))
