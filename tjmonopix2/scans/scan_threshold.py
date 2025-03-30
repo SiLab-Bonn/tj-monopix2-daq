@@ -37,8 +37,8 @@ class ThresholdScan(ScanBase):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['hitor'][start_column:stop_column, start_row:stop_row] = True
-        # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
-        self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
+        # # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
+        # self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
 
         # Read masked pixels from masked_pixels.yaml
         with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
@@ -102,9 +102,33 @@ class ThresholdScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
         self.chip.registers["CMOS_TX_EN_CONF"].write(1)
 
-        # vreset = os.getenv('VRESET')
-        # self.chip.registers["VRESET"].write(int(vreset))
-        # self.chip.registers["ICASN"].write(30)
+        # #w2r5 HVC KEK register HVC17
+        # self.chip.registers["ITHR"].write(30)
+        # self.chip.registers["IBIAS"].write(100)  # IBIAS was 60 in KEK try to increase it tto reduce a bit THR
+        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(50)  # ICAN was 100 
+        # self.chip.registers["IDB"].write(88)
+        # self.chip.registers["ITUNE"].write(200)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
+
+
+
+
+        # # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and W8R04
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(30) #def 30
+        # self.chip.registers["ICASN"].write(30) #def 30
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(50)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
 
         # # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and W8R04
         # self.chip.registers["IBIAS"].write(100)
@@ -121,17 +145,17 @@ class ThresholdScan(ScanBase):
 
 
         # W8R06 irradiated DCC used TB2024 run 1484 THR=30.6 DAC and W8R4
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["ITHR"].write(64)  # TB ITHR=64
-        self.chip.registers["ICASN"].write(10)  # TB ICASN=20
-        self.chip.registers["IDB"].write(100)  # TB IDB=100
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(88)  #prebvious lab test data with 88
-        self.chip.registers["IRAM"].write(50)
-        self.chip.registers["VRESET"].write(143) # TB 143
-        self.chip.registers["VCASP"].write(93)
-        self.chip.registers["VCASC"].write(205)
-        self.chip.registers["VCLIP"].write(255)
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(64)  # TB ITHR=64
+        # self.chip.registers["ICASN"].write(10)  # TB ICASN=20
+        # self.chip.registers["IDB"].write(100)  # TB IDB=100
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)  #prebvious lab test data with 88
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(143) # TB 143
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205)
+        # self.chip.registers["VCLIP"].write(255)
 
         # # # W2R17 irradiated 2.5e14 DCC
         # self.chip.registers["IBIAS"].write(100)
