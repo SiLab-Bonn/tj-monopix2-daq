@@ -17,12 +17,12 @@ from tjmonopix2.system.scan_base import ScanBase
 import yaml
 
 scan_configuration = {
-    'start_column': 449,
-    'stop_column': 480,
+    'start_column': 224,
+    'stop_column': 448,
     'start_row': 0,
     'stop_row': 512,
 
-    'scan_timeout': 200,
+    'scan_timeout': 100,
     'min_occupancy': 10,
 }
 
@@ -52,7 +52,7 @@ class NoiseOccScan(ScanBase):
 
         col_bad = []
         # W8R6 bad columns (246 to 251 included: double-cols will be disabled)
-        # col_bad += [248]
+        col_bad += [248]
         # # W8R13 pixels that fire even when disabled
         # col_bad += list(range(383,415)) # chip w8r13
         # col_bad += list(range(0,40)) # chip w8r13
@@ -82,7 +82,7 @@ class NoiseOccScan(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 
@@ -90,16 +90,16 @@ class NoiseOccScan(ScanBase):
         self.chip.masks.update(force=True)
 
         #W14R12 DCC used for ITUNE calib in W8R06 parameters 20241007_134946_threshold_scan_interpreted
-        self.chip.registers["ITHR"].write(64)
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
-        self.chip.registers["ICASN"].write(5)
-        self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(255)
-        self.chip.registers["VCASP"].write(93)
-        self.chip.registers["VCASC"].write(205) #by mistake was 255 in the THR scan for ITUNE in W8R13
-        self.chip.registers["VCLIP"].write(255)
+        # self.chip.registers["ITHR"].write(64)
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(5)
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(255)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205) #by mistake was 255 in the THR scan for ITUNE in W8R13
+        # self.chip.registers["VCLIP"].write(255)
 
         # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and also W8R04
         # self.chip.registers["IBIAS"].write(100)

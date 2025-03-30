@@ -167,6 +167,13 @@ def export_mask_yaml(path_h5,basepath, noisy_pixels, occ, clim, measurement):
     # for i in range(np.shape(disabled_pixels)[1]):
     #     file.write(str(disabled_pixels[:,i]))
 
+    # # ONLY FOR MASKING SPECIFIC COLUMNS OR ROWS (swapping col with row)
+    # for col in np.arange(248,250,1):
+    #     for row in range(512):
+    #     #print("[",row,col,"]")
+    #         masked_pixels.append({'row': int(row), 'col': int(col), 'hits': 777777.})
+
+
 
     for row in range(512):
         for col in range(512):

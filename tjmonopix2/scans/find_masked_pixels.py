@@ -1,6 +1,7 @@
 import numpy as np
 import tables as tb
 from pathlib import Path
+import yaml
 
 #
 # Finds the lates noise occupancy scan in a given folder and prints the disabled pixels to terminal
@@ -43,9 +44,24 @@ print(disabled_pixels)
 
 # Standard usage
 with open(folder_path + '/masked_pixels.yaml', 'w') as file:
-    file.write('cols , rows\n')
+    # file.write('cols , rows\n')
+    # for i in range(np.shape(disabled_pixels)[1]):
+    #     file.write(str(disabled_pixels[:,i]))
+    masked_pixels = []
+
     for i in range(np.shape(disabled_pixels)[1]):
-        file.write(str(disabled_pixels[:,i]))
+        row = disabled_pixels[1,i]
+        col = disabled_pixels[0,i]
+        #print("[",row,col,"]")
+        masked_pixels.append({'row': int(row), 'col': int(col), 'hits': 999999.})
+    
+    output = {'measurement': str(filepath_in),
+              'masked_pixels': masked_pixels,
+              }
+
+
+    yaml.dump(output, file, default_flow_style=False, sort_keys=False)
+
 
 # # Enumerating only usage -- COMMENT FOR STANDARD USAGE
 # for i in range(np.shape(disabled_pixels)[1]):

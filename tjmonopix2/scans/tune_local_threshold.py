@@ -20,8 +20,8 @@ from tjmonopix2.analysis import online as oa
 import yaml
 
 scan_configuration = {
-    'start_column': 449,
-    'stop_column': 480,
+    'start_column': 224,
+    'stop_column': 448,
     'start_row': 0,
     'stop_row': 512,
 
@@ -29,7 +29,7 @@ scan_configuration = {
 
     # Target threshold
     'VCAL_LOW': 30,
-    'VCAL_HIGH': 30+13
+    'VCAL_HIGH': 30+27
 }
 
 
@@ -102,7 +102,7 @@ class TDACTuning(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 
@@ -110,17 +110,17 @@ class TDACTuning(ScanBase):
         self.chip.masks.update(force=True)
 
         # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["ITHR"].write(30) #def 30
-        self.chip.registers["ICASN"].write(30) #def 30
-        self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(88)
-        self.chip.registers["IRAM"].write(50)
-        self.chip.registers["VRESET"].write(50)
-        self.chip.registers["VCASP"].write(40)
-        self.chip.registers["VCASC"].write(140)
-        self.chip.registers["VCLIP"].write(255)
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(30) #def 30
+        # self.chip.registers["ICASN"].write(30) #def 30
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(50)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
 
         # # # W2R17 irradiated 2.5e14 DCC
         # self.chip.registers["IBIAS"].write(100)
