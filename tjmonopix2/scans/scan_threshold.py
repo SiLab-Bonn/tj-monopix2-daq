@@ -40,6 +40,9 @@ class ThresholdScan(ScanBase):
         # # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
         # self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
 
+        # # This enables random phase at injection:
+        # self.chip.RESET_BCID = False
+
         # Read masked pixels from masked_pixels.yaml
         with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
             masked_pixels = yaml.full_load(f)

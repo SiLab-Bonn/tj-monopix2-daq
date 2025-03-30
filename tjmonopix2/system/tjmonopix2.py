@@ -675,6 +675,8 @@ class TJMonoPix2(object):
 
         self.debug = 0
 
+        self.RESET_BCID = True
+
     def get_sn(self):
         return self.chip_sn
 
@@ -1047,8 +1049,9 @@ class TJMonoPix2(object):
         '''
         indata = []
         #GR comment these 2 line below to avoid the reset of the BCID
-        indata += self._write_register(146, 0b100, write=False)
-        indata += self._write_register(146, 0b000, write=False)
+        if self.RESET_BCID:
+            indata += self._write_register(146, 0b100, write=False)
+            indata += self._write_register(146, 0b000, write=False)
 
         indata += self.write_sync(write=False) * wait_cycles
         indata += [self.CMD_CAL]
