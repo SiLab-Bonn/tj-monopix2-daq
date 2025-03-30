@@ -69,6 +69,7 @@ def main(input_file, overwrite=False, no_fit=False):
         col_stop = int(cfg["configuration_in.scan.scan_config.stop_column"])
         row_n, col_n = row_stop - row_start, col_stop - col_start
         thr_gen = np.zeros((512,512))
+        noise_gen = np.zeros((512,512))
 
         # Prepare histograms
         occupancy = np.zeros((col_n, row_n, charge_dac_bins))
@@ -458,7 +459,7 @@ def main(input_file, overwrite=False, no_fit=False):
         thr_gen[col_start:col_stop,row_start:row_stop] = threshold_DAC
         low_thr_pixels = thr_gen<0 # Create a matrix of False
         low_thr_pixels[enable_mask] = thr_gen[enable_mask] < th_min
-        export_mask_yaml(input_file,low_thr_pixels,os.path.splitext(input_file)[0],thr_gen)
+        # export_mask_yaml(input_file,low_thr_pixels,os.path.splitext(input_file)[0],thr_gen)
         # for i, (col, row) in enumerate(zip(*np.nonzero((threshold_DAC < th_min)&(threshold_DAC >0)))):
         for i, (col, row) in enumerate(zip(*np.nonzero((threshold_DAC < th_min)))):
 
@@ -605,6 +606,11 @@ def main(input_file, overwrite=False, no_fit=False):
 
         noise_max = noise_mean.n+8*noise_mean.s
         # print(f"First 100 pixels with noise > mean noise + 8*σ ({round(noise_max,1)})")
+        noise_gen[col_start:col_stop,row_start:row_stop] = noise_DAC
+        high_noise_pixels = noise_gen<0 # Create a matrix of False
+        high_noise_pixels[enable_mask] = noise_gen[enable_mask] > noise_max
+        export_mask_yaml(input_file,low_thr_pixels,high_noise_pixels,os.path.splitext(input_file)[0],thr_gen)
+
         index = -1
         for i, (col, row) in enumerate(zip(*np.nonzero((noise_DAC > noise_max)))):
             index = i
@@ -614,8 +620,6 @@ def main(input_file, overwrite=False, no_fit=False):
                 # print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC = {tdac[col+col_start,row+row_start]}")
                 continue
         print(f"Number of pixels with noise > mean noise + 8*σ ({round(noise_max,1)}) AND not disabled: {index+1}")
-
-
 
         # Noise map
         plt.axes((0.125, 0.11, 0.775, 0.72))
