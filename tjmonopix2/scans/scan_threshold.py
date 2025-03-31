@@ -40,6 +40,7 @@ class ThresholdScan(ScanBase):
         # # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
         # self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
 
+        # # BCID RESET: uncomment this line (and set it to False) to run without BCID RESET
         # # This enables random phase at injection:
         # self.chip.RESET_BCID = False
 
@@ -82,7 +83,7 @@ class ThresholdScan(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             #print(f"test i {enumerate(reg_values)}")
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
