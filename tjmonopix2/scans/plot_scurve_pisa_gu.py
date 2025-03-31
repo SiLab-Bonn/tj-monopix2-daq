@@ -69,6 +69,7 @@ def main(input_file, overwrite=False, no_fit=False):
         col_stop = int(cfg["configuration_in.scan.scan_config.stop_column"])
         row_n, col_n = row_stop - row_start, col_stop - col_start
         thr_gen = np.zeros((512,512))
+        noise_gen = np.zeros((512,512))
 
         # Prepare histograms
         occupancy = np.zeros((col_n, row_n, charge_dac_bins))
@@ -175,7 +176,7 @@ def main(input_file, overwrite=False, no_fit=False):
                     f"\nTotal = {len(noisy_list)} pixels ({len(noisy_list)/row_n/col_n:.1%})"
                 ), (0.5, 0.5), ha='center', va='center')
             print(f"Noisy pixels (n = {len(noisy_list)})")
-            print("[" + ", ".join(str((a, b)) for a, b in noisy_list) + "]")
+            # print("[" + ", ".join(str((a, b)) for a, b in noisy_list) + "]")
             output_file_txt = os.path.splitext(input_file)[0]
             with open(output_file_txt + "_noisy_pixels_occu.txt", "w") as f1:
                 print("[" + ", ".join(f'"{int(a)}, {int(b)}"' for a, b in noisy_list) + "]", file=f1)
@@ -264,9 +265,9 @@ def main(input_file, overwrite=False, no_fit=False):
             if not (col_start <= col < col_stop and row_start <= row < row_stop):
                 continue
             print(f"    ({col:3d}, {row:3d}), THR = {threshold_DAC[col-col_start,row-row_start]:.2f}, noise = {noise_DAC[col-col_start,row-row_start]:.2f}")
-        print("Pixels with THR > 70")
-        for col, row in zip(*np.nonzero(threshold_DAC > 70)):
-             print(f"    ({col+col_start:3d}, {row+row_start:3d}), THR = {threshold_DAC[col,row]:.2f}")
+        # print("Pixels with THR > 70")
+        # for col, row in zip(*np.nonzero(threshold_DAC > 70)):
+        #      print(f"    ({col+col_start:3d}, {row+row_start:3d}), THR = {threshold_DAC[col,row]:.2f}")
          #print("First 10 pixels with 34 < THR < 36")
          #for i, (col, row) in enumerate(zip(*np.nonzero((34 < threshold_DAC) & (threshold_DAC < 36)))):
          #    if i >= 100:
@@ -307,9 +308,9 @@ def main(input_file, overwrite=False, no_fit=False):
                 if not (col_start <= col < col_stop and row_start <= row < row_stop):
                     continue
                 print(f"    ({col:3d}, {row:3d}), THR = {threshold_DAC[col-col_start,row-row_start]:.2f}, noise = {noise_DAC[col-col_start,row-row_start]:.2f}")
-            print("Pixels with THR > 70")
-            for col, row in zip(*np.nonzero(threshold_DAC > 70)):
-                print(f"    ({col+col_start:3d}, {row+row_start:3d}), THR = {threshold_DAC[col,row]:.2f}")
+            # print("Pixels with THR > 70")
+            # for col, row in zip(*np.nonzero(threshold_DAC > 70)):
+            #     print(f"    ({col+col_start:3d}, {row+row_start:3d}), THR = {threshold_DAC[col,row]:.2f}")
             #print("First 10 pixels with 34 < THR < 36")
             #for i, (col, row) in enumerate(zip(*np.nonzero((34 < threshold_DAC) & (threshold_DAC < 36)))):
             #    if i >= 100:
@@ -453,12 +454,12 @@ def main(input_file, overwrite=False, no_fit=False):
         pdf.savefig(); plt.clf()
 
         th_min = th_mean.n-6*th_mean.s
-        print(f"First 200 pixels with THR < mean THR - 6*σ ({round(th_min,1)})")
+        # print(f"First 200 pixels with THR < mean THR - 6*σ ({round(th_min,1)})")
         index = -1
         thr_gen[col_start:col_stop,row_start:row_stop] = threshold_DAC
         low_thr_pixels = thr_gen<0 # Create a matrix of False
         low_thr_pixels[enable_mask] = thr_gen[enable_mask] < th_min
-        export_mask_yaml(input_file,low_thr_pixels,os.path.splitext(input_file)[0],thr_gen)
+        # export_mask_yaml(input_file,low_thr_pixels,os.path.splitext(input_file)[0],thr_gen)
         # for i, (col, row) in enumerate(zip(*np.nonzero((threshold_DAC < th_min)&(threshold_DAC >0)))):
         for i, (col, row) in enumerate(zip(*np.nonzero((threshold_DAC < th_min)))):
 
@@ -467,18 +468,20 @@ def main(input_file, overwrite=False, no_fit=False):
             if i >= 200:
                 continue
             else:
-                print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC = {tdac[col+col_start,row+row_start]}")
+                # print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC = {tdac[col+col_start,row+row_start]}")
+                continue
         print(f"Number of pixels with THR < mean THR - 6*σ ({round(th_min,1)}) AND not disabled: {index+1}")
 
-        print("First 100 pixels with noise > 4")
+        # print("First 100 pixels with noise > 4")
         # print("# of pixel with THR < 28 ",len(*np.nonzero((threshold_DAC > 0 )&(threshold_DAC < 28))))
         index = -1
         for i, (col, row) in enumerate(zip(*np.nonzero((noise_DAC > 4 )))):
             index = i
             if i >= 100:
-                a = 0
+                continue
             else:
-                print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC= {tdac[col+col_start,row+row_start]}")
+                # print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC= {tdac[col+col_start,row+row_start]}")
+                continue
             #print(f"    ({col+col_start:3d}, {row+row_start:3d}), THR = {threshold_DAC[col,row]}")
         print("Number of pixel with noise > 4 ",index+1)
 
@@ -602,17 +605,21 @@ def main(input_file, overwrite=False, no_fit=False):
         pdf.savefig(); plt.clf()
 
         noise_max = noise_mean.n+8*noise_mean.s
-        print(f"First 100 pixels with noise > mean noise + 8*σ ({round(noise_max,1)})")
+        # print(f"First 100 pixels with noise > mean noise + 8*σ ({round(noise_max,1)})")
+        noise_gen[col_start:col_stop,row_start:row_stop] = noise_DAC
+        high_noise_pixels = noise_gen<0 # Create a matrix of False
+        high_noise_pixels[enable_mask] = noise_gen[enable_mask] > noise_max
+        export_mask_yaml(input_file,low_thr_pixels,high_noise_pixels,os.path.splitext(input_file)[0],thr_gen)
+
         index = -1
         for i, (col, row) in enumerate(zip(*np.nonzero((noise_DAC > noise_max)))):
             index = i
             if i >= 100:
                 continue
             else:
-                print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC = {tdac[col+col_start,row+row_start]}")
+                # print(f"    ({col+col_start:3d}, {row+row_start:3d}), Noise = {noise_DAC[col,row]:.1f}, THR = {threshold_DAC[col,row]:.1f}, TDAC = {tdac[col+col_start,row+row_start]}")
+                continue
         print(f"Number of pixels with noise > mean noise + 8*σ ({round(noise_max,1)}) AND not disabled: {index+1}")
-
-
 
         # Noise map
         plt.axes((0.125, 0.11, 0.775, 0.72))

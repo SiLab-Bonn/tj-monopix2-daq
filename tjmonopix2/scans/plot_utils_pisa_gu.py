@@ -67,7 +67,7 @@ def get_block_matrix(mat, dx=1, dy=1, f=np.mean, mask=None):
 
     return np.array(bl_mat), np.array(bl_mat_masked)
 
-def export_mask_yaml(path_h5, noisy_pixels, measurement,thr,old_mask= False):
+def export_mask_yaml(path_h5, noisy_pixels_THR, noisy_pixels_noise, measurement,thr,old_mask= False):
     masked_pixels = []
     # h5file = tb.open_file(path_h5, mode="r")
     output_file = os.path.splitext(path_h5)[0] + "_masked_pixels.yaml"
@@ -96,8 +96,11 @@ def export_mask_yaml(path_h5, noisy_pixels, measurement,thr,old_mask= False):
 
     for row in range(512):
         for col in range(512):
-            if noisy_pixels[col, row]:
+            if noisy_pixels_THR[col, row]:
                 masked_pixels.append({'row': row, 'col': col, 'thr': float(thr[int(col),int(row)])})
+            elif noisy_pixels_noise[col, row]:
+                masked_pixels.append({'row': row, 'col': col, 'thr': float(thr[int(col),int(row)])})
+
     output = {'measurement': measurement,
               'masked_pixels': masked_pixels,
               }

@@ -12,11 +12,11 @@ from tjmonopix2.system.scan_base import ScanBase
 from tqdm import tqdm
 
 import yaml
-
+import os
 
 scan_configuration = {
-    'start_column': 450,
-    'stop_column': 452,
+    'start_column': 290,
+    'stop_column': 292,
     'start_row': 0,
     'stop_row': 512,
 
@@ -40,6 +40,9 @@ class ThresholdScan(ScanBase):
         # # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
         # self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
 
+        # # This enables random phase at injection:
+        # self.chip.RESET_BCID = False
+
         # Read masked pixels from masked_pixels.yaml
         with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
             masked_pixels = yaml.full_load(f)
@@ -47,10 +50,10 @@ class ThresholdScan(ScanBase):
         for i in range(0, len(masked_pixels['masked_pixels'])):
             row = masked_pixels['masked_pixels'][i]['row']
             col = masked_pixels['masked_pixels'][i]['col']
-            self.chip.masks.disable_mask[col, row] = False
+            self.chip.masks.disable_mask[col, row] = False  
 
         # # TDAC=4 for threshold tuning 0b100
-        #self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 4# TDAC=4 (default)
+        # self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 4# TDAC=4 (default)
 
         #chip w8r13 bad cols
         # #Disable W8R13 bad/broken columns (25, 160, 161, 224, 274, 383-414 included, 447) and pixels
@@ -61,8 +64,10 @@ class ThresholdScan(ScanBase):
         #      self.chip.masks['enable'][col,row] = False
 
         col_bad = [] #
+
         # W8R6 bad columns (246 to 251 included: double-cols will be disabled)
         # col_bad += [248]
+
         # W2R5 bad columns
         col_bad += [224]
 
@@ -94,7 +99,7 @@ class ThresholdScan(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
         self.chip.masks.apply_disable_mask()
@@ -157,8 +162,21 @@ class ThresholdScan(ScanBase):
         # self.chip.registers["VCASC"].write(140)
         # self.chip.registers["VCLIP"].write(255)
 
+        # # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and W8R04
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(30) #def 30
+        # self.chip.registers["ICASN"].write(30) #def 30
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(50)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
 
-        # # # W8R06 irradiated DCC used TB2024 run 1484 THR=30.6 DAC and W8R4
+
+        # W8R06 irradiated DCC used TB2024 run 1484 THR=30.6 DAC and W8R4
         # self.chip.registers["IBIAS"].write(100)
         # self.chip.registers["ITHR"].write(64)  # TB ITHR=64
         # self.chip.registers["ICASN"].write(10)  # TB ICASN=20

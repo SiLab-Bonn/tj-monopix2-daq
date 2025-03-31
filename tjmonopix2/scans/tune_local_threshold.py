@@ -20,8 +20,8 @@ from tjmonopix2.analysis import online as oa
 import yaml
 
 scan_configuration = {
-    'start_column': 449,
-    'stop_column': 480,
+    'start_column': 224,
+    'stop_column': 448,
     'start_row': 0,
     'stop_row': 512,
 
@@ -29,7 +29,7 @@ scan_configuration = {
 
     # Target threshold
     'VCAL_LOW': 30,
-    'VCAL_HIGH': 30+13
+    'VCAL_HIGH': 30+27
 }
 
 
@@ -124,8 +124,8 @@ class TDACTuning(ScanBase):
         # #w2r5 HVC KEK register HVC17 (+ some tuning in DESY) 
         # self.chip.registers["ITHR"].write(30)
         # self.chip.registers["IBIAS"].write(100)  # IBIAS was 60 in KEK try to increase it tto reduce a bit THR
-        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
-        # self.chip.registers["ICASN"].write(30)  # ICAN was 100 
+        # self.chip.registers["VRESET"].write(50)  # VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(30)   # ICAN was 100 
         # self.chip.registers["IDB"].write(88)
         # self.chip.registers["ITUNE"].write(200)
         # self.chip.registers["IDEL"].write(88)
@@ -147,7 +147,7 @@ class TDACTuning(ScanBase):
         # self.chip.registers["VCASC"].write(140)
         # self.chip.registers["VCLIP"].write(255)
 
-        # # # W2R17 irradiated 2.5e14 DCC
+        # # W2R17 irradiated 2.5e14 DCC
         # self.chip.registers["IBIAS"].write(100)
         # self.chip.registers["ITHR"].write(64)  # TB ITHR=64
         # self.chip.registers["ICASN"].write(40)  # TB ICASN=20
