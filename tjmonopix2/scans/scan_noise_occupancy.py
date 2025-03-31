@@ -51,6 +51,8 @@ class NoiseOccScan(ScanBase):
 
 
         col_bad = []
+        # W2R5 bad columns
+        col_bad += [224]
         # W8R6 bad columns (246 to 251 included: double-cols will be disabled)
         # col_bad += [248]
         # # W8R13 pixels that fire even when disabled
@@ -82,24 +84,60 @@ class NoiseOccScan(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            #print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        #W14R12 DCC used for ITUNE calib in W8R06 parameters 20241007_134946_threshold_scan_interpreted
-        self.chip.registers["ITHR"].write(64)
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
-        self.chip.registers["ICASN"].write(5)
+        #w2r5 DCC KEK register DCC31 (+ some tuning in DESY) 
+        self.chip.registers["ITHR"].write(50)
+        self.chip.registers["IBIAS"].write(100)  
+        self.chip.registers["VRESET"].write(120) 
+        self.chip.registers["ICASN"].write(100)
         self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(255)
+        self.chip.registers["ITUNE"].write(200)
+        self.chip.registers["IDEL"].write(88)
         self.chip.registers["VCASP"].write(93)
-        self.chip.registers["VCASC"].write(205) #by mistake was 255 in the THR scan for ITUNE in W8R13
+        self.chip.registers["VCASC"].write(228)
         self.chip.registers["VCLIP"].write(255)
+
+        #w2r5 DCC KEK register DCC57 (+ some tuning in DESY) 
+        # self.chip.registers["ITHR"].write(64)
+        # self.chip.registers["IBIAS"].write(100)  
+        # self.chip.registers["VRESET"].write(143) 
+        # self.chip.registers["ICASN"].write(100)  
+        # self.chip.registers["IDB"].write(150)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205)
+        # self.chip.registers["VCLIP"].write(255)
+
+        # #w2r5 HVC KEK register HVC17
+        # self.chip.registers["ITHR"].write(30)
+        # self.chip.registers["IBIAS"].write(100)  # IBIAS was 60 in KEK try to increase it tto reduce a bit THR
+        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(30)  # ICAN was 100 
+        # self.chip.registers["IDB"].write(88)
+        # self.chip.registers["ITUNE"].write(200)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
+
+        # #W14R12 DCC used for ITUNE calib in W8R06 parameters 20241007_134946_threshold_scan_interpreted
+        # self.chip.registers["ITHR"].write(64)
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(5)
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(255)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205) #by mistake was 255 in the THR scan for ITUNE in W8R13
+        # self.chip.registers["VCLIP"].write(255)
 
         # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and also W8R04
         # self.chip.registers["IBIAS"].write(100)

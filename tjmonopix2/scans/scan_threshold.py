@@ -63,6 +63,8 @@ class ThresholdScan(ScanBase):
         col_bad = [] #
         # W8R6 bad columns (246 to 251 included: double-cols will be disabled)
         # col_bad += [248]
+        # W2R5 bad columns
+        col_bad += [224]
 
         # # W8R13 pixels that fire even when disabled
         # col_bad += list(range(383,415)) # chip w8r13
@@ -102,11 +104,36 @@ class ThresholdScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
         self.chip.registers["CMOS_TX_EN_CONF"].write(1)
 
-        # #w2r5 HVC KEK register HVC17
+
+        #w2r5 DCC KEK register DCC31 (+ some tuning in DESY) 
+        self.chip.registers["ITHR"].write(50)
+        self.chip.registers["IBIAS"].write(100)  
+        self.chip.registers["VRESET"].write(120) 
+        self.chip.registers["ICASN"].write(100) # DCC31 was 120
+        self.chip.registers["IDB"].write(100)
+        self.chip.registers["ITUNE"].write(200)
+        self.chip.registers["IDEL"].write(88)
+        self.chip.registers["VCASP"].write(93)
+        self.chip.registers["VCASC"].write(228)
+        self.chip.registers["VCLIP"].write(255)
+
+        #w2r5 DCC KEK register DCC57 (+ some tuning in DESY) 
+        # self.chip.registers["ITHR"].write(64)
+        # self.chip.registers["IBIAS"].write(100)  
+        # self.chip.registers["VRESET"].write(143) 
+        # self.chip.registers["ICASN"].write(100)  
+        # self.chip.registers["IDB"].write(150)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205)
+        # self.chip.registers["VCLIP"].write(255)
+
+        # #w2r5 HVC KEK register HVC17 (+ some tuning in DESY) 
         # self.chip.registers["ITHR"].write(30)
         # self.chip.registers["IBIAS"].write(100)  # IBIAS was 60 in KEK try to increase it tto reduce a bit THR
         # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
-        # self.chip.registers["ICASN"].write(50)  # ICAN was 100 
+        # self.chip.registers["ICASN"].write(30)  # ICASN was 100 
         # self.chip.registers["IDB"].write(88)
         # self.chip.registers["ITUNE"].write(200)
         # self.chip.registers["IDEL"].write(88)

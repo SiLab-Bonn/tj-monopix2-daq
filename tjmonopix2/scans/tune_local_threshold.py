@@ -86,7 +86,7 @@ class TDACTuning(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
             self.chip._write_register(155+i, v)
@@ -102,25 +102,50 @@ class TDACTuning(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["ITHR"].write(30) #def 30
-        self.chip.registers["ICASN"].write(30) #def 30
-        self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(88)
-        self.chip.registers["IRAM"].write(50)
-        self.chip.registers["VRESET"].write(50)
-        self.chip.registers["VCASP"].write(40)
-        self.chip.registers["VCASC"].write(140)
-        self.chip.registers["VCLIP"].write(255)
+        #w2r5 DCC KEK register DCC57 (+ some tuning in DESY) 
+        # self.chip.registers["ITHR"].write(64)
+        # self.chip.registers["IBIAS"].write(100)  
+        # self.chip.registers["VRESET"].write(143) 
+        # self.chip.registers["ICASN"].write(50)  
+        # self.chip.registers["IDB"].write(150)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(205)
+        # self.chip.registers["VCLIP"].write(255)
+
+        # #w2r5 HVC KEK register HVC17 (+ some tuning in DESY) 
+        # self.chip.registers["ITHR"].write(30)
+        # self.chip.registers["IBIAS"].write(100)  # IBIAS was 60 in KEK try to increase it tto reduce a bit THR
+        # self.chip.registers["VRESET"].write(50)  #VRESET=50 for HVC
+        # self.chip.registers["ICASN"].write(30)  # ICAN was 100 
+        # self.chip.registers["IDB"].write(88)
+        # self.chip.registers["ITUNE"].write(200)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
+
+
+        # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(30) #def 30
+        # self.chip.registers["ICASN"].write(30) #def 30
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(50)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
 
         # # # W2R17 irradiated 2.5e14 DCC
         # self.chip.registers["IBIAS"].write(100)
