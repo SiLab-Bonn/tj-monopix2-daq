@@ -4,6 +4,7 @@ import threading
 import time
 import pyeudaq
 import os
+import json
 import yaml
 from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 from tjmonopix2.system import logger
@@ -134,6 +135,20 @@ class EudaqScan(pyeudaq.Producer):
             self.log.warning(f"BCID distribution is disabled!")
         for i in range(16):
             self.scan.chip._write_register(171 + i, v)
+        
+        # json is used to convert eg "[1, 2, 3]" to list of integers
+        cols_disable = json.loads(eudaqConfig.get("cols_disable", '[]'))
+        # Disable column 484 and 485:
+        dcols_enable = [0] * 16
+        for c in range(self.scan.scan_config["start_column"], self.scan.scan_config["stop_column"]):
+            dcols_enable[c // 32] |= (1 << ((c >> 1) & 15))
+        for c in cols_disable:  # List of disabled columns
+            dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
+        for i, v in enumerate(dcols_enable):
+            self.scan.chip._write_register(155 + i, v)  # EN_RO_CONF
+            # self.chip._write_register(171 + i, v)  # EN_BCID_CONF
+            self.scan.chip._write_register(187 + i, v)  # EN_RO_RST_CONF
+            self.scan.chip._write_register(203 + i, v)  # EN_FREEZE_CONF
 
         try:
             self.scan.configure()

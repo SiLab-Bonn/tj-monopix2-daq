@@ -42,19 +42,6 @@ class ExtTriggerScan(ScanBase):
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update()
 
-        cols_disable = [484, 485]
-        # Disable column 484 and 485:
-        dcols_enable = [0] * 16
-        for c in range(start_column, stop_column):
-            dcols_enable[c // 32] |= (1 << ((c >> 1) & 15))
-        for c in cols_disable:  # List of disabled columns
-            dcols_enable[c // 32] &= ~(1 << ((c >> 1) & 15))
-        for i, v in enumerate(dcols_enable):
-            self.chip._write_register(155 + i, v)  # EN_RO_CONF
-            # self.chip._write_register(171 + i, v)  # EN_BCID_CONF
-            self.chip._write_register(187 + i, v)  # EN_RO_RST_CONF
-            self.chip._write_register(203 + i, v)  # EN_FREEZE_CONF
-
         self.daq.configure_tlu_veto_pulse(veto_length=500)
         if max_triggers:
             # self.daq.configure_tlu_module(max_triggers=max_triggers)
