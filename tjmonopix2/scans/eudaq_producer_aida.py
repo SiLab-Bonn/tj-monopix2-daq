@@ -127,6 +127,13 @@ class EudaqScan(pyeudaq.Producer):
             if reg_val >= 0:
                 self.log.info(f"Override register {reg} to value {reg_val}")
                 self.scan.chip.registers[reg].write(reg_val)
+        
+        v = 0xFFFF
+        if int(eudaqConfig.get('disable_bcid', 0)) > 0:
+            v = 0x0000
+            self.log.warning(f"BCID distribution is disabled!")
+        for i in range(16):
+            self.scan.chip._write_register(171 + i, v)
 
         try:
             self.scan.configure()
