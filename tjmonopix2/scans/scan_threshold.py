@@ -25,8 +25,6 @@ scan_configuration = {
     'VCAL_LOW_start': 140-0,
     'VCAL_LOW_stop': 140-60,
     'VCAL_LOW_step': -1
-
-
 }
 
 
@@ -40,9 +38,9 @@ class ThresholdScan(ScanBase):
         # # print(f"WAS: {self.daq.rx_channels['rx0']['DATA_DELAY']} ___________________________-----")
         # self.daq.rx_channels['rx0']['DATA_DELAY'] = 20
 
-        # # BCID RESET: uncomment this line (and set it to False) to run without BCID RESET
-        # # This enables random phase at injection:
-        # self.chip.RESET_BCID = False
+        # BCID with RESET (default configuration) -->  self.chip.RESET_BCID = True
+        # BCID without RESET  -->  self.chip.RESET_BCID = False
+        self.chip.RESET_BCID = True
 
         # Read masked pixels from masked_pixels.yaml
         with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
@@ -70,7 +68,7 @@ class ThresholdScan(ScanBase):
         # col_bad += [248]
 
         # W2R5 bad columns
-        col_bad += [224]
+        # col_bad += [224]
 
         # # W8R13 pixels that fire even when disabled
         # col_bad += list(range(383,415)) # chip w8r13
@@ -83,7 +81,7 @@ class ThresholdScan(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        # print(" ".join(f"{x:016b}" for x in reg_values))
+        print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             #print(f"test i {enumerate(reg_values)}")
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
@@ -112,16 +110,16 @@ class ThresholdScan(ScanBase):
 
 
         #w2r5 DCC KEK register DCC31 (+ some tuning in DESY) 
-        self.chip.registers["ITHR"].write(50)
-        self.chip.registers["IBIAS"].write(100)  
-        self.chip.registers["VRESET"].write(120) 
-        self.chip.registers["ICASN"].write(100) # DCC31 was 120
-        self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(200)
-        self.chip.registers["IDEL"].write(88)
-        self.chip.registers["VCASP"].write(93)
-        self.chip.registers["VCASC"].write(228)
-        self.chip.registers["VCLIP"].write(255)
+        # self.chip.registers["ITHR"].write(50)
+        # self.chip.registers["IBIAS"].write(100)  
+        # self.chip.registers["VRESET"].write(120) 
+        # self.chip.registers["ICASN"].write(100) # DCC31 was 120
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(200)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["VCASP"].write(93)
+        # self.chip.registers["VCASC"].write(228)
+        # self.chip.registers["VCLIP"].write(255)
 
         #w2r5 DCC KEK register DCC57 (+ some tuning in DESY) 
         # self.chip.registers["ITHR"].write(64)
@@ -146,9 +144,6 @@ class ThresholdScan(ScanBase):
         # self.chip.registers["VCASP"].write(40)
         # self.chip.registers["VCASC"].write(140)
         # self.chip.registers["VCLIP"].write(255)
-
-
-
 
         # # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C and W8R04
         # self.chip.registers["IBIAS"].write(100)
