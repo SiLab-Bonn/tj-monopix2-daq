@@ -86,11 +86,13 @@ class EudaqScan(pyeudaq.Producer):
             bench_conf["TLU"]["TRIGGER_LOW_TIMEOUT"] = 0
             bench_conf["TLU"]["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 5 
             bench_conf["TLU"]["DATA_FORMAT"] = 0
+            self.log.info("Setting up TLU module in EUDET mode")
         else:
             bench_conf["TLU"]["TRIGGER_MODE"] = 2
             bench_conf["TLU"]["TRIGGER_LOW_TIMEOUT"] = 4
             bench_conf["TLU"]["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 1 
             bench_conf["TLU"]["DATA_FORMAT"] = 1
+            self.log.info("Setting up TLU module in AIDA mode")
 
 
         self.log.debug("Probing if DAQ board is up")
