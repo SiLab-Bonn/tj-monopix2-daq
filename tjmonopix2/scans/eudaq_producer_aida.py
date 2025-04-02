@@ -78,7 +78,24 @@ class EudaqScan(pyeudaq.Producer):
         bench_conf["modules"]["module_0"]["chip_0"]["chip_config_file"] = eudaqConfig.get("chip_config_file", None)
         bench_conf["general"]["output_directory"] = eudaqConfig.get("output_directory", None)
         bench_conf["modules"]["module_0"]["chip_0"]["chip_sn"] = eudaqConfig.get("chip_sn", None)
-        bench_conf["modules"]["module_0"]["chip_0"]["send_data"] = "tcp://127.0.0.1:" + eudaqConfig.get("online_monitor_port", "5500")
+        bench_conf["modules"]["module_0"]["chip_0"]["send_data"] = "tcp://127.0.0.1:" + (eudaqConfig.get("online_monitor_port", "5500"))
+
+        # Handshake Modes 
+        if eudaqConfig.get("handshake_mode") == "eudet":
+            bench_conf["TLU"]["TRIGGER_MODE"] = 3
+            bench_conf["TLU"]["TRIGGER_LOW_TIMEOUT"] = 0
+            bench_conf["TLU"]["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 5 
+            bench_conf["TLU"]["DATA_FORMAT"] = 0
+            self.log.info("Setting up TLU module in EUDET mode")
+        elif eudaqConfig.get("handshake_mode") == "aida":
+            bench_conf["TLU"]["TRIGGER_MODE"] = 2
+            bench_conf["TLU"]["TRIGGER_LOW_TIMEOUT"] = 4
+            bench_conf["TLU"]["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 1 
+            bench_conf["TLU"]["DATA_FORMAT"] = 1
+            bench_conf["TLU"]["EN_TLU_RESET_TIMESTAMP"] = 1
+            self.log.info("Setting up TLU module in AIDA mode")
+        else:
+            self.log.info("Using TLU settings provided in testbench.yaml file")
 
         self.log.debug("Probing if DAQ board is up")
         if host_reachable(daqboard_ip, 24, self.BDAQBoardTimeout):
@@ -94,7 +111,7 @@ class EudaqScan(pyeudaq.Producer):
             self.log.error("Initialization failed")
             raise RuntimeError("BDAQ board unreachable")
 
-         # Handshake Modes 
+         # Handshake Modes # TODO: Check if covered with above settings
         if eudaqConfig.get("handshake_mode","aida").lower() == "eudet":
             self.scan.daq.configure_tlu_module(aidamode=False)
         elif eudaqConfig.get("handshake_mode","aida").lower() == "aida":
