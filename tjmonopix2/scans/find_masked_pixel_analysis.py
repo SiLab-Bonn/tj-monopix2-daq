@@ -81,10 +81,10 @@ with open(folder_path + f"/run00{run_no}_masked_pixels.txt", 'w') as file:
         
         file.write(f'p {col} {row}\n')
     
-    disabled_cols = [i for i in range(512) if not (start_col <= i <= stop_col)]
+    disabled_cols = [i for i in range(512) if not (start_col <= i <= stop_col-1)]
     for i in disabled_cols:
         file.write(f'c {i}\n')
-    disabled_rows = [i for i in range(512) if not (start_row <= i <= stop_row)]
+    disabled_rows = [i for i in range(512) if not (start_row <= i <= stop_row-1)]
     for i in disabled_rows:
         file.write(f'r {i}\n')
 
