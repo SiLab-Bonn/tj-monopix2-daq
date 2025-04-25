@@ -528,8 +528,11 @@ wire TLU_FIFO_PREEMPT_REQ;
 wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
 wire [31:0] TDC_FIFO_DATA;
 
-rrp_arbiter 
-#( 
+// TDL TDC (high-res)
+wire PTDC_FIFO_READ, PTDC_FIFO_EMPTY;
+wire [31:0] PTDC_FIFO_DATA;
+
+rrp_arbiter #( 
     .WIDTH(3)
 ) rrp_arbiter (
     .RST(BUS_RST),
@@ -539,20 +542,20 @@ rrp_arbiter
         ~RX_FIFO_EMPTY,
         ~TLU_FIFO_EMPTY,
         // ~TDC_FIFO_EMPTY,
-        ~ptdc_fifo_empty
+        ~PTDC_FIFO_EMPTY
     }),
     .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
         // TDC_FIFO_DATA,
-        ptdc_fifo_data
+        PTDC_FIFO_DATA
     }),
     .READ_GRANT({
         RX_FIFO_READ,
         TLU_FIFO_READ,
         // TDC_FIFO_READ,
-        ptdc_fifo_read
+        PTDC_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -671,8 +674,6 @@ pulse_gen #(
 // );
 
 // ----- FAST TDC ----- //
-wire [31:0] ptdc_fifo_data;
-
 tdl_tdc #(
 	.BASEADDR(TDL_TDC_BASEADDR),
 	.HIGHADDR(TDL_TDC_HIGHADDR),
@@ -695,13 +696,11 @@ tdl_tdc #(
 	.timestamp(TIMESTAMP[24:0]),
 	.ext_en(1'b0),
 	.arm_tdc(1'b0),
-	.fifo_read(ptdc_fifo_read),
+	.fifo_read(PTDC_FIFO_READ),
 
-	.fifo_empty(ptdc_fifo_empty),
-	.fifo_data(ptdc_fifo_data)
+	.fifo_empty(PTDC_FIFO_EMPTY),
+	.fifo_data(PTDC_FIFO_DATA)
 );
-
-wire ptdc_fifo_read, ptdc_fifo_empty;
 
 // fast readout
 tjmono2_rx #(

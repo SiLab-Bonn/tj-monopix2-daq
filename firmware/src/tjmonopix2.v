@@ -259,7 +259,7 @@ BUFG BUFG_inst_CLK160  (.O(CLK160),  .I(CLK160_PLL));
 BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
 
 // ------ CLK TDL TDC -------- //
-// Si570 without muxing, directly connected to MGT_REFCLK1
+// Si570 low-jitter oscillator, hard-wired to MGT_REFCLK1
 wire CLK160_TDC_Si570_in, CLK160_TDC_Si570;
 
 IBUFDS_GTE2 IBUFDS_tdcclk  

@@ -259,15 +259,15 @@ class BDAQ53(Dut):
         self.log.info('Configuring TDC module')
         self['pTDC'].EN_WRITE_TIMESTAMP = self.configuration['TDC'].get('EN_WRITE_TIMESTAMP', 1)
         self['pTDC'].EN_TRIGGER_DIST = self.configuration['TDC'].get('EN_TRIGGER_DIST', 1)
-        # self['pTDC'].EN_NO_WRITE_TRIG_ERR = self.configuration['TDC'].get('EN_NO_WRITE_TRIG_ERR', 1)
-        # self['pTDC'].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
-        # self['pTDC'].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
+        self['pTDC'].EN_INVERT_TDC = self.configuration['TDC'].get('EN_INVERT_TDC', 0)
+        self['pTDC'].EN_INVERT_TRIGGER = self.configuration['TDC'].get('EN_INVERT_TRIGGER', 0)
 
     def calibrate_ptdc_module(self):
-        # Run calibration for one second. FPGA should be up and running for some time ideally
+        # Run calibration for two seconds. FPGA should be up and running for some time
+        self.log.info("Calibrating tapped delay line for TDC module")
         self.reset_fifo()
         self['pTDC'].EN_CALIBRATION_MOD = 1
-        time.sleep(1)
+        time.sleep(2)
         self['pTDC'].EN_CALIBRATION_MOD = 0
         # TODO: Figure out where and how to store TDC calibration words...
 
