@@ -101,6 +101,8 @@ wire LVDS_HITOR;
 wire [3:0] LVDS_PULSE_EXT;
 wire LVDS_CHSYNC_LOCK;
 
+wire CMD_OUT;
+
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
@@ -127,6 +129,7 @@ tjmonopix2_core #(
 
     //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
+    .CMD_OUT(CMD_OUT),
 
     .GPIO_SENSE(4'b0),
 
@@ -212,10 +215,10 @@ monopix2 dut_0 (
     .RESETB_EXT(1'b1),  // No need to reset chip in tests
     // .ANALOG_HIT(ANALOG_HIT),
     .CHIP_ID(2'b0),
-    
-    .LVDS_CMD(~LVDS_CMD[0]),  // invert for simulation only
-    .LVDS_CMD_CLK(LVDS_CMD_CLK[0]), 
-    .LVDS_SER_CLK(LVDS_SER_CLK[0]), 
+
+    .LVDS_CMD(CMD_OUT),  // invert for simulation only
+    .LVDS_CMD_CLK(CLKCMD), 
+    .LVDS_SER_CLK(CLK160), 
     .LVDS_DATA_OUT(LVDS_DATA[0]), 
     .LVDS_HITOR_OUT(),
     // .LVDS_PULSE_EXT(LVDS_PULSE_EXT[0]),
@@ -229,9 +232,9 @@ monopix2 dut_1 (
     // .ANALOG_HIT(ANALOG_HIT),
     .CHIP_ID(2'b1),
     
-    .LVDS_CMD(~LVDS_CMD[1]),  // invert for simulation only
-    .LVDS_CMD_CLK(LVDS_CMD_CLK[1]), 
-    .LVDS_SER_CLK(LVDS_SER_CLK[1]), 
+    .LVDS_CMD(CMD_OUT),  // invert for simulation only
+    .LVDS_CMD_CLK(CLKCMD), 
+    .LVDS_SER_CLK(CLK160), 
     .LVDS_DATA_OUT(LVDS_DATA[1]), 
     .LVDS_HITOR_OUT(),
     // .LVDS_PULSE_EXT(LVDS_PULSE_EXT[1]),
@@ -245,9 +248,9 @@ monopix2 dut_2 (
     // .ANALOG_HIT(ANALOG_HIT),
     .CHIP_ID(2'b10),
     
-    .LVDS_CMD(~LVDS_CMD[2]),  // invert for simulation only
-    .LVDS_CMD_CLK(LVDS_CMD_CLK[2]), 
-    .LVDS_SER_CLK(LVDS_SER_CLK[2]), 
+    .LVDS_CMD(CMD_OUT),  // invert for simulation only
+    .LVDS_CMD_CLK(CLKCMD), 
+    .LVDS_SER_CLK(CLK160), 
     .LVDS_DATA_OUT(LVDS_DATA[2]), 
     .LVDS_HITOR_OUT(),
     // .LVDS_PULSE_EXT(LVDS_PULSE_EXT[2]),
@@ -261,9 +264,9 @@ monopix2 dut_3 (
     // .ANALOG_HIT(ANALOG_HIT),
     .CHIP_ID(2'b11),
     
-    .LVDS_CMD(~LVDS_CMD[3]),  // invert for simulation only
-    .LVDS_CMD_CLK(LVDS_CMD_CLK[3]), 
-    .LVDS_SER_CLK(LVDS_SER_CLK[3]), 
+    .LVDS_CMD(CMD_OUT),  // invert for simulation only
+    .LVDS_CMD_CLK(CLKCMD), 
+    .LVDS_SER_CLK(CLK160), 
     .LVDS_DATA_OUT(LVDS_DATA[3]), 
     .LVDS_HITOR_OUT(),
     // .LVDS_PULSE_EXT(LVDS_PULSE_EXT[3]),

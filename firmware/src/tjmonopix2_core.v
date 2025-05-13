@@ -77,6 +77,7 @@ module tjmonopix2_core #(
 
     //cmd
     output wire CMD_LOOP_START_PULSE,
+    output wire CMD_OUT,
 
     // Displayport control signals
     input wire [3:0] GPIO_SENSE,
@@ -442,7 +443,7 @@ assign LVDS_PULSE_EXT = 4'b0;  // not connected for now
 
 // ----- Command encoder ----- //
 wire CMD;
-wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING;
+wire CMD_OUTPUT_EN, CMD_WRITING;
 wire CMD_LOOP_START;
 
 wire EXT_START_PIN, EXT_TRIGGER;
@@ -485,21 +486,21 @@ cmd #(
     assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
     assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
     assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
-`elsif BDAQ53
-    genvar i;
-    generate
-        for (i=0; i<4; i=i+1) begin : ODDR_inst_clks
-            ODDR ODDR_inst_SER_CLK (
-                .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
-            ODDR ODDR_inst_CMD_CLK (
-                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
-            ODDR ODDR_inst_CMD (
-                .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
-            );
-        end
-    endgenerate
+// `elsif BDAQ53
+//     genvar i;
+//     generate
+//         for (i=0; i<4; i=i+1) begin : ODDR_inst_clks
+//             ODDR ODDR_inst_SER_CLK (
+//                 .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+//             );
+//             ODDR ODDR_inst_CMD_CLK (
+//                 .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+//             );
+//             ODDR ODDR_inst_CMD (
+//                 .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+//             );
+//         end
+//     endgenerate
 `endif
 
 pulse_gen #(

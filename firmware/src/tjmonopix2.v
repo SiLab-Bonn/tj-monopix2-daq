@@ -307,6 +307,16 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
     genvar i;
     generate
         for (i=0; i<4; i=i+1) begin : BUFDS_inst
+            ODDR ODDR_inst_SER_CLK (
+                .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+            );
+            ODDR ODDR_inst_CMD_CLK (
+                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+            );
+            ODDR ODDR_inst_CMD (
+                .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+            );
+
             // CMD
             OBUFDS #(
                 .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
@@ -595,6 +605,8 @@ assign LED[5]= 1'b0;
 assign LED[4]= 1'b0;
 wire [1:0] CHIP_ID;
 
+wire CMD_OUT;
+
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
@@ -621,6 +633,7 @@ tjmonopix2_core #(
 
     //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
+    .CMD_OUT(CMD_OUT),
 
     //fifo
     .ARB_READY_OUT(ARB_READY_OUT),
@@ -681,7 +694,7 @@ tjmonopix2_core #(
         LVDS_DATA_2_DBG <= LVDS_DATA[2];
         LVDS_DATA_3_DBG <= LVDS_DATA[3];
    end
-    multichip_debugger i_multichip_debugger (
+   /* multichip_debugger i_multichip_debugger (
         .clk(CLKILA), // input wire clk
 
         .probe0({LVDS_DATA_0_DBG}), // input wire  probe0  
@@ -689,6 +702,7 @@ tjmonopix2_core #(
         .probe2({LVDS_DATA_2_DBG}), // input wire  probe2 
         .probe3({LVDS_DATA_3_DBG})  // input wire  probe3
     );
+   */
 `endif
 
 
