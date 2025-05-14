@@ -287,7 +287,7 @@ wire [ABUSWIDTH-1:0] BUS_MEM_ADD;
 assign BUS_MEM_EN = (BUS_WR | BUS_RD) & BUS_ADD >= REGSIZE;
 assign BUS_MEM_ADD = BUS_ADD - REGSIZE;
 
-(* RAM_STYLE="{BLOCK_POWER2}" *)
+(* RAM_STYLE="block_power2" *)
 reg [7:0] mem [CMD_MEM_SIZE-1:0];
 
 reg [BRAM_ABUSWIDTH-1:0] read_address = 0;

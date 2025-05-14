@@ -90,7 +90,7 @@ module tjmonopix2_core #(
     input wire FIFO_NEAR_FULL,
 
     // tlu, lemo, led
-    output wire [4:0] LED,
+    output wire [3:0] LED,
     input wire [1:0] LEMO_RX,
     output wire [7:0] LEMO_MUX,
     output wire RJ45_BUSY,

@@ -584,10 +584,10 @@ cdc_syncfifo #(.DSIZE(32), .ASIZE(3)) cdc_syncfifo_i
 assign ARB_READY_OUT = !FIFO_FULL;
 
 wire FIFO_EMPTY;
-fifo_32_to_8 #(.DEPTH(256*1024)) i_data_fifo (
+fifo_32_to_8 #(.DEPTH(128*1024)) i_data_fifo (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
-    
+
     .WRITE(!cdc_fifo_empty),
     .READ(TCP_TX_WR),
     .DATA_IN(cdc_data_out),
@@ -599,6 +599,8 @@ fifo_32_to_8 #(.DEPTH(256*1024)) i_data_fifo (
 assign TCP_TX_WR = !TCP_TX_FULL && !FIFO_EMPTY;
 
 // -------  USER CORE ------- //
+
+// LED on BDAQ53 board, pull-ups to 1.8 V, i.e., active low
 assign LED[7]= 1'b0;
 assign LED[6]= 1'b0;
 assign LED[5]= 1'b0;
@@ -643,7 +645,7 @@ tjmonopix2_core #(
     .FIFO_NEAR_FULL(FIFO_NEAR_FULL),
 
     //LED
-    .LED(LED[4:0]),
+    .LED(LED[3:0]),
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
     .LEMO_MUX({LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0}),
     .RJ45_CLK(RJ45_CLK),
