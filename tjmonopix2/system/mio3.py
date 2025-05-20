@@ -8,15 +8,15 @@
 import collections
 import os
 import time
+from importlib.metadata import version
 
-import pkg_resources
 import yaml
 from basil.dut import Dut
 
 from tjmonopix2.system import logger
 from tjmonopix2.system.tjmono2_rx import tjmono2_rx
 
-VERSION = pkg_resources.get_distribution("tjmonopix2").version
+VERSION = version('tjmonopix2')
 
 
 class MIO3(Dut):

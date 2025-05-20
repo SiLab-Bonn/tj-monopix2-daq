@@ -5,16 +5,14 @@
 # ------------------------------------------------------------
 #
 
-import os
-import pkg_resources
 import collections
-
+import os
 from copy import deepcopy
+from importlib.metadata import version
 
 import tables as tb
 
-
-VERSION = pkg_resources.get_distribution("tjmonopix2").version
+VERSION = version('tjmonopix2')
 
 
 def recursive_update(first, second={}):

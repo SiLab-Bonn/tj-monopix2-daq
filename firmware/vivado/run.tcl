@@ -36,7 +36,7 @@ proc run_bit {part xdc_file size {suffix ""}} {
     if {$suffix != ""} {set suffix \_$suffix}
     set identifier $board_name\_$fpga_name$suffix
 
-    set version [exec python -c "import pkg_resources; print(pkg_resources.get_distribution('tjmonopix2').version)"]
+    set version [exec python -c "from importlib.metadata import version; print(version('tjmonopix2'))"]
     set version_major [lindex [split $version '.'] 0]
     set version_minor [lindex [split $version '.'] 1]
     set version_patch [lindex [split $version '.'] 2]
