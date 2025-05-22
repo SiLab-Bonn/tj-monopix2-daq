@@ -10,6 +10,7 @@ import collections
 import inspect
 import multiprocessing
 import os
+import sys
 import time
 import traceback
 from collections import OrderedDict
@@ -212,6 +213,8 @@ class ScanBase(object):
         self.initialized = False
 
         self.daq = None  # readout system, defined during scan init if not existing
+
+        self.last_exception = None  # query last exception
 
         # Needed for parallel scans where several readout threads change the chip handles
         self.chip_handle_lock = Lock()
@@ -1016,6 +1019,7 @@ class ScanBase(object):
 
     def _on_exception(self):
         ''' Called when exception occurs in main process '''
+        self.last_exception = sys.exc_info()
         self.errors_occured = traceback.format_exc()
         self.close()
 
@@ -1128,6 +1132,7 @@ class ScanBase(object):
 
     def handle_err(self, exc):
         ''' Handle errors when readout is started '''
+        self.last_exception = exc
         msg = '%s' % exc[1]
         if msg:
             self.log.error('%s', msg)

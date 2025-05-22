@@ -177,9 +177,9 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan']:
+            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan', 'eudaq_scan']:
                 self.create_fancy_occupancy()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'calibrate_tot']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'eudaq_scan', 'calibrate_tot']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()

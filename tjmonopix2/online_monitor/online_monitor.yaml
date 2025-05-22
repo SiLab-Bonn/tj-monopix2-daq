@@ -1,5 +1,5 @@
 converter :
-    TJ2 :
+    DUT:
         kind : tjmonopix2_inter
         frontend : tcp://127.0.0.1:5500
         backend : tcp://127.0.0.1:5600
@@ -7,7 +7,7 @@ converter :
         noisy_threshold : 3  # Pixels per readout above noisy_threshold * median occupancy
 
 receiver :
-    TJ2 :
+    DUT :
         kind : tjmonopix2_recv
         frontend : tcp://127.0.0.1:5600
 
