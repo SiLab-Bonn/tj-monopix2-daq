@@ -283,10 +283,21 @@ assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
 assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
 
 // -------  Diff buffer for BDAQ  ------- //
+wire CMD_OUT;
 `ifdef BDAQ53
     wire LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK, LVDS_PULSE_EXT;
     wire CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N, PULSE_EXT_P, PULSE_EXT_N;
     wire CMD_OUT_int, CMD_CLK_int, SER_CLK_int, PULSE_EXT_int;
+
+    ODDR ODDR_inst_SER_CLK (
+        .Q(LVDS_SER_CLK), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD_CLK (
+        .Q(LVDS_CMD_CLK), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    ODDR ODDR_inst_CMD (
+        .Q(LVDS_CMD), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+    );
 
     // CMD
     OBUFDS #(
@@ -596,6 +607,8 @@ tjmonopix2_core #(
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),
 
+    .CMD_OUT(CMD_OUT),
+
     //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
 
@@ -615,9 +628,6 @@ tjmonopix2_core #(
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
 
-    .LVDS_CMD(LVDS_CMD), 
-    .LVDS_CMD_CLK(LVDS_CMD_CLK), 
-    .LVDS_SER_CLK(LVDS_SER_CLK), 
     .LVDS_DATA(LVDS_DATA), 
     .LVDS_HITOR(LVDS_HITOR),
     .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
