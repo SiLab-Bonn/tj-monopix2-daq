@@ -103,7 +103,7 @@ module tjmonopix2_core #(
     output wire LVDS_CMD,
     output wire LVDS_CMD_CLK,
     output wire LVDS_SER_CLK,
-    input wire LVDS_DATA,
+    input wire [3:0] LVDS_DATA,
     input wire LVDS_HITOR,
     output wire LVDS_PULSE_EXT,
 
@@ -161,9 +161,6 @@ localparam GPIO_HIGHADDR = 32'h0100 - 1;
 localparam PULSE_INJ_BASEADDR = 32'h0100;
 localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
 
-localparam RX_BASEADDR = 32'h0200;
-localparam RX_HIGHADDR = 32'h0300 - 1; 
-
 localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
 localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
 
@@ -194,11 +191,15 @@ localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
 
-localparam I2C_BASEADDR = 32'h3000;
-localparam I2C_HIGHADDR = 32'h4000 - 1;
+// RX
+localparam RX_BASEADDR = 32'h1000;
+localparam RX_HIGHADDR = 32'h1100 - 1;
 
-localparam CMD_BASEADDR = 32'h1000;
-localparam CMD_HIGHADDR = 32'h3000 - 1;
+localparam CMD_BASEADDR = 32'h2000;
+localparam CMD_HIGHADDR = 32'h4000 - 1;
+
+localparam I2C_BASEADDR = 32'h4000;
+localparam I2C_HIGHADDR = 32'h5000 - 1;
 
 localparam ABUSWIDTH = 32;
 
@@ -505,8 +506,9 @@ pulse_gen #(
 );
 
 // RX
-wire RX_FIFO_READ, RX_FIFO_EMPTY;
-wire [31:0] RX_FIFO_DATA;
+wire [3:0] RX_FIFO_READ;
+wire [3:0] RX_FIFO_EMPTY;
+wire [31:0] RX_FIFO_DATA [3:0];
 
 // TLU
 wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
@@ -525,17 +527,17 @@ rrp_arbiter
     .CLK(BUS_CLK),
 
     .WRITE_REQ({
-        ~RX_FIFO_EMPTY,
+        ~RX_FIFO_EMPTY[0],
         ~TLU_FIFO_EMPTY,
         ~TDC_FIFO_EMPTY
     }),
     .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
-        RX_FIFO_DATA,
+        RX_FIFO_DATA[0],
         TLU_FIFO_DATA,
         TDC_FIFO_DATA}),
     .READ_GRANT({
-        RX_FIFO_READ,
+        RX_FIFO_READ[0],
         TLU_FIFO_READ,
         TDC_FIFO_READ
     }),
@@ -655,40 +657,47 @@ tdc_s3 #(
     .TIMESTAMP(TIMESTAMP[15:0])
 );
 
+
 // fast readout
-tjmono2_rx #(
-    .BASEADDR(RX_BASEADDR),
-    .HIGHADDR(RX_HIGHADDR),
-    .DATA_IDENTIFIER(4'b0100),
-    .ABUSWIDTH(ABUSWIDTH),
-    .USE_FIFO_CLK(0)
-) tjmono2_rx (
-    .TS_CLK(CLK40),
-    .FCLK(CLK160),
-    .FCLK2X(CLK320),
-    .RX_CLKW(CLK16),
-    .RX_DATA(LVDS_DATA),
+genvar rx_mod;  // RX module ID
+generate
+    for (rx_mod=0; rx_mod<1; rx_mod=rx_mod+1) begin : rx
+        tjmono2_rx #(
+            .BASEADDR(32'h1000 + rx_mod*32'h0100),
+            .HIGHADDR(32'h1100 + rx_mod*32'h0100 - 1),
+            .DATA_IDENTIFIER(4'b0100 + rx_mod),  // hochzaehlen
+            .ABUSWIDTH(ABUSWIDTH),
+            .USE_FIFO_CLK(0)
+        ) tjmono2_rx (
+            .TS_CLK(CLK40),
+            .FCLK(CLK160),
+            .FCLK2X(CLK320),
+            .RX_CLKW(CLK16),
+            .RX_DATA(LVDS_DATA[rx_mod]),
 
-    .RX_READY(),
-    .RX_8B10B_DECODER_ERR(),
-    .RX_FIFO_OVERFLOW_ERR(),
+            .RX_READY(),
+            .RX_8B10B_DECODER_ERR(),
+            .RX_FIFO_OVERFLOW_ERR(),
 
-    .FIFO_CLK(),
-    .FIFO_READ(RX_FIFO_READ),
-    .FIFO_EMPTY(RX_FIFO_EMPTY),
-    .FIFO_DATA(RX_FIFO_DATA),
+            .FIFO_CLK(),
+            // vervierfachen RX_FIFO_READ etc
+            .FIFO_READ(RX_FIFO_READ[rx_mod]),
+            .FIFO_EMPTY(RX_FIFO_EMPTY[rx_mod]),
+            .FIFO_DATA(RX_FIFO_DATA[rx_mod]),
 
-    .RX_FIFO_FULL(),
-    .RX_ENABLED(),
+            .RX_FIFO_FULL(),
+            .RX_ENABLED(),
 
-    .TIMESTAMP(TIMESTAMP[51:0]),
+            .TIMESTAMP(TIMESTAMP[51:0]),
 
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR)
-);
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR)
+        );
+    end
+endgenerate
 
 endmodule

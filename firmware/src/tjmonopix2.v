@@ -259,15 +259,20 @@ BUFG BUFG_inst_CLK160  (.O(CLK160),  .I(CLK160_PLL));
 BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
 
 // MGT CLK (from Si570 or SMA input)
-wire CLKCMD;
+wire CLKCMD, CLKCMD_ibufds;
 
 IBUFDS_GTE2 IBUFDS_refclk  
 (
-    .O               (CLKCMD),
+    .O               (CLKCMD_ibufds),
     .ODIV2           (),
     .CEB             (1'b0),
     .I               (MGT_REFCLK0_P),
     .IB              (MGT_REFCLK0_N)
+);
+
+BUFG BUFG_inst_CLKCMD (
+    .O(CLKCMD),
+    .I(CLKCMD_ibufds)
 );
 
 // -------  LEMO TX ------- //
@@ -331,18 +336,20 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
     assign DP_GPIO_N[0] = PULSE_EXT_N;
     assign DP_GPIO_P[0] = PULSE_EXT_P;
 
-    wire LVDS_DATA, LVDS_DATA_int, LVDS_HITOR;
+    wire [3:0] LVDS_DATA;
+    wire [3:0] LVDS_DATA_int;
+    wire LVDS_HITOR;
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
         .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
         .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
     ) i_IBUFDS_data (
-        .O(LVDS_DATA_int),      // Buffer output
+        .O(LVDS_DATA_int[0]),      // Buffer output
         .I(DP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
         .IB(DP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
     );
 
-    assign LVDS_DATA = ~LVDS_DATA_int;
+    assign LVDS_DATA[0] = ~LVDS_DATA_int[0];
 
     IBUFDS #(
         .DIFF_TERM("TRUE"),     // Differential Termination
