@@ -104,7 +104,6 @@ module tjmonopix2_core #(
     // LVDS IO
     input wire [3:0] LVDS_DATA,
     input wire LVDS_HITOR,
-    output wire LVDS_PULSE_EXT,
 
     // NTC
     output wire [2:0] NTC_MUX,
@@ -428,7 +427,6 @@ i2c
 
 // ----- Pulser for injection ----- //
 assign CMOS_PULSE_EXT = 1'b0;  // not connected for now
-assign LVDS_PULSE_EXT = 1'b0;  // not connected for now
 
 // ----- Command encoder ----- //
 wire CMD;
