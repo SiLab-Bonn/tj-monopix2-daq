@@ -180,41 +180,47 @@ set_property SLEW FAST [get_ports {rgmii_txd[3]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {rgmii_txd[3]}]
 set_property PACKAGE_PIN K22 [get_ports {rgmii_txd[3]}]
 
-# DP_ML ("DP2") connected to SelectIOs
-# set_property PACKAGE_PIN A18 [get_ports {DP_GPIO_P[0]}]
-# set_property PACKAGE_PIN A19 [get_ports {DP_GPIO_N[0]}]
-set_property PACKAGE_PIN C19 [get_ports {DP_GPIO_P[0]}]
-set_property PACKAGE_PIN B19 [get_ports {DP_GPIO_N[0]}]
-set_property PACKAGE_PIN E18 [get_ports {DP_GPIO_P[1]}]
-set_property PACKAGE_PIN D18 [get_ports {DP_GPIO_N[1]}]
-set_property PACKAGE_PIN B17 [get_ports {DP_GPIO_P[2]}]
-set_property PACKAGE_PIN A17 [get_ports {DP_GPIO_N[2]}]
-set_property IOSTANDARD LVDS_25 [get_ports DP_GPIO*]
-set_property PACKAGE_PIN C16 [get_ports DP_GPIO_AUX_P]
-set_property PACKAGE_PIN B16 [get_ports DP_GPIO_AUX_N]
-set_property IOSTANDARD LVDS_25 [get_ports DP_GPIO_AUX*]
-
-# # mDP_ML ("mini DP") connected to SelectIOs
-# set_property PACKAGE_PIN B14 [get_ports {mDP_GPIO_P[0]}]
-# set_property PACKAGE_PIN A14 [get_ports {mDP_GPIO_N[0]}]
-# set_property PACKAGE_PIN C12 [get_ports {mDP_GPIO_P[1]}]
-# set_property PACKAGE_PIN C11 [get_ports {mDP_GPIO_N[1]}]
-# set_property PACKAGE_PIN H14 [get_ports {mDP_GPIO_P[2]}]
-# set_property PACKAGE_PIN G14 [get_ports {mDP_GPIO_N[2]}]
-# set_property PACKAGE_PIN B12 [get_ports {mDP_GPIO_P[3]}]
-# set_property PACKAGE_PIN B11 [get_ports {mDP_GPIO_N[3]}]
-# set_property IOSTANDARD LVDS_25 [get_ports mDP_GPIO*]
-# set_property PACKAGE_PIN B15 [get_ports mDP_GPIO_AUX_P]
-# set_property PACKAGE_PIN A15 [get_ports mDP_GPIO_AUX_N]
-# set_property IOSTANDARD LVDS_25 [get_ports mDP_GPIO_AUX*]
-
-# DP2 (SL)
+##### HITOR #####
+# DP_SL ("DP2")
 set_property PACKAGE_PIN D19 [get_ports HITOR_P]
 set_property PACKAGE_PIN D20 [get_ports HITOR_N]
 set_property IOSTANDARD LVDS_25 [get_ports HITOR_*]
 
-##### RJ45 #####
-# # J1C connected to SelectIOs
+##### DATA #####
+# DP_ML ("DP5") connected to SelectIOs
+# set_property PACKAGE_PIN A18 [get_ports {DP_GPIO_P[0]}]
+# set_property PACKAGE_PIN A19 [get_ports {DP_GPIO_N[0]}]
+set_property PACKAGE_PIN C19 [get_ports {J_SER_CLK_P[0]}]
+set_property PACKAGE_PIN B19 [get_ports {J_SER_CLK_N[0]}]
+set_property PACKAGE_PIN E18 [get_ports {J_CMD_CLK_P[0]}]
+set_property PACKAGE_PIN D18 [get_ports {J_CMD_CLK_N[0]}]
+set_property PACKAGE_PIN B17 [get_ports {J_CMD_P[0]}]
+set_property PACKAGE_PIN A17 [get_ports {J_CMD_N[0]}]
+set_property PACKAGE_PIN C16 [get_ports DP_GPIO_AUX_P]
+set_property PACKAGE_PIN B16 [get_ports DP_GPIO_AUX_N]
+set_property IOSTANDARD LVDS_25 [get_ports DP_GPIO_AUX*]
+
+# RJ45 (J1A) connected to SelectIOs
+set_property PACKAGE_PIN L19 [get_ports {J_SER_CLK_P[1]}]
+set_property PACKAGE_PIN L20 [get_ports {J_SER_CLK_N[1]}]
+set_property PACKAGE_PIN G19 [get_ports {J_CMD_CLK_P[1]}]
+set_property PACKAGE_PIN F20 [get_ports {J_CMD_CLK_N[1]}]
+set_property PACKAGE_PIN H17 [get_ports {J_CMD_P[1]}]
+set_property PACKAGE_PIN H18 [get_ports {J_CMD_N[1]}]
+# set_property PACKAGE_PIN C12 [get_ports {J_GPIO_AUX_P[2]}]
+# set_property PACKAGE_PIN C11 [get_ports {J_GPIO_AUX_N[2]}]
+
+# RJ45 (J1B) connected to SelectIOs
+set_property PACKAGE_PIN J18 [get_ports {J_SER_CLK_P[2]}] 
+set_property PACKAGE_PIN J19 [get_ports {J_SER_CLK_N[2]}] 
+set_property PACKAGE_PIN K16 [get_ports {J_CMD_CLK_P[2]}] 
+set_property PACKAGE_PIN K17 [get_ports {J_CMD_CLK_N[2]}] 
+set_property PACKAGE_PIN M17 [get_ports {J_CMD_P[2]}] 
+set_property PACKAGE_PIN L18 [get_ports {J_CMD_N[2]}] 
+# set_property PACKAGE_PIN H14 [get_ports {J_GPIO_AUX_P[3]}] 
+# set_property PACKAGE_PIN G14 [get_ports {J_GPIO_AUX_N[3]}] 
+
+# # RJ45 (J1C) connected to SelectIOs
 # set_property PACKAGE_PIN G11 [get_ports {J_GPIO_CLK_SER_P[0]}]
 # set_property PACKAGE_PIN F10 [get_ports {J_GPIO_CLK_SER_N[0]}]
 # set_property PACKAGE_PIN C14 [get_ports {J_GPIO_CLK_CMD_P[0]}]
@@ -224,42 +230,19 @@ set_property IOSTANDARD LVDS_25 [get_ports HITOR_*]
 # set_property PACKAGE_PIN J13 [get_ports {J_GPIO_AUX_P[0]}]
 # set_property PACKAGE_PIN H13 [get_ports {J_GPIO_AUX_N[0]}]
 
-# J1D connected to SelectIOs
-set_property PACKAGE_PIN F14 [get_ports {RJ45_D_P[0]}]
-set_property PACKAGE_PIN F13 [get_ports {RJ45_D_N[0]}]
-set_property PACKAGE_PIN E13 [get_ports {RJ45_D_P[1]}]
-set_property PACKAGE_PIN E12 [get_ports {RJ45_D_N[1]}]
-set_property PACKAGE_PIN G12 [get_ports {RJ45_D_P[2]}]
-set_property PACKAGE_PIN F12 [get_ports {RJ45_D_N[2]}]
+# RJ45 (J1D) connected to SelectIOs
+set_property PACKAGE_PIN F14 [get_ports {J_SER_CLK_P[3]}]
+set_property PACKAGE_PIN F13 [get_ports {J_SER_CLK_N[3]}]
+set_property PACKAGE_PIN E13 [get_ports {J_CMD_CLK_P[3]}]
+set_property PACKAGE_PIN E12 [get_ports {J_CMD_CLK_N[3]}]
+set_property PACKAGE_PIN G12 [get_ports {J_CMD_P[3]}]
+set_property PACKAGE_PIN F12 [get_ports {J_CMD_N[3]}]
 # set_property PACKAGE_PIN B14 [get_ports {J_GPIO_AUX_P[1]}]
 # set_property PACKAGE_PIN A14 [get_ports {J_GPIO_AUX_N[1]}]
-set_property IOSTANDARD LVCMOS25 [get_ports RJ45_D*]
-set_property DIFF_TERM TRUE [get_ports RJ45_D*]
 
-# J1A connected to SelectIOs
-set_property PACKAGE_PIN L19 [get_ports {RJ45_A_P[0]}]
-set_property PACKAGE_PIN L20 [get_ports {RJ45_A_N[0]}]
-set_property PACKAGE_PIN G19 [get_ports {RJ45_A_P[1]}]
-set_property PACKAGE_PIN F20 [get_ports {RJ45_A_N[1]}]
-set_property PACKAGE_PIN H17 [get_ports {RJ45_A_P[2]}]
-set_property PACKAGE_PIN H18 [get_ports {RJ45_A_N[2]}]
-# set_property PACKAGE_PIN C12 [get_ports {J_GPIO_AUX_P[2]}]
-# set_property PACKAGE_PIN C11 [get_ports {J_GPIO_AUX_N[2]}]
-set_property IOSTANDARD LVCMOS25 [get_ports RJ45_A*]
-set_property DIFF_TERM TRUE [get_ports RJ45_A*]
-
-
-# J1B connected to SelectIOs
-set_property PACKAGE_PIN J18 [get_ports {RJ45_B_P[0]}] 
-set_property PACKAGE_PIN J19 [get_ports {RJ45_B_N[0]}] 
-set_property PACKAGE_PIN K16 [get_ports {RJ45_B_P[1]}] 
-set_property PACKAGE_PIN K17 [get_ports {RJ45_B_N[1]}] 
-set_property PACKAGE_PIN M17 [get_ports {RJ45_B_P[2]}] 
-set_property PACKAGE_PIN L18 [get_ports {RJ45_B_N[2]}] 
-# set_property PACKAGE_PIN H14 [get_ports {J_GPIO_AUX_P[3]}] 
-# set_property PACKAGE_PIN G14 [get_ports {J_GPIO_AUX_N[3]}] 
-set_property IOSTANDARD LVCMOS25 [get_ports RJ45_B*]
-set_property DIFF_TERM TRUE [get_ports RJ45_B*]
+set_property IOSTANDARD LVDS_25 [get_ports {J_SER*}]
+set_property IOSTANDARD LVDS_25 [get_ports {J_CMD_CLK*}]
+set_property IOSTANDARD LVDS_25 [get_ports {J_CMD*}]
 
 # Displayport RESET signals 0:DP1, 1:DP3, 2:DP4, 3:DP5, 4:mDP
 # set_property PACKAGE_PIN G10 [get_ports RESETB_EXT]
