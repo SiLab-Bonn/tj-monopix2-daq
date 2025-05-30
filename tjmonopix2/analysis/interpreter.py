@@ -14,6 +14,7 @@ class_spec = [
     ('tj_timestamp', numba.int64),
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
+    ('receiver', numba.uint8),
 
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
@@ -24,8 +25,8 @@ class_spec = [
 
 
 @numba.njit
-def is_tjmono(word):
-    return (word & 0xF8000000) == 0x40000000
+def is_tjmono(word, rx_id=0):
+    return (word & 0xF8000000) == 0x40000000 + rx_id * 0x10000000
 
 
 @numba.njit
@@ -39,13 +40,13 @@ def is_tdc(word):
 
 
 @numba.njit
-def is_tjmono_timestamp_msb(word):
-    return (word & 0xFC000000) == 0x4C000000
+def is_tjmono_timestamp_msb(word, rx_id=0):
+    return (word & 0xFC000000) == 0x4C000000 + rx_id * 0x10000000
 
 
 @numba.njit
-def is_tjmono_timestamp_lsb(word):
-    return (word & 0xFC000000) == 0x48000000
+def is_tjmono_timestamp_lsb(word, rx_id=0):
+    return (word & 0xFC000000) == 0x48000000 + rx_id * 0x10000000
 
 
 @numba.njit
@@ -65,7 +66,7 @@ def get_tdc_value(word):
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, receiver=0):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -74,6 +75,7 @@ class RawDataInterpreter(object):
 
         self.n_scan_params = n_scan_params
         self.trigger_data_format = trigger_data_format
+        self.receiver = receiver
 
         self.n_triggers = 0
         self.n_tdc = 0
@@ -87,11 +89,11 @@ class RawDataInterpreter(object):
             #############################
             # Part 1: interpret TJ word #
             #############################
-            if is_tjmono_timestamp_msb(raw_data_word):
+            if is_tjmono_timestamp_msb(raw_data_word, rx_id=self.receiver):
                 self.tj_timestamp = (raw_data_word & 0x3FFFFFF) << 26
-            elif is_tjmono_timestamp_lsb(raw_data_word):
+            elif is_tjmono_timestamp_lsb(raw_data_word, rx_id=self.receiver):
                 self.tj_timestamp = self.tj_timestamp | (raw_data_word & 0x3FFFFFF)
-            elif is_tjmono(raw_data_word):
+            elif is_tjmono(raw_data_word, rx_id=self.receiver):
                 dat = np.zeros(3, dtype=np.uint16)
                 dat[0] = (raw_data_word & 0x7FC0000) >> 18
                 dat[1] = (raw_data_word & 0x003FE00) >> 9
