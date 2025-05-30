@@ -508,23 +508,32 @@ wire [31:0] TDC_FIFO_DATA;
 
 rrp_arbiter 
 #( 
-    .WIDTH(3)
+    .WIDTH(6)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
 
     .WRITE_REQ({
         ~RX_FIFO_EMPTY[0],
+        ~RX_FIFO_EMPTY[1],
+        ~RX_FIFO_EMPTY[2],
+        ~RX_FIFO_EMPTY[3],
         ~TLU_FIFO_EMPTY,
         ~TDC_FIFO_EMPTY
     }),
-    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ({4'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA[0],
+        RX_FIFO_DATA[1],
+        RX_FIFO_DATA[2],
+        RX_FIFO_DATA[3],
         TLU_FIFO_DATA,
         TDC_FIFO_DATA}),
     .READ_GRANT({
         RX_FIFO_READ[0],
+        RX_FIFO_READ[1],
+        RX_FIFO_READ[2],
+        RX_FIFO_READ[3],
         TLU_FIFO_READ,
         TDC_FIFO_READ
     }),
@@ -648,11 +657,11 @@ tdc_s3 #(
 // fast readout
 genvar rx_mod;  // RX module ID
 generate
-    for (rx_mod=0; rx_mod<1; rx_mod=rx_mod+1) begin : rx
+    for (rx_mod=0; rx_mod<4; rx_mod=rx_mod+1) begin : rx
         tjmono2_rx #(
             .BASEADDR(32'h1000 + rx_mod*32'h0100),
             .HIGHADDR(32'h1100 + rx_mod*32'h0100 - 1),
-            .DATA_IDENTIFIER(4'b0100 + rx_mod),  // hochzaehlen
+            .DATA_IDENTIFIER(4'b0100 + rx_mod),
             .ABUSWIDTH(ABUSWIDTH),
             .USE_FIFO_CLK(0)
         ) tjmono2_rx (
@@ -667,7 +676,6 @@ generate
             .RX_FIFO_OVERFLOW_ERR(),
 
             .FIFO_CLK(),
-            // vervierfachen RX_FIFO_READ etc
             .FIFO_READ(RX_FIFO_READ[rx_mod]),
             .FIFO_EMPTY(RX_FIFO_EMPTY[rx_mod]),
             .FIFO_DATA(RX_FIFO_DATA[rx_mod]),

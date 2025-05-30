@@ -51,7 +51,7 @@ module tjmonopix2 #(
         output wire [3:0] J_CMD_CLK_P, J_CMD_CLK_N, 
         output wire [3:0] J_CMD_P, J_CMD_N, 
 
-        input wire DP_GPIO_AUX_P, DP_GPIO_AUX_N, // DATA
+        input wire [3:0] J_DATA_P, J_DATA_N, // DATA
 
         // output wire [2:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK}
         // input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
@@ -296,97 +296,102 @@ TODO: Keep the generate blocks separated. RJ45 needs inverted CMD CLK and CMD re
 TODO: Unify when cable pinout is changed and cables produced.
 */
 `ifdef BDAQ53
+    // ------- DP ML (DP5) ------- //
+    // Command
+    ODDR ODDR_inst_CMD (
+        .Q(LVDS_CMD[0]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+    );
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"),
+        .SLEW("FAST")
+    ) i_OBUFDS_cmd (
+        .O(CMD_P[0]),
+        .OB(CMD_N[0]),
+        .I(LVDS_CMD[0])
+    );
+    assign J_CMD_N[0] = CMD_N[0];
+    assign J_CMD_P[0] = CMD_P[0];
+
+    // Command clock
+    ODDR ODDR_inst_CMD_CLK (
+        .Q(LVDS_CMD_CLK[0]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"),
+        .SLEW("FAST")
+    ) i_OBUFDS_cmd_clk (
+        .O(CMD_CLK_P[0]),
+        .OB(CMD_CLK_N[0]),
+        .I(LVDS_CMD_CLK[0])
+    );
+    assign J_CMD_CLK_N[0] = CMD_CLK_N[0];
+    assign J_CMD_CLK_P[0] = CMD_CLK_P[0];
+
+    // Serializer clock
+    ODDR ODDR_inst_SER_CLK (
+        .Q(LVDS_SER_CLK[0]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+    );
+    OBUFDS #(
+        .IOSTANDARD("LVDS_25"),
+        .SLEW("FAST")
+    ) i_OBUFDS_ser_clk (
+        .O(SER_CLK_P[0]),
+        .OB(SER_CLK_N[0]),
+        .I(LVDS_SER_CLK[0])
+    );
+    assign J_SER_CLK_N[0] = SER_CLK_N[0];
+    assign J_SER_CLK_P[0] = SER_CLK_P[0];
+
+    // Data
+    IBUFDS #(
+        .DIFF_TERM("TRUE"),
+        .IBUF_LOW_PWR("FALSE"),
+        .IOSTANDARD("LVDS_25")
+    ) i_IBUFDS_data (
+        .O(LVDS_DATA_int[0]),
+        .I(J_DATA_P[0]),
+        .IB(J_DATA_N[0])
+    );
+    assign LVDS_DATA[0] = ~LVDS_DATA_int[0]; // Has to be inverted due to wiring on the SCC
+
+    // ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
     genvar i;
     generate
-        for (i=0; i<1; i=i+1) begin : lvds_io_dp
-
-            ODDR ODDR_inst_SER_CLK (
-                .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
-
-            ODDR ODDR_inst_CMD_CLK (
-                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
+        for (i=1; i<4; i=i+1) begin : lvds_io_rj45
+            // Command
             ODDR ODDR_inst_CMD (
                 .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
             );
-
-            // *** Command *** //
             OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
+                .IOSTANDARD("LVDS_25"),
+                .SLEW("FAST")
             ) i_OBUFDS_cmd (
-                .O(CMD_P[i]),              // Diff_p output (connect directly to top-level port)
-                .OB(CMD_N[i]),             // Diff_n output (connect directly to top-level port)
-                .I(LVDS_CMD[i])            // Buffer input
+                .O(CMD_P[i]),
+                .OB(CMD_N[i]),
+                .I(LVDS_CMD[i])
             );
             assign J_CMD_N[i] = CMD_N[i];
             assign J_CMD_P[i] = CMD_P[i];
 
-            // *** Command clock *** //
+            // Command clock
+            ODDR ODDR_inst_CMD_CLK (
+                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+            );
             OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
+                .IOSTANDARD("LVDS_25"),
+                .SLEW("FAST")
             ) i_OBUFDS_cmd_clk (
-                .O(CMD_CLK_P[i]),          // Diff_p output (connect directly to top-level port)
-                .OB(CMD_CLK_N[i]),         // Diff_n output (connect directly to top-level port)
-                .I(LVDS_CMD_CLK[i])        // Buffer input
+                .O(CMD_CLK_P[i]),
+                .OB(CMD_CLK_N[i]),
+                .I(LVDS_CMD_CLK[i])
             );
             assign J_CMD_CLK_N[i] = CMD_CLK_N[i];
             assign J_CMD_CLK_P[i] = CMD_CLK_P[i];
 
-            // *** Serializer clock *** //
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
-            ) i_OBUFDS_ser_clk (
-                .O(SER_CLK_P[i]),          // Diff_p output (connect directly to top-level port)
-                .OB(SER_CLK_N[i]),         // Diff_n output (connect directly to top-level port)
-                .I(LVDS_SER_CLK[i])        // Buffer input
-            );
-            assign J_SER_CLK_N[i] = SER_CLK_N[i];
-            assign J_SER_CLK_P[i] = SER_CLK_P[i];
-        end
-    endgenerate
-
-    generate
-        for (i=1; i<4; i=i+1) begin : lvds_io_rj45
+            // Serializer clock
             ODDR ODDR_inst_SER_CLK (
                 .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
             );
-
-            ODDR ODDR_inst_CMD_CLK (
-                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b1), .D2(1'b0), .R(1'b0), .S(1'b0)
-            );
-            ODDR ODDR_inst_CMD (
-                .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(CMD_OUT), .D2(CMD_OUT), .R(1'b0), .S(1'b0)
-            );
-
-            // *** Command *** //
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
-            ) i_OBUFDS_cmd (
-                .O(CMD_P[i]),              // Diff_p output (connect directly to top-level port)
-                .OB(CMD_N[i]),             // Diff_n output (connect directly to top-level port)
-                .I(LVDS_CMD[i])            // Buffer input
-            );
-            assign J_CMD_N[i] = CMD_N[i];
-            assign J_CMD_P[i] = CMD_P[i];
-
-            // *** Command clock *** //
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
-            ) i_OBUFDS_cmd_clk (
-                .O(CMD_CLK_P[i]),          // Diff_p output (connect directly to top-level port)
-                .OB(CMD_CLK_N[i]),         // Diff_n output (connect directly to top-level port)
-                .I(LVDS_CMD_CLK[i])        // Buffer input
-            );
-            assign J_CMD_CLK_N[i] = CMD_CLK_N[i];
-            assign J_CMD_CLK_P[i] = CMD_CLK_P[i];
-
-            // *** Serializer clock *** //
             OBUFDS #(
                 .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
                 .SLEW("FAST")           // Specify the output slew rate
@@ -397,7 +402,18 @@ TODO: Unify when cable pinout is changed and cables produced.
             );
             assign J_SER_CLK_N[i] = SER_CLK_N[i];
             assign J_SER_CLK_P[i] = SER_CLK_P[i];
-            
+
+            // Data
+            IBUFDS #(
+                .DIFF_TERM("TRUE"),     // Differential Termination
+                .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
+                .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
+            ) i_IBUFDS_data (
+                .O(LVDS_DATA[i]),      // Buffer output
+                .I(J_DATA_P[i]),      // Diff_p buffer input (connect directly to top-level port)
+                .IB(J_DATA_N[i])      // Diff_n buffer input (connect directly to top-level port)
+            );
+            // assign LVDS_DATA[i] = ~LVDS_DATA_int[i];
         end
     endgenerate
 
@@ -412,18 +428,6 @@ TODO: Unify when cable pinout is changed and cables produced.
         .I(HITOR_P),            // Diff_p buffer input (connect directly to top-level port)
         .IB(HITOR_N)            // Diff_n buffer input (connect directly to top-level port)
     );
-
-    // *** Data *** ///
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),     // Differential Termination
-        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
-        .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
-    ) i_IBUFDS_data (
-        .O(LVDS_DATA_int[0]),      // Buffer output
-        .I(DP_GPIO_AUX_P),      // Diff_p buffer input (connect directly to top-level port)
-        .IB(DP_GPIO_AUX_N)      // Diff_n buffer input (connect directly to top-level port)
-    );
-    assign LVDS_DATA[0] = ~LVDS_DATA_int[0];
 `endif
 
 assign RST = !RESET_BUTTON | !LOCKED;
