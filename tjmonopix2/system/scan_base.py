@@ -877,9 +877,11 @@ class ScanBase(object):
         self.readout_status = self.fifo_readout.print_readout_status()
 
     def _get_readout_status(self, receiver):
-        discard_counts = self.readout_status
+        discard_counts, decode_err_counts = self.readout_status
         discard_count = discard_counts[int(receiver[2])]
-        return discard_count
+        decode_err_count = decode_err_counts[int(receiver[2])]
+
+        return discard_count, decode_err_count
 
     def _add_chip_status(self):
         '''
@@ -1067,48 +1069,62 @@ class ScanBase(object):
 
     # Readout methods
     @contextmanager
-    def readout(self, scan_param_id=0, timeout=10.0, **kwargs):
+    def readout(self, scan_param_id=0, timeout=10.0, *args, **kwargs):
 
         self.scan_param_id = scan_param_id
 
         callback = kwargs.pop('callback', self.handle_data)
-        errback = kwargs.pop('errback', self.handle_err)
-        fill_buffer = kwargs.pop('fill_buffer', False)
-        clear_buffer = kwargs.pop('clear_buffer', False)
 
         if kwargs:
             self.store_scan_par_values(scan_param_id, **kwargs)
 
-        self.start_readout(callback=callback, clear_buffer=clear_buffer, fill_buffer=fill_buffer, errback=errback, **kwargs)
+        self.fifo_readout.reset_channels()
+        if not self.is_parallel_scan:
+            self.fifo_readout.attach_channel(self.chip.receiver)
+        else:
+            for _ in self.iterate_chips():
+                self.fifo_readout.attach_channel(self.chip.receiver)
+        self.fifo_readout.set_callback(callback=callback)
+
+        self.start_readout(*args, **kwargs)
         try:
             yield
         finally:
             if self.daq.board_version == 'SIMULATION':
                 for _ in range(100):
-                    self.daq.rx_channels[self.chip.receiver].is_done()
+                    self.daq.rx_channels[self.chip.receiver].get_rx_ready()
             self.stop_readout(timeout=timeout)
 
-    def start_readout(self, **kwargs):
+    def start_readout(self, *args, **kwargs):
         # Pop parameters for fifo_readout.start
-        callback = kwargs.pop('callback', self.handle_data)
-        clear_buffer = kwargs.pop('clear_buffer', False)
-        fill_buffer = kwargs.pop('fill_buffer', False)
-        reset_sram_fifo = kwargs.pop('reset_sram_fifo', True)
         errback = kwargs.pop('errback', self.handle_err)
+        reset_rx = kwargs.pop('reset_rx', False)
+        reset_sram_fifo = kwargs.pop('reset_sram_fifo', True)
         no_data_timeout = kwargs.pop('no_data_timeout', None)
+        fill_buffer = kwargs.pop('fill_buffer', False)
 
-        self.fifo_readout.start(reset_sram_fifo=reset_sram_fifo, fill_buffer=fill_buffer, clear_buffer=clear_buffer,
-                                callback=callback, errback=errback, no_data_timeout=no_data_timeout)
+        self.fifo_readout.start(
+            errback=errback,
+            reset_rx=reset_rx,
+            reset_sram_fifo=reset_sram_fifo,
+            no_data_timeout=no_data_timeout,
+            fill_buffer=fill_buffer
+        )
 
     def stop_readout(self, timeout=10.0):
         self.fifo_readout.stop(timeout=timeout)
 
-    def handle_data(self, data_tuple):
+    def handle_data(self, data_tuple, receiver):
         '''
             Handling of the data.
-        '''
-        total_words = self.raw_data_earray.nrows
 
+            Called from fifo readout per readout channel
+        '''
+
+        # Set handles to the chip at the channel
+        self._get_chip_at_rx(receiver)
+
+        total_words = self.raw_data_earray.nrows
         self.raw_data_earray.append(data_tuple[0])
         self.raw_data_earray.flush()
 
