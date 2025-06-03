@@ -41,7 +41,14 @@ class BDAQ53(Dut):
         self.calibration = self.configuration.get('calibration', {})
         self.enable_NTC = self.configuration['hardware'].get('enable_NTC', False)
 
-        self.receivers = ['rx0']
+        # Receivers in use
+        self.receivers = []
+        chip_cfgs = self.get_chips_cfgs()
+        for chip_cfg in chip_cfgs:
+            if chip_cfg['receiver'] not in self.receivers:
+                self.receivers.append(chip_cfg['receiver'])
+            else:
+                raise RuntimeError('Receiver {0} is used multiple times in the testbench configuration!'.format(chip_cfg['receiver']))
 
         if not conf:
             conf = os.path.join(self.proj_dir, 'system' + os.sep + 'bdaq53.yaml')
@@ -61,16 +68,15 @@ class BDAQ53(Dut):
         if self.fw_version != VERSION.split('.')[0] + '.' + VERSION.split('.')[1]:  # Compare only the first two blocks
             raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
-        # Initialize readout (only one chip supported at the moment)
-        self.rx_channels = {}
-        self.rx_channels['rx0'] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                            'base_addr': 0x0200})
-        self.rx_channels['rx0'].init()
+        # Initialize readout
+        self.num_rx_channels = 4
 
-        # self.rx_lanes = {}
-        # for recv in self.receivers:
-        #     t_rx_lanes = self.rx_channels[recv].get_rx_config()
-        #     self.rx_lanes[recv] = t_rx_lanes
+        self.rx_channels = {}
+        for i in range(self.num_rx_channels):
+                rx = 'rx%d' %i
+                self.rx_channels[rx] = tjmono2_rx(self['intf'], {'name': 'rx%s' %i, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
+                                                'base_addr': 0x1000 + i * 0x0100})
+                self.rx_channels[rx].init()
 
         # Configure cmd encoder
         self.set_cmd_clk(frequency=160.0)

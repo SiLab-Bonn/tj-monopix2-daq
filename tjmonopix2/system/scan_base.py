@@ -513,6 +513,8 @@ class ScanBase(object):
         # Instantiate periphery and RO hardware (append log to all chip log files)
         with self._logging_through_handlers():
             self.log.info('Initializing %s...', self.__class__.__name__)
+            if self.is_parallel_scan:
+                self.log.info('Run scan on all chips in parallel')
             if not self.daq:  # create daq object only once
                 if self.configuration['bench']['general']['readout_system'] is not None:
                     readout_system = self.configuration['bench']['general']['readout_system'].lower()
