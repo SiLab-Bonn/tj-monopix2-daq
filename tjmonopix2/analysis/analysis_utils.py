@@ -19,6 +19,11 @@ from tqdm import tqdm
 
 logger = logging.getLogger('Analysis')
 
+# Word defines
+TRIGGER_HEADER = 0x80000000
+TDC_HEADER = 0x20000000
+
+# Hit data types 
 hit_dtype = np.dtype([
     ("col", "<i2"),
     ("row", "<i2"),

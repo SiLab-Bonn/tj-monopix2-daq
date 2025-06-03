@@ -1,6 +1,8 @@
 import numpy as np
 import numba
 
+from tjmonopix2.analysis import analysis_utils as au
+
 class_spec = [
     ('sof', numba.boolean),
     ('eof', numba.boolean),
@@ -14,7 +16,7 @@ class_spec = [
     ('tj_timestamp', numba.int64),
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
-    ('receiver', numba.uint8),
+    ('rx_id', numba.uint8),
 
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
@@ -31,12 +33,12 @@ def is_tjmono(word, rx_id=0):
 
 @numba.njit
 def is_tlu(word):
-    return word & 0x80000000 == 0x80000000
+    return word & 0x80000000 == au.TRIGGER_HEADER
 
 
 @numba.njit
 def is_tdc(word):
-    return word & 0xF0000000 == 0x20000000
+    return word & 0xF0000000 == au.TDC_HEADER
 
 
 @numba.njit
@@ -66,7 +68,7 @@ def get_tdc_value(word):
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1, receiver=0):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, rx_id=0):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -75,7 +77,7 @@ class RawDataInterpreter(object):
 
         self.n_scan_params = n_scan_params
         self.trigger_data_format = trigger_data_format
-        self.receiver = receiver
+        self.rx_id = rx_id
 
         self.n_triggers = 0
         self.n_tdc = 0
@@ -89,11 +91,11 @@ class RawDataInterpreter(object):
             #############################
             # Part 1: interpret TJ word #
             #############################
-            if is_tjmono_timestamp_msb(raw_data_word, rx_id=self.receiver):
+            if is_tjmono_timestamp_msb(raw_data_word, rx_id=self.rx_id):
                 self.tj_timestamp = (raw_data_word & 0x3FFFFFF) << 26
-            elif is_tjmono_timestamp_lsb(raw_data_word, rx_id=self.receiver):
+            elif is_tjmono_timestamp_lsb(raw_data_word, rx_id=self.rx_id):
                 self.tj_timestamp = self.tj_timestamp | (raw_data_word & 0x3FFFFFF)
-            elif is_tjmono(raw_data_word, rx_id=self.receiver):
+            elif is_tjmono(raw_data_word, rx_id=self.rx_id):
                 dat = np.zeros(3, dtype=np.uint16)
                 dat[0] = (raw_data_word & 0x7FC0000) >> 18
                 dat[1] = (raw_data_word & 0x003FE00) >> 9

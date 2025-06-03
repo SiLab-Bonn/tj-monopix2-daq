@@ -319,7 +319,7 @@ class Analysis(object):
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
                 rx_id = int(self.chip_settings["receiver"][2])
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], receiver=rx_id)
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], rx_id=rx_id)
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
