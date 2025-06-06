@@ -71,27 +71,27 @@ module tjmonopix2_core #(
     input wire CLKCMD,
     output wire MGT_REF_SEL,
 
-    // i2c
+    // I2C
     inout wire I2C_SCL,
     inout wire I2C_SDA,
 
+    // Command
     output wire CMD_OUT,
-
-    //cmd
     output wire CMD_LOOP_START_PULSE,
 
-    // Displayport control signals
+    // DP control signals
     input wire [3:0] GPIO_SENSE,
 
-    // Fifo
+    // FIFO
     input wire ARB_READY_OUT,
     output wire ARB_WRITE_OUT,
     output wire [31:0] ARB_DATA_OUT,
     input wire FIFO_FULL,
     input wire FIFO_NEAR_FULL,
 
-    // tlu, lemo, led
-    output wire [4:0] LED,
+    output wire [3:0] RX_ENABLED,
+
+    // TLU, LEMO
     input wire [1:0] LEMO_RX,
     output wire [7:0] LEMO_MUX,
     output wire RJ45_BUSY,
@@ -104,9 +104,6 @@ module tjmonopix2_core #(
     // LVDS IO
     input wire [3:0] LVDS_DATA,
     input wire LVDS_HITOR,
-
-    // NTC
-    output wire [2:0] NTC_MUX,
 
     `ifdef MIO3
         // CHSYNC output only connected on MIO3 compatible PCBs
@@ -130,7 +127,8 @@ module tjmonopix2_core #(
         input wire TOKEN_OUT,
     `endif
 
-    inout wire [1:0] CHIP_ID
+    // NTC
+    output wire [2:0] NTC_MUX
 );
 
 // BOARD ID
@@ -653,7 +651,6 @@ tdc_s3 #(
     .TIMESTAMP(TIMESTAMP[15:0])
 );
 
-
 // fast readout
 genvar rx_mod;  // RX module ID
 generate
@@ -664,7 +661,7 @@ generate
             .DATA_IDENTIFIER(4'b0100 + rx_mod),
             .ABUSWIDTH(ABUSWIDTH),
             .USE_FIFO_CLK(0)
-        ) tjmono2_rx (
+        ) i_tjmono2_rx (
             .TS_CLK(CLK40),
             .FCLK(CLK160),
             .FCLK2X(CLK320),
@@ -681,7 +678,7 @@ generate
             .FIFO_DATA(RX_FIFO_DATA[rx_mod]),
 
             .RX_FIFO_FULL(),
-            .RX_ENABLED(),
+            .RX_ENABLED(RX_ENABLED[rx_mod]), // LED on base board is active low
 
             .TIMESTAMP(TIMESTAMP[51:0]),
 

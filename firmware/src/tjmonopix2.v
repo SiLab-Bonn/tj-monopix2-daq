@@ -33,91 +33,86 @@ module tjmonopix2 #(
     parameter VERSION_MINOR = 8'd0,
     parameter VERSION_PATCH = 8'd0
 )(
-    output wire MGT_REF_SEL,                    // switch between Si570 and external reference clock
-    input wire MGT_REFCLK0_P, MGT_REFCLK0_N,    // programmable clock from Si570 oscillator or SMA
-    input wire MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
-    input wire FCLK_IN, // 100MHz
+    output wire       MGT_REF_SEL,                    // switch between Si570 and external reference clock
+    input wire        MGT_REFCLK0_P, MGT_REFCLK0_N,    // programmable clock from Si570 oscillator or SMA
+    input wire        MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
+    input wire        FCLK_IN, // 100MHz
 
     //LED
     output wire [7:0] LED,
       
-    input wire LEMO_RX0, LEMO_RX1,
-    output wire LEMO_TX0, LEMO_TX1,
-    input wire RJ45_RESET,
-    input wire RJ45_TRIGGER,
+    input wire        LEMO_RX0, LEMO_RX1,
+    output wire       LEMO_TX0, LEMO_TX1,
+    input wire        RJ45_RESET,
+    input wire        RJ45_TRIGGER,
 
     `ifdef BDAQ53
         output wire [3:0] J_SER_CLK_P, J_SER_CLK_N, 
         output wire [3:0] J_CMD_CLK_P, J_CMD_CLK_N, 
         output wire [3:0] J_CMD_P, J_CMD_N, 
 
-        input wire [3:0] J_DATA_P, J_DATA_N, // DATA
-
-        // output wire [2:0] mDP_GPIO_P, mDP_GPIO_N,  // {CMD, CMD_CLK, SER_CLK}
-        // input wire mDP_GPIO_AUX_P, mDP_GPIO_AUX_N, // DATA
-
-        input wire HITOR_P, HITOR_N,             // HITOR
+        input wire [3:0]  J_DATA_P, J_DATA_N, // DATA
+        input wire        HITOR_P, HITOR_N,         // HITOR
 
         // NTC
         output wire [2:0] NTC_MUX,
 
         // SiTCP EEPROM
-        output wire EEPROM_CS, EEPROM_SK, EEPROM_DI,
-        input wire EEPROM_DO,
+        output wire       EEPROM_CS, EEPROM_SK, EEPROM_DI,
+        input wire        EEPROM_DO,
     `elsif MIO3
-        output wire RESETB_EXT,
+        output wire       RESETB_EXT,
         // LVDS signals single ended to TX/RX on GPAC
-        output wire LVDS_CMD,     //LVDS DOUT3(DOUT16)
-        output wire LVDS_CMD_CLK, //LVDS DOUT2(DOUT1)
-        output wire LVDS_SER_CLK,     //LVDS DOUT1(DOUT18)
-        input wire LVDS_DATA,      //LVDS DIN3(DIN11)
-        input wire LVDS_HITOR,             //LVDS DIN2(DIN9)
-        output wire LVDS_PULSE_EXT,   //LVDS DOUT0(DOUT19)
-        input wire LVDS_CHSYNC_LOCKED_OUT, //LVDS DIN1(DIN10)
-        input wire LVDS_CHSYNC_CLK_OUT,    //LVDS DIN0(DIN8)
+        output wire       LVDS_CMD,               // LVDS DOUT3(DOUT16)
+        output wire       LVDS_CMD_CLK,           // LVDS DOUT2(DOUT1)
+        output wire       LVDS_SER_CLK,           // LVDS DOUT1(DOUT18)
+        input wire        LVDS_DATA,              // LVDS DIN3(DIN11)
+        input wire        LVDS_HITOR,             // LVDS DIN2(DIN9)
+        output wire       LVDS_PULSE_EXT,         // LVDS DOUT0(DOUT19)
+        input wire        LVDS_CHSYNC_LOCKED_OUT, // LVDS DIN1(DIN10)
+        input wire        LVDS_CHSYNC_CLK_OUT,    // LVDS DIN0(DIN8)
 
-        output wire INPUT_SEL,      //DOUT14
-        output wire CMOS_CMD,       //DOUT4
-        output wire CMOS_CMD_CLK,   //DOUT2
-        output wire CMOS_SER_CLK,   //DOUT0
-        input wire CMOS_DATA,   //DIN2
-        input wire CMOS_HITOR,  //DIN4
-        output wire CMOS_PULSE_EXT, //DOUT12
+        output wire       INPUT_SEL,              // DOUT14
+        output wire       CMOS_CMD,               // DOUT4
+        output wire       CMOS_CMD_CLK,           // DOUT2
+        output wire       CMOS_SER_CLK,           // DOUT0
+        input wire        CMOS_DATA,              // DIN2
+        input wire        CMOS_HITOR,             // DIN4
+        output wire       CMOS_PULSE_EXT,         // DOUT12
     
         // RO
-        input wire FREEZE_EXT,      //DOUT10
-        output wire READ_EXT,       //DOUT8
-        output wire RO_RST_EXT,     //DOUT9
-        input wire TOKEN_OUT,       //DIN0
+        input wire        FREEZE_EXT,             // DOUT10
+        output wire       READ_EXT,               // DOUT8
+        output wire       RO_RST_EXT,             // DOUT9
+        input wire        TOKEN_OUT,              // DIN0
     `endif
 
     // 2-row PMOD header for general purpose IOs
-    inout wire [7:0] PMOD,
+    inout wire [7:0]  PMOD,
 
-    // I2C
-    inout wire I2C_SDA,
-    inout wire I2C_SCL,
+    inout wire        I2C_SDA,
+    inout wire        I2C_SCL,
 
     // User buttons
-    input wire RESET_BUTTON,    
+    input wire        RESET_BUTTON,    
 
     // Ethernet
     output wire [3:0] rgmii_txd,
-    output wire rgmii_tx_ctl,
-    output wire rgmii_txc,
-    input wire [3:0] rgmii_rxd,
-    input wire rgmii_rx_ctl,
-    input wire rgmii_rxc,
-    output wire mdio_phy_mdc,
-    inout wire mdio_phy_mdio,
-    output wire phy_rst_n
+    output wire       rgmii_tx_ctl,
+    output wire       rgmii_txc,
+    input wire [3:0]  rgmii_rxd,
+    input wire        rgmii_rx_ctl,
+    input wire        rgmii_rxc,
+    output wire       mdio_phy_mdc,
+    inout wire        mdio_phy_mdio,
+    output wire       phy_rst_n
 );
 
  // ------- RESET/CLOCK  ------- //
  (* KEEP = "{TRUE}" *) wire BUS_CLK;
 
 wire RST;
-wire BUS_CLK_PLL, CLK250PLL, CLK125PLLTX, CLK125PLLTX90, CLK125PLLRX;
+wire BUS_CLK_PLL, CLK125PLLTX, CLK125PLLTX90, CLK125PLLRX;
 wire PLL_FEEDBACK, LOCKED;
 
 // -------  PLL for communication with FPGA  ------- //
@@ -162,7 +157,7 @@ PLLE2_BASE #(
     .CLKOUT5_PHASE(0)         // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_comm (
     .CLKOUT0(BUS_CLK_PLL),
-    .CLKOUT1(CLK250PLL),
+    .CLKOUT1(),
     .CLKOUT2(CLK125PLLTX),
     .CLKOUT3(CLK125PLLTX90),
     .CLKOUT4(CLK125PLLRX),
@@ -184,10 +179,10 @@ PLLE2_BASE #(
 );
 
 wire CLK125TX, CLK125TX90, CLK125RX;
-BUFG BUFG_inst_CLK125TX (  .O(CLK125TX),  .I(CLK125PLLTX) );
-BUFG BUFG_inst_CLK125TX90 (  .O(CLK125TX90),  .I(CLK125PLLTX90) );
-BUFG BUFG_inst_CLK125RX (  .O(CLK125RX),  .I(rgmii_rxc) );
-BUFG BUFG_inst_CLK200 (  .O(CLK200),  .I(CLK200_PLL) );
+BUFG BUFG_inst_CLK125TX   ( .O(CLK125TX),   .I(CLK125PLLTX)   );
+BUFG BUFG_inst_CLK125TX90 ( .O(CLK125TX90), .I(CLK125PLLTX90) );
+BUFG BUFG_inst_CLK125RX   ( .O(CLK125RX),   .I(rgmii_rxc)     );
+BUFG BUFG_inst_CLK200     ( .O(CLK200),     .I(CLK200_PLL)    );
 
 // -------  PLL for clk synthesis  ------- //
 (* KEEP = "{TRUE}" *) wire CLK320;  
@@ -254,12 +249,12 @@ PLLE2_BASE #(
     .CLKFBIN(PLL_FEEDBACK2)
 );
 
-BUFG BUFG_inst_BUS_CKL (.O(BUS_CLK), .I(BUS_CLK_PLL));
-BUFG BUFG_inst_CLK16   (.O(CLK16),   .I(CLK16_PLL));
-BUFG BUFG_inst_CLK32   (.O(CLK32),   .I(CLK32_PLL));
-BUFG BUFG_inst_CLK40   (.O(CLK40),   .I(CLK40_PLL));
-BUFG BUFG_inst_CLK160  (.O(CLK160),  .I(CLK160_PLL));
-BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
+BUFG BUFG_inst_BUS_CKL ( .O(BUS_CLK), .I(BUS_CLK_PLL) );
+BUFG BUFG_inst_CLK16   ( .O(CLK16),   .I(CLK16_PLL)   );
+BUFG BUFG_inst_CLK32   ( .O(CLK32),   .I(CLK32_PLL)   );
+BUFG BUFG_inst_CLK40   ( .O(CLK40),   .I(CLK40_PLL)   );
+BUFG BUFG_inst_CLK160  ( .O(CLK160),  .I(CLK160_PLL)  );
+BUFG BUFG_inst_CLK320  ( .O(CLK320),  .I(CLK320_PLL)  );
 
 // MGT CLK (from Si570 or SMA input)
 wire CLKCMD, CLKCMD_ibufds;
@@ -285,17 +280,18 @@ wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
 assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
 assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
 
-// -------  Diff buffer for BDAQ  ------- //
-wire CMD_OUT;
-wire [3:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
-wire [3:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
-wire [3:0] LVDS_DATA, LVDS_DATA_int;
-
-/*
-TODO: Keep the generate blocks separated. RJ45 needs inverted CMD CLK and CMD relative to DP.
-TODO: Unify when cable pinout is changed and cables produced.
-*/
 `ifdef BDAQ53
+    // -------  Diff buffer for BDAQ  ------- //
+    wire CMD_OUT;
+    wire [3:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
+    wire [3:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
+    wire [3:0] LVDS_DATA;
+    wire LVDS_DATA_int;
+
+    /*
+    TODO: Keep the following blocks separated. Unify when cable pinout is changed and cables produced.
+    */
+
     // ------- DP ML (DP5) ------- //
     // Command
     ODDR ODDR_inst_CMD (
@@ -348,11 +344,11 @@ TODO: Unify when cable pinout is changed and cables produced.
         .IBUF_LOW_PWR("FALSE"),
         .IOSTANDARD("LVDS_25")
     ) i_IBUFDS_data (
-        .O(LVDS_DATA_int[0]),
+        .O(LVDS_DATA_int),
         .I(J_DATA_P[0]),
         .IB(J_DATA_N[0])
     );
-    assign LVDS_DATA[0] = ~LVDS_DATA_int[0]; // Has to be inverted due to wiring on the SCC
+    assign LVDS_DATA[0] = ~LVDS_DATA_int; // Has to be inverted due to wiring on the SCC
 
     // ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
     genvar i;
@@ -420,13 +416,13 @@ TODO: Unify when cable pinout is changed and cables produced.
     // *** HitOr *** //
     wire LVDS_HITOR;
     IBUFDS #(
-        .DIFF_TERM("TRUE"),     // Differential Termination
-        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
-        .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
+        .DIFF_TERM("TRUE"),
+        .IBUF_LOW_PWR("FALSE"),
+        .IOSTANDARD("LVDS_25")
     ) i_IBUFDS_hitor (
-        .O(LVDS_HITOR),         // Buffer output
-        .I(HITOR_P),            // Diff_p buffer input (connect directly to top-level port)
-        .IB(HITOR_N)            // Diff_n buffer input (connect directly to top-level port)
+        .O(LVDS_HITOR),
+        .I(HITOR_P),
+        .IB(HITOR_N)
     );
 `endif
 
@@ -635,24 +631,25 @@ fifo_32_to_8 #(.DEPTH(256*1024)) i_data_fifo (
 assign TCP_TX_WR = !TCP_TX_FULL && !FIFO_EMPTY;
 
 // -------  USER CORE ------- //
-assign LED[7]= 1'b0;
-assign LED[6]= 1'b1;
-assign LED[5]= 1'b1;
-wire [1:0] CHIP_ID;
+wire [3:0] RX_ENABLED;
+
+wire [7:0] LED_int;
+assign LED_int = {RX_ENABLED[3], RX_ENABLED[2], RX_ENABLED[1], RX_ENABLED[0], 4'b0};
+assign LED = ~LED_int;
 
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
     .VERSION_PATCH(VERSION_PATCH)
 ) i_tjmonopix2_core (
-    //local bus
+    // Bus
     .BUS_CLK(BUS_CLK),
     .BUS_DATA(BUS_DATA),
     .BUS_ADD(BUS_ADD),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .BUS_RST(BUS_RST),
-    //clocks
+    // CLK
     .CLK16(CLK16),
     .CLK32(CLK32),
     .CLK40(CLK40),
@@ -664,20 +661,20 @@ tjmonopix2_core #(
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),
 
+    // CMD
     .CMD_OUT(CMD_OUT),
-
-    //cmd
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
 
-    //fifo
+    // FIFO
     .ARB_READY_OUT(ARB_READY_OUT),
     .ARB_WRITE_OUT(ARB_WRITE_OUT),
     .ARB_DATA_OUT(ARB_DATA_OUT),
     .FIFO_FULL(FIFO_FULL),
     .FIFO_NEAR_FULL(FIFO_NEAR_FULL),
 
-    //LED
-    .LED(LED[4:0]),
+    .RX_ENABLED(RX_ENABLED), // RX status for LED
+
+    // TLU, LEMO
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
     .LEMO_MUX({LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0}),
     .RJ45_CLK(RJ45_CLK),
@@ -706,11 +703,9 @@ tjmonopix2_core #(
         .READ_EXT(READ_EXT), 
         .RO_RST_EXT(RO_RST_EXT), 
         .TOKEN_OUT(TOKEN_OUT),
-    `elsif BDAQ53
-        .NTC_MUX(NTC_MUX),
     `endif
 
-    .CHIP_ID(CHIP_ID)
+    .NTC_MUX(NTC_MUX)
 );
 
 endmodule
