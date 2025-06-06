@@ -25,7 +25,10 @@ class cmd(RegisterHardwareLayer):
                   'SIZE': {'descr': {'addr': 3, 'size': 16}},
                   'REPETITIONS': {'descr': {'addr': 5, 'size': 16}},
                   'MEM_BYTES': {'descr': {'addr': 7, 'size': 16, 'properties': ['ro']}},
-                  'AZ_VETO_CYCLES': {'descr': {'addr': 9, 'size': 16}}
+                  'AZ_VETO_CYCLES': {'descr': {'addr': 9, 'size': 16}},
+                  'BYPASS_MODE_RESET': {'descr': {'addr': 11, 'size': 1, 'offset': 0, 'properties': ['wo']}},
+                  'BYPASS_CDR': {'descr': {'addr': 11, 'size': 1, 'offset': 1, 'properties': ['wo']}},
+                  'AUTO_SYNC': {'descr': {'addr': 11, 'size': 1, 'offset': 2, 'properties': ['wr']}}
                   }
 
     _require_version = "==2"
@@ -133,6 +136,15 @@ class cmd(RegisterHardwareLayer):
     def set_bypass_mode(self, value):
         ''' CDR bypass mode (KC705+FMC_LPC). Enables the output drivers and sends cmd and serializer clock to the chip '''
         self.BYPASS_MODE = value
+
+    def set_auto_sync(self, value):
+        ''' Enables automatic sending of sync commands to prevent ITkPixV1 like chips from unlocking '''
+        self.AUTO_SYNC = value
+
+    def get_auto_sync(self):
+        ''' Gets the status of the AUTO_SYNC register to enable automatic sending of sync commands to prevent ITkPixV1 like chips from unlocking '''
+        return self.AUTO_SYNC
+
 
     def get_bypass_mode(self):
         return self.BYPASS_MODE

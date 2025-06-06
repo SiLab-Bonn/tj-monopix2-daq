@@ -235,17 +235,13 @@ class BDAQ53(Dut):
         else:
             self.log.error('FPGA temperature readout is not not supported on this hardware platform.')
 
-    def set_chip_type(self):
-        ''' Defines chip type ITkPixV1-like '''
-        self['cmd'].set_chip_type(1)
+    def enable_auto_sync(self):
+        '''Enables automatic sending of sync commands'''
+        self['cmd'].set_auto_sync(1)
 
-    # def enable_auto_sync(self):
-    #     '''Enables automatic sending of sync commands'''
-    #     self['cmd'].set_auto_sync(1)
-
-    # def disable_auto_sync(self):
-    #     '''Disables automatic sending of sync commands'''
-    #     self['cmd'].set_auto_sync(0)
+    def disable_auto_sync(self):
+        '''Disables automatic sending of sync commands'''
+        self['cmd'].set_auto_sync(0)
 
     def configure_tdc_module(self):
         self.log.info('Configuring TDC module')
