@@ -57,10 +57,10 @@ class BDAQ53(Dut):
         # Flag indicating of tlu module is enabled.
         self.tlu_module_enabled = False
 
-        super(BDAQ53, self).__init__(conf)
+        super().__init__(conf)
 
     def init(self, **kwargs):
-        super(BDAQ53, self).init()
+        super().init()
 
         self.fw_version, self.board_version = self['system'].get_daq_version()
         self.log.success('Found board %s running firmware version %s' % (self.board_version, self.fw_version))
@@ -69,19 +69,18 @@ class BDAQ53(Dut):
             raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
         # Initialize readout
-        self.num_rx_channels = 4
-
         self.rx_channels = {}
-        for i in range(self.num_rx_channels):
-                rx = 'rx%d' %i
-                self.rx_channels[rx] = tjmono2_rx(self['intf'], {'name': 'rx%s' %i, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                'base_addr': 0x1000 + i * 0x0100})
-                self.rx_channels[rx].init()
+        for rec in self.receivers:
+                self.rx_channels[rec] = tjmono2_rx(self['intf'], {'name': rec, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
+                                                'base_addr': 0x1000 + int(rec[2]) * 0x0100})
+                self.rx_channels[rec].init()
 
         # Configure cmd encoder
         self.set_cmd_clk(frequency=160.0)
         self['cmd'].reset()
         time.sleep(0.1)
+
+        self.communication_established = False
 
         # # Wait for the chip (model) PLL to lock before establishing a link
         # if self.board_version == 'SIMULATION':

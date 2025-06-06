@@ -158,10 +158,11 @@ class Register(dict):
             return self.chip._write_register(self['address'], wr_value, write=False)
         else:
             wr_value = eval('0b' + '0' * self['size'])
-            indata = []
+            indata = self.chip.write_sync(write=False) * 8
             for i in range(0, self['size'], 16):
                 reg_value = (self['value'] & (0xFF << i)) >> i
                 indata += self.chip._write_register(self['address'] + self['size'] // 16 - 1, reg_value, write=False)
+                indata += self.chip.write_sync(write=False) * 8
             return indata
 
     def get_read_command(self):
@@ -242,10 +243,10 @@ class RegisterObject(OrderedDict):
                 continue
 
             indata += self[reg['name']].get_write_command()
-            indata += self.chip.write_sync(write=False) * 16
+            indata += self.chip.write_sync(write=False) * 8
 
             if len(indata) > 3500:
-                indata += self.chip.write_sync(write=False) * 16
+                indata += self.chip.write_sync(write=False) * 8
                 self.chip.write_command(indata)
                 indata = self.chip.write_sync(write=False)
 
@@ -580,7 +581,7 @@ class DoubleShiftPattern(ShiftPatternBase):
         return np.roll(np.roll(self.base_mask, step // self.dimensions[0], 1), step % self.dimensions[0], 0)
 
 
-class TJMonoPix2(object):
+class TJMonoPix2():
 
     """ Map hardware IDs for board identification """
     hw_map = {
@@ -674,9 +675,6 @@ class TJMonoPix2(object):
         return self.chip_sn
 
     def init(self):
-        # super(TJMonoPix2, self).init()
-        self.daq['cmd'].set_chip_type(1)  # ITkpixV1-like
-
         # power on
         if self.daq.board_version == 'mio3':
             self.daq['CONF']['RESET_EXT'] = 1
@@ -692,12 +690,26 @@ class TJMonoPix2(object):
             self.daq['CONF']['RESET_EXT'] = 0
             self.daq['CONF'].write()
 
-        self.write_command(self.write_sync(write=False) * 32)
+        # TODO: Move this to DAQ instance, but needs a lot of the commands (and change all in this class then)..
+        if not self.daq.communication_established:
+            self.init_communication()
         self.reset()
-        self.configure_rx(delay=40, rd_frz_dly=40)
 
         if self.daq.board_version == 'mio3':
             self.log.info(str(self.get_power_status()))
+
+    def init_communication(self, repetitions=1000, write_reset=False):
+        self.log.info('Initializing communication...')
+
+        if write_reset:
+            self._write_reset(write=True, repetitions=repetitions)
+        self.write_sync_01(write=True, repetitions=repetitions)
+        self.write_sync(write=True, repetitions=repetitions * 2)
+        self.daq['cmd'].set_auto_sync(True)
+
+        # TODO: Check if RX is ready at least on software/firmware side
+        self.daq.communication_established = True
+        self.log.success('Communication established')
 
     def power_on(self, VDDA=1.8, VDDP=1.8, VDDA_DAC=1.8, VDDD=1.8, VPC=1.6):
         # Set power
@@ -934,11 +946,26 @@ class TJMonoPix2(object):
             while (not self.daq['cmd'].is_done()):
                 pass
 
-    def write_sync(self, write=True):
+    def write_sync(self, write=True, repetitions=1):
         indata = [0b10000001, 0b01111110]
         if write:
-            self.write_command(indata)
+            self.write_command(indata, repetitions=repetitions)
         return indata
+
+    def write_sync_01(self, write=True, repetitions=1):
+        indata = [0b10101010]
+        indata += [0b10101010]
+        if write:
+            self.write_command(indata, repetitions=repetitions)
+        return indata
+
+    def _write_reset(self, write=True, repetitions=300):
+        indata = [0xff] * 10
+        indata += [0x00] * 10
+        if write:
+            self.write_command(indata, repetitions=repetitions)
+        return indata
+
 
     # def write_ecr(self, write=True):
     #     indata = [self.CMD_CLEAR]
