@@ -35,4 +35,32 @@ firmware/
 
 ## Compilation
 
+Clone [basil](https://github.com/SiLab-Bonn/basil) to any location and install it by running `pip install -e .` from its root folder.
+<details>
+  <summary>If you want to download SiTCP and patch it for yourself, click here</summary>
+
+  Grab a copy of [SiTCP](https://github.com/BeeBeansTechnologies/SiTCP_Netlist_for_Kintex7) and move the `*.V` and `*.ngc` files to a newly created `firmware/SiTCP` folder in the cloned `tj-monopix2-daq` repository.
+  Add a line `` `default_nettype wire`` in all `*.V` files right below the copyright notice in the beginning and before the first module declaration.
+  This ensures compatibility with the rest of the verilog code.
+</details>
+
+### Using firmware manager
+This is the easiest method to compile the firmware. Simply run
+```bash
+python manage_firmware.py --compile <platform>
+```
+where `<platform>` is usually `BDAQ53`. Make sure to have a Vivado binary in the current `PATH`.
+
+### Using Vivado CLI or GUI
+Use this method, if you are developing or debugging to check the output and see the logs.
+You have to have SiTCP properly set up and patched (as explained above).
+Run
+```
+vivado -mode batch -source run.tcl
+```
+from the `firmware/vivado` folder. The resulting bit files will be written to `firmware/bit`. This will build the firmware for multiple supported hardware platforms. If you want to build it for only one, pass the arguments that you can find in `run.tcl` as command line arguments, e.g.
+```
+vivado -mode batch -source run.tcl -tclargs xc7k160tffg676-2 bdaq53_kx2.xdc 64 _1RX
+```
+
 todo
