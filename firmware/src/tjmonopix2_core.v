@@ -45,9 +45,6 @@
 
 `include "gray_dec.v"
 
-// `include "tjmono_direct_rx/tjmono_direct_rx.v"
-// `include "tjmono_direct_rx/tjmono_direct_rx_core.v"
-
 module tjmonopix2_core #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
@@ -115,7 +112,7 @@ module tjmonopix2_core #(
 
         // CMOS IO
         output wire CMOS_CMD,
-        output wire CMOS_CMD_CLK,    
+        output wire CMOS_CMD_CLK,
         output wire CMOS_SER_CLK,
         input wire CMOS_DATA,
         input wire CMOS_HITOR,
@@ -208,8 +205,11 @@ wire [ABUSWIDTH-1:0] DAQ_SYSTEM_ADD;
 wire [7:0] DAQ_SYSTEM_DATA_IN;
 reg [7:0] DAQ_SYSTEM_DATA_OUT;
 
-bus_to_ip #( .BASEADDR(DAQ_SYSTEM_BASEADDR), .HIGHADDR(DAQ_SYSTEM_HIGHADDR), .ABUSWIDTH(ABUSWIDTH) ) i_bus_to_ip_daq
-(
+bus_to_ip #(
+    .BASEADDR(DAQ_SYSTEM_BASEADDR),
+    .HIGHADDR(DAQ_SYSTEM_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH)
+) i_bus_to_ip_daq (
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .BUS_ADD(BUS_ADD),
@@ -247,15 +247,13 @@ always @ (posedge BUS_CLK)
 
 // -------  USER MODULES  ------- //
 wire [23:0] IO;
-gpio 
-#( 
-    .BASEADDR(GPIO_BASEADDR), 
+gpio #(
+    .BASEADDR(GPIO_BASEADDR),
     .HIGHADDR(GPIO_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .IO_WIDTH(24),
     .IO_DIRECTION(24'hfff0ff)
-) gpio_i
-(
+) gpio_i (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -278,12 +276,12 @@ assign GPIO_MODE = IO[14:12];
     assign IO[9] = LVDS_CHSYNC_CLK_OUT;
     assign IO[11] = RO_RST_EXT;
     assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
-    assign SEL_DIRECT = IO[16]; 
+    assign SEL_DIRECT = IO[16];
 `endif
 
 // GPIO module to access general base-board features
 wire [15:0] IO_CONTROL;
-assign MGT_REF_SEL = ~IO_CONTROL[15];   // invert, because the default value '0' should correspond to the internal clock
+assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
 assign IO_CONTROL[3:0] = GPIO_SENSE;
@@ -372,13 +370,11 @@ always @(posedge CLK40) begin
         IO_FF <= {IO_FF[2:0],IO[0]};
 end
 
-pulse_gen
-#( 
-    .BASEADDR(PULSE_RST_BASEADDR), 
+pulse_gen #(
+    .BASEADDR(PULSE_RST_BASEADDR),
     .HIGHADDR(PULSE_RST_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH)
-) pulse_gen_rst
-(
+) pulse_gen_rst (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -399,7 +395,7 @@ assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
 wire I2C_CLK;
 
 clock_divider #(
-.DIVISOR(1600)
+    .DIVISOR(1600)
 ) i_clock_divisor_i2c (
     .CLK(BUS_CLK),
     .RESET(1'b0),
@@ -407,14 +403,12 @@ clock_divider #(
     .CLOCK(I2C_CLK)
 );
 
-i2c
-#(
+i2c #(
     .BASEADDR(I2C_BASEADDR),
     .HIGHADDR(I2C_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .MEM_BYTES(32)
-)  i_i2c
-(
+) i_i2c (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -580,7 +574,11 @@ assign EXT_START_PULSE_VETO = TRIGGER_ACCEPTED_FLAG;
 wire VETO_TLU_PULSE;
 
 // set acknowledge when veto returns to low
-pulse_gen_rising i_pulse_gen_rising_tlu_veto(.clk_in(CLK40), .in(~VETO_TLU_PULSE), .out(TRIGGER_ACKNOWLEDGE_FLAG));
+pulse_gen_rising i_pulse_gen_rising_tlu_veto(
+    .clk_in(CLK40),
+    .in(~VETO_TLU_PULSE),
+    .out(TRIGGER_ACKNOWLEDGE_FLAG)
+);
 
 pulse_gen #(
     .BASEADDR(PULSER_VETO_BASEADDR),
@@ -602,8 +600,6 @@ pulse_gen #(
 // ----- TDC ----- //
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
 wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
-// wire LEMO_RX0_FROM_TDC;
-// wire HITOR_FROM_TDC;
 
 tdc_s3 #(
     .BASEADDR(TDC_BASEADDR),
@@ -613,7 +609,7 @@ tdc_s3 #(
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
     .FAST_TRIGGER(1),
-    .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+    .BROADCAST(0)         // for first TDC module: generate 640 MHz sampled trigger signal to share with other modules using TRIGGER input
 ) i_tdc (
     .CLK320(CLK320),      // 320 MHz
     .CLK160(CLK160),      // 160 MHz

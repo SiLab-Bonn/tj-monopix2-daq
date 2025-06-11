@@ -196,7 +196,7 @@ always @(posedge BUS_CLK) begin
     else if(BUS_WR && BUS_ADD < 16)
         status_regs[BUS_ADD[3:0]] <= BUS_DATA_IN;
 end
-assign CHIP_TYPE = 2'b1; // status_regs[2][7:6];
+assign CHIP_TYPE = 2'b01; // status_regs[2][7:6];
 wire [15:0] CONF_CMD_SIZE;
 assign CONF_CMD_SIZE = {status_regs[4], status_regs[3]};
 wire [15:0] CONF_REPEAT_COUNT;

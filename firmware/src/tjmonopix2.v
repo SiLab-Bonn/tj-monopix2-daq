@@ -4,7 +4,6 @@
 `include "utils/bus_to_ip.v"
 
 `include "utils/cdc_syncfifo.v"
-`include "utils/generic_fifo.v"
 `include "utils/cdc_pulse_sync.v"
 
 `include "utils/CG_MOD_pos.v"
@@ -41,14 +40,14 @@ module tjmonopix2 #(
     parameter VERSION_MINOR = 8'd0,
     parameter VERSION_PATCH = 8'd0
 )(
-    output wire       MGT_REF_SEL,                    // switch between Si570 and external reference clock
-    input wire        MGT_REFCLK0_P, MGT_REFCLK0_N,    // programmable clock from Si570 oscillator or SMA
-    input wire        MGT_REFCLK1_P, MGT_REFCLK1_N,    // programmable clock from Si570 oscillator
-    input wire        FCLK_IN, // 100MHz
+    output wire       MGT_REF_SEL,                  // switch between Si570 and external reference clock
+    input wire        MGT_REFCLK0_P, MGT_REFCLK0_N, // programmable clock from Si570 oscillator or SMA
+    input wire        MGT_REFCLK1_P, MGT_REFCLK1_N, // programmable clock from Si570 oscillator
+    input wire        FCLK_IN,                      // 100 MHz
 
-    //LED
+    // LED
     output wire [7:0] LED,
-      
+
     input wire        LEMO_RX0, LEMO_RX1,
     output wire       LEMO_TX0, LEMO_TX1,
     input wire        RJ45_RESET,
@@ -87,7 +86,7 @@ module tjmonopix2 #(
         input wire        CMOS_DATA,              // DIN2
         input wire        CMOS_HITOR,             // DIN4
         output wire       CMOS_PULSE_EXT,         // DOUT12
-    
+
         // RO
         input wire        FREEZE_EXT,             // DOUT10
         output wire       READ_EXT,               // DOUT8
@@ -102,7 +101,7 @@ module tjmonopix2 #(
     inout wire        I2C_SCL,
 
     // User buttons
-    input wire        RESET_BUTTON,    
+    input wire        RESET_BUTTON,
 
     // Ethernet
     output wire [3:0] rgmii_txd,
@@ -139,7 +138,7 @@ PLLE2_BASE #(
     .DIVCLK_DIVIDE(1),        // Master division value, (1-56)
     .REF_JITTER1(0.0),        // Reference input jitter in UI, (0.000-0.999).
     .STARTUP_WAIT("FALSE"),   // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
-    
+
     .CLKOUT0_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
@@ -193,7 +192,7 @@ BUFG BUFG_inst_CLK125RX   ( .O(CLK125RX),   .I(rgmii_rxc)     );
 BUFG BUFG_inst_CLK200     ( .O(CLK200),     .I(CLK200_PLL)    );
 
 // -------  PLL for clk synthesis  ------- //
-(* KEEP = "{TRUE}" *) wire CLK320;  
+(* KEEP = "{TRUE}" *) wire CLK320;
 (* KEEP = "{TRUE}" *) wire CLK160;
 (* KEEP = "{TRUE}" *) wire CLK32;
 (* KEEP = "{TRUE}" *) wire CLK40;
@@ -230,7 +229,7 @@ PLLE2_BASE #(
     .CLKOUT4_DIVIDE(5),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
-    
+
     .CLKOUT5_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
@@ -243,16 +242,16 @@ PLLE2_BASE #(
     .CLKOUT5(),
 
     .CLKFBOUT(PLL_FEEDBACK2),
-    
+
     .LOCKED(LOCKED2),         // 1-bit output: LOCK
-    
+
     // Input 100 MHz clock
     .CLKIN1(FCLK_IN),
-    
+
     // Control Ports
     .PWRDWN(0),
     .RST(!RESET_BUTTON),
-    
+
     // Feedback
     .CLKFBIN(PLL_FEEDBACK2)
 );
@@ -267,7 +266,7 @@ BUFG BUFG_inst_CLK320  ( .O(CLK320),  .I(CLK320_PLL)  );
 // MGT CLK (from Si570 or SMA input)
 wire CLKCMD, CLKCMD_ibufds;
 
-IBUFDS_GTE2 IBUFDS_refclk  
+IBUFDS_GTE2 IBUFDS_refclk
 (
     .O               (CLKCMD_ibufds),
     .ODIV2           (),
@@ -492,7 +491,7 @@ WRAP_SiTCP_GMII_XC7K_32K sitcp(
     // MII interface
     .GMII_RSTn(phy_rst_n)        ,    // out    : PHY reset
     .GMII_1000M(1'b1)            ,    // in     : GMII mode (0:MII, 1:GMII)
-    // TX 
+    // TX
     .GMII_TX_CLK(CLK125TX)       ,    // in     : Tx clock
     .GMII_TX_EN(gmii_tx_en)      ,    // out    : Tx enable
     .GMII_TXD(gmii_txd)          ,    // out    : Tx data[7:0]
@@ -556,7 +555,7 @@ rbcp_to_bus irbcp_to_bus(
     .BUS_RD(BUS_RD),
     .BUS_ADD(BUS_ADD),
     .BUS_DATA(BUS_DATA)
-); 
+);
 
 // -------  MODULES for fast data readout(FIFO) - cdc_fifo is for timing reasons
 wire ARB_READY_OUT,ARB_WRITE_OUT;
@@ -579,7 +578,7 @@ wire FIFO_EMPTY;
 fifo_32_to_8 #(.DEPTH(256*1024)) i_data_fifo (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
-    
+
     .WRITE(!cdc_fifo_empty),
     .READ(TCP_TX_WR),
     .DATA_IN(cdc_data_out),
@@ -643,26 +642,26 @@ tjmonopix2_core #(
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
 
-    .LVDS_DATA(LVDS_DATA), 
+    .LVDS_DATA(LVDS_DATA),
     .LVDS_HITOR(LVDS_HITOR),
 
     `ifdef MIO3
-        .RESETB_EXT(RESETB_EXT), 
+        .RESETB_EXT(RESETB_EXT),
 
         .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCKED_OUT),
         .LVDS_CHSYNC_CLK_OUT(LVDS_CHSYNC_CLK_OUT),
-        .INPUT_SEL(INPUT_SEL), 
+        .INPUT_SEL(INPUT_SEL),
 
-        .CMOS_CMD(CMOS_CMD), 
-        .CMOS_CMD_CLK(CMOS_CMD_CLK), 
+        .CMOS_CMD(CMOS_CMD),
+        .CMOS_CMD_CLK(CMOS_CMD_CLK),
         .CMOS_SER_CLK(CMOS_SER_CLK),
         .CMOS_DATA(CMOS_DATA),
         .CMOS_HITOR(CMOS_HITOR),
         .CMOS_PULSE_EXT(CMOS_PULSE_EXT),
 
-        .FREEZE_EXT(FREEZE_EXT), 
-        .READ_EXT(READ_EXT), 
-        .RO_RST_EXT(RO_RST_EXT), 
+        .FREEZE_EXT(FREEZE_EXT),
+        .READ_EXT(READ_EXT),
+        .RO_RST_EXT(RO_RST_EXT),
         .TOKEN_OUT(TOKEN_OUT),
     `endif
 
