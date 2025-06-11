@@ -25,16 +25,19 @@ set include_dirs [list $vivado_dir/../src $vivado_dir/../SiTCP $basil_dir/basil/
 file mkdir ../bit reports
 
 
-proc run_bit {part xdc_file size {suffix ""}} {
+proc run_bit {part xdc_file size {lanes _1RX} {suffix ""}} {
     global vivado_dir
+    global include_dirs
+
     set src_dir $vivado_dir/../src
     
     set board_name [lindex [split [lindex [split $xdc_file '.'] 0] '_'] 0]
     set fpga_name [lindex [split [lindex [split $xdc_file '.'] 0] '_'] 1]
     set option [lindex [split [lindex [split $xdc_file '.'] 0] '_'] 2]
+    set n_lanes [string tolower [lindex [split $lanes '_'] 1]]
     if {$option != ""} {set option \_$option}
     if {$suffix != ""} {set suffix \_$suffix}
-    set identifier $board_name\_$fpga_name$suffix
+    set identifier $board_name\_$fpga_name$suffix\_$n_lanes
 
     set version [exec python -c "from importlib.metadata import version; print(version('tjmonopix2'))"]
     set version_major [lindex [split $version '.'] 0]
@@ -43,14 +46,13 @@ proc run_bit {part xdc_file size {suffix ""}} {
 
     create_project -force -part $part $identifier designs
 
-    read_verilog $src_dir/tjmonopix2.v
-    read_verilog $src_dir/tjmonopix2_core.v
+    read_verilog -sv $src_dir/tjmonopix2.v
+    read_verilog -sv $src_dir/tjmonopix2_core.v
     read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc
     read_xdc $src_dir/$xdc_file
     read_xdc $src_dir/SiTCP.xdc
-    global include_dirs
 
-    synth_design -top tjmonopix2 -include_dirs $include_dirs -verilog_define [string toupper $board_name]=1 -verilog_define "SYNTHESIS=1" -generic VERSION_MAJOR=8'd$version_major -generic VERSION_MINOR=8'd$version_minor -generic VERSION_PATCH=8'd$version_patch
+    synth_design -top tjmonopix2 -include_dirs $include_dirs -verilog_define [string toupper $board_name]=1 -verilog_define "SYNTHESIS=1" -verilog_define "$lanes=1" -generic VERSION_MAJOR=8'd$version_major -generic VERSION_MINOR=8'd$version_minor -generic VERSION_PATCH=8'd$version_patch
     opt_design
     place_design
     phys_opt_design
@@ -69,11 +71,12 @@ proc run_bit {part xdc_file size {suffix ""}} {
 
 if {$argc == 0} {
     # Standalone mode, directly calling tcl file
-    #          FPGA model          constraints file    flash size  suffix
-    run_bit    xc7k160tfbg676-1    mio3_kx1.xdc        64          ""
-    run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc      64          ""
-    run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc      64          ""
-    run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc      64          325
+    #          FPGA model          constraints file     flash size  lanes       suffix
+    # run_bit    xc7k160tfbg676-1    mio3_kx1.xdc         64          _1RX        ""
+    run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc       64          _1RX        ""
+    run_bit    xc7k160tffg676-2    bdaq53_kx2_4x.xdc    64          _4RX        ""
+    # run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc     64          _1RX        ""
+    # run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc     64          _1RX        325
 } else {
     # Build specific firmware by passing arguments
     # Suffix argument is not required, and default "" can not be read from command line arguments 

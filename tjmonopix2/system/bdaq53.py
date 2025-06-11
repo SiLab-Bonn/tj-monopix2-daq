@@ -69,6 +69,8 @@ class BDAQ53(Dut):
             raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
         # Initialize readout
+        if len(self.receivers) > self['system']['N_CHIPS']:
+            raise RuntimeError("More receivers in the testbench configuration than supported in this firmware!")
         self.rx_channels = {}
         for rec in self.receivers:
                 self.rx_channels[rec] = tjmono2_rx(self['intf'], {'name': rec, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',

@@ -27,6 +27,14 @@
 // User core and its modules
 `include "tjmonopix2_core.v"
 
+`ifdef _1RX
+    localparam N_CHIPS = 1;
+`elsif _4RX
+    localparam N_CHIPS = 4;
+`else
+    localparam N_CHIPS = 1; // default
+`endif
+
 module tjmonopix2 #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
@@ -47,11 +55,11 @@ module tjmonopix2 #(
     input wire        RJ45_TRIGGER,
 
     `ifdef BDAQ53
-        output wire [3:0] J_SER_CLK_P, J_SER_CLK_N, 
-        output wire [3:0] J_CMD_CLK_P, J_CMD_CLK_N, 
-        output wire [3:0] J_CMD_P, J_CMD_N, 
+        output wire [N_CHIPS-1:0] J_SER_CLK_P, J_SER_CLK_N,
+        output wire [N_CHIPS-1:0] J_CMD_CLK_P, J_CMD_CLK_N,
+        output wire [N_CHIPS-1:0] J_CMD_P, J_CMD_N,
 
-        input wire [3:0]  J_DATA_P, J_DATA_N, // DATA
+        input wire  [N_CHIPS-1:0] J_DATA_P, J_DATA_N, // DATA
         input wire        HITOR_P, HITOR_N,         // HITOR
 
         // NTC
@@ -283,77 +291,14 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
 `ifdef BDAQ53
     // -------  Diff buffer for BDAQ  ------- //
     wire CMD_OUT;
-    wire [3:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
-    wire [3:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
-    wire [3:0] LVDS_DATA;
-    wire LVDS_DATA_int;
-
-    /*
-    TODO: Keep the following blocks separated. Unify when cable pinout is changed and cables produced.
-    */
-
-    // ------- DP ML (DP5) ------- //
-    // Command
-    ODDR ODDR_inst_CMD (
-        .Q(LVDS_CMD[0]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
-    );
-    OBUFDS #(
-        .IOSTANDARD("LVDS_25"),
-        .SLEW("FAST")
-    ) i_OBUFDS_cmd (
-        .O(CMD_P[0]),
-        .OB(CMD_N[0]),
-        .I(LVDS_CMD[0])
-    );
-    assign J_CMD_N[0] = CMD_N[0];
-    assign J_CMD_P[0] = CMD_P[0];
-
-    // Command clock
-    ODDR ODDR_inst_CMD_CLK (
-        .Q(LVDS_CMD_CLK[0]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-    );
-    OBUFDS #(
-        .IOSTANDARD("LVDS_25"),
-        .SLEW("FAST")
-    ) i_OBUFDS_cmd_clk (
-        .O(CMD_CLK_P[0]),
-        .OB(CMD_CLK_N[0]),
-        .I(LVDS_CMD_CLK[0])
-    );
-    assign J_CMD_CLK_N[0] = CMD_CLK_N[0];
-    assign J_CMD_CLK_P[0] = CMD_CLK_P[0];
-
-    // Serializer clock
-    ODDR ODDR_inst_SER_CLK (
-        .Q(LVDS_SER_CLK[0]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-    );
-    OBUFDS #(
-        .IOSTANDARD("LVDS_25"),
-        .SLEW("FAST")
-    ) i_OBUFDS_ser_clk (
-        .O(SER_CLK_P[0]),
-        .OB(SER_CLK_N[0]),
-        .I(LVDS_SER_CLK[0])
-    );
-    assign J_SER_CLK_N[0] = SER_CLK_N[0];
-    assign J_SER_CLK_P[0] = SER_CLK_P[0];
-
-    // Data
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("FALSE"),
-        .IOSTANDARD("LVDS_25")
-    ) i_IBUFDS_data (
-        .O(LVDS_DATA_int),
-        .I(J_DATA_P[0]),
-        .IB(J_DATA_N[0])
-    );
-    assign LVDS_DATA[0] = ~LVDS_DATA_int; // Has to be inverted due to wiring on the SCC
+    wire [N_CHIPS-1:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
+    wire [N_CHIPS-1:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
+    wire [N_CHIPS-1:0] LVDS_DATA;
 
     // ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
     genvar i;
     generate
-        for (i=1; i<4; i=i+1) begin : lvds_io_rj45
+        for (i=0; i<N_CHIPS; i=i+1) begin : gen_lvds_io_rj45
             // Command
             ODDR ODDR_inst_CMD (
                 .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
@@ -399,17 +344,32 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
             assign J_SER_CLK_N[i] = SER_CLK_N[i];
             assign J_SER_CLK_P[i] = SER_CLK_P[i];
 
-            // Data
-            IBUFDS #(
-                .DIFF_TERM("TRUE"),     // Differential Termination
-                .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE"
-                .IOSTANDARD("LVDS_25")  // Specify the input I/O standard
-            ) i_IBUFDS_data (
-                .O(LVDS_DATA[i]),      // Buffer output
-                .I(J_DATA_P[i]),      // Diff_p buffer input (connect directly to top-level port)
-                .IB(J_DATA_N[i])      // Diff_n buffer input (connect directly to top-level port)
-            );
-            // assign LVDS_DATA[i] = ~LVDS_DATA_int[i];
+            // Data (invert for DP connector)
+            `ifdef _1RX
+                wire LVDS_DATA_int;
+                IBUFDS #(
+                    .DIFF_TERM("TRUE"),
+                    .IBUF_LOW_PWR("FALSE"),
+                    .IOSTANDARD("LVDS_25")
+                ) i_IBUFDS_data (
+                    .O(LVDS_DATA_int),
+                    .I(J_DATA_P[i]),
+                    .IB(J_DATA_N[i])
+                );
+                assign LVDS_DATA[i] = ~LVDS_DATA_int;
+            `else
+            `ifdef _4RX
+                IBUFDS #(
+                    .DIFF_TERM("TRUE"),
+                    .IBUF_LOW_PWR("FALSE"),
+                    .IOSTANDARD("LVDS_25")
+                ) i_IBUFDS_data (
+                    .O(LVDS_DATA[i]),
+                    .I(J_DATA_P[i]),
+                    .IB(J_DATA_N[i])
+                );
+            `endif
+            `endif
         end
     endgenerate
 
@@ -640,7 +600,8 @@ assign LED = ~LED_int;
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
-    .VERSION_PATCH(VERSION_PATCH)
+    .VERSION_PATCH(VERSION_PATCH),
+    .N_RX(N_CHIPS)
 ) i_tjmonopix2_core (
     // Bus
     .BUS_CLK(BUS_CLK),

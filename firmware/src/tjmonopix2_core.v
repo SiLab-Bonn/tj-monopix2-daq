@@ -52,7 +52,8 @@ module tjmonopix2_core #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
     parameter VERSION_MINOR = 8'd0,
-    parameter VERSION_PATCH = 8'd0
+    parameter VERSION_PATCH = 8'd0,
+    parameter N_RX = 3'd1
 )(
     // local bus
     input wire BUS_CLK,
@@ -102,7 +103,7 @@ module tjmonopix2_core #(
     output wire RESETB_EXT,
 
     // LVDS IO
-    input wire [3:0] LVDS_DATA,
+    input wire [N_RX-1:0] LVDS_DATA,
     input wire LVDS_HITOR,
 
     `ifdef MIO3
@@ -135,6 +136,8 @@ module tjmonopix2_core #(
 localparam SIM = 8'd0;
 localparam BDAQ53 = 8'd1;
 localparam MIO3 = 8'd2;
+
+localparam N_CHIPS = N_RX;
 
 `ifdef SIM
     localparam BOARD = SIM;
@@ -228,6 +231,7 @@ always @ (posedge BUS_CLK) begin
             2:       DAQ_SYSTEM_DATA_OUT <= VERSION_MAJOR;
             3:       DAQ_SYSTEM_DATA_OUT <= BOARD;
             4:       DAQ_SYSTEM_DATA_OUT <= SI570_IS_CONFIGURED;
+            5:       DAQ_SYSTEM_DATA_OUT <= N_CHIPS;
             default: DAQ_SYSTEM_DATA_OUT <= 0;
         endcase
     end
@@ -491,9 +495,9 @@ pulse_gen #(
 );
 
 // RX
-wire [3:0] RX_FIFO_READ;
-wire [3:0] RX_FIFO_EMPTY;
-wire [31:0] RX_FIFO_DATA [3:0];
+wire [N_CHIPS-1:0] RX_FIFO_READ;
+wire [N_CHIPS-1:0] RX_FIFO_EMPTY;
+wire [N_CHIPS-1:0][31:0] RX_FIFO_DATA;
 
 // TLU
 wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
@@ -504,36 +508,25 @@ wire TLU_FIFO_PREEMPT_REQ;
 wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
 wire [31:0] TDC_FIFO_DATA;
 
-rrp_arbiter 
-#( 
-    .WIDTH(6)
+rrp_arbiter #(
+    .WIDTH(N_CHIPS+2)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
-
     .WRITE_REQ({
-        ~RX_FIFO_EMPTY[0],
-        ~RX_FIFO_EMPTY[1],
-        ~RX_FIFO_EMPTY[2],
-        ~RX_FIFO_EMPTY[3],
-        ~TLU_FIFO_EMPTY,
-        ~TDC_FIFO_EMPTY
+        !TDC_FIFO_EMPTY,
+        ~RX_FIFO_EMPTY,
+        !TLU_FIFO_EMPTY
     }),
-    .HOLD_REQ({4'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ(TLU_FIFO_PREEMPT_REQ),
     .DATA_IN({
-        RX_FIFO_DATA[0],
-        RX_FIFO_DATA[1],
-        RX_FIFO_DATA[2],
-        RX_FIFO_DATA[3],
-        TLU_FIFO_DATA,
-        TDC_FIFO_DATA}),
+        TDC_FIFO_DATA,
+        RX_FIFO_DATA,
+        TLU_FIFO_DATA}),
     .READ_GRANT({
-        RX_FIFO_READ[0],
-        RX_FIFO_READ[1],
-        RX_FIFO_READ[2],
-        RX_FIFO_READ[3],
-        TLU_FIFO_READ,
-        TDC_FIFO_READ
+        TDC_FIFO_READ,
+        RX_FIFO_READ,  // TODO: ~FULL
+        TLU_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -654,10 +647,10 @@ tdc_s3 #(
 // fast readout
 genvar rx_mod;  // RX module ID
 generate
-    for (rx_mod=0; rx_mod<4; rx_mod=rx_mod+1) begin : rx
+    for (rx_mod=0; rx_mod < N_CHIPS; rx_mod=rx_mod + 1) begin : gen_rx
         tjmono2_rx #(
-            .BASEADDR(32'h1000 + rx_mod*32'h0100),
-            .HIGHADDR(32'h1100 + rx_mod*32'h0100 - 1),
+            .BASEADDR(RX_BASEADDR + 32'h0100 * rx_mod),
+            .HIGHADDR(RX_HIGHADDR + 32'h0100 * rx_mod),
             .DATA_IDENTIFIER(4'b0100 + rx_mod),
             .ABUSWIDTH(ABUSWIDTH),
             .USE_FIFO_CLK(0)
