@@ -145,7 +145,6 @@ class cmd(RegisterHardwareLayer):
         ''' Gets the status of the AUTO_SYNC register to enable automatic sending of sync commands to prevent ITkPixV1 like chips from unlocking '''
         return self.AUTO_SYNC
 
-
     def get_bypass_mode(self):
         return self.BYPASS_MODE
 

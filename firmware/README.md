@@ -63,4 +63,3 @@ from the `firmware/vivado` folder. The resulting bit files will be written to `f
 vivado -mode batch -source run.tcl -tclargs xc7k160tffg676-2 bdaq53_kx2.xdc 64 _1RX
 ```
 
-todo

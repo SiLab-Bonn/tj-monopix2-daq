@@ -57,6 +57,7 @@ class BDAQ53(Dut):
         # Flag indicating of tlu module is enabled.
         self.tlu_module_enabled = False
 
+        # Initialize underlying basil DUT
         super().__init__(conf)
 
     def init(self, **kwargs):
