@@ -14,6 +14,7 @@
 `include "utils/cdc_reset_sync.v"
 
 `include "utils/fifo_32_to_8.v"
+`include "utils/generic_fifo.v"
 
 `include "utils/rgmii_io.v"
 `include "utils/rbcp_to_bus.v"
