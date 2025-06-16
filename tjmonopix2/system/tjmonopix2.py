@@ -969,7 +969,6 @@ class TJMonoPix2():
             self.write_command(indata, repetitions=repetitions)
         return indata
 
-
     # def write_ecr(self, write=True):
     #     indata = [self.CMD_CLEAR]
     #     indata += [self.cmd_data_map[self.chip_id]]
@@ -1021,7 +1020,7 @@ class TJMonoPix2():
                 indata : binarray
                     Boolean representation of register write command.
         '''
-        if type(address) == str:
+        if isinstance(address, str):
             address = self.register_name_map[address]
 
         indata = [self.CMD_RDREG]

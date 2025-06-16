@@ -74,9 +74,13 @@ class BDAQ53(Dut):
             raise RuntimeError("More receivers in the testbench configuration than supported in this firmware!")
         self.rx_channels = {}
         for rec in self.receivers:
-                self.rx_channels[rec] = tjmono2_rx(self['intf'], {'name': rec, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                'base_addr': 0x1000 + int(rec[2]) * 0x0100})
-                self.rx_channels[rec].init()
+            self.rx_channels[rec] = tjmono2_rx(self['intf'], {
+                'name': rec,
+                'type': 'tjmonopix2.tjmono2_rx',
+                'interface': 'intf',
+                'base_addr': 0x1000 + int(rec[2]) * 0x0100
+            })
+            self.rx_channels[rec].init()
 
         # Configure cmd encoder
         self.set_cmd_clk(frequency=160.0)
