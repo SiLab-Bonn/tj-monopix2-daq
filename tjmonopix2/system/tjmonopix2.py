@@ -701,6 +701,9 @@ class TJMonoPix2():
     def init_communication(self, repetitions=1000, write_reset=False):
         self.log.info('Initializing communication...')
 
+        if self.daq.board_version == 'SIMULATION':
+            repetitions = 8
+
         if write_reset:
             self._write_reset(write=True, repetitions=repetitions)
         self.write_sync_01(write=True, repetitions=repetitions)

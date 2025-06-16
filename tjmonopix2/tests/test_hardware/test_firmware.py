@@ -23,7 +23,7 @@ class FirmwareTest(unittest.TestCase):
     def test_register_rw(self) -> None:
         self.dut.registers["VL"].write(38)
         reg = self.dut.registers["VL"].read()
-        self.dut.write_command(self.dut.write_sync(write=False), repetitions=8)
+        hw_utils.wait_for_sim(self.dut, repetitions=4)
         assert reg == 38
 
     def test_inj(self) -> None:
