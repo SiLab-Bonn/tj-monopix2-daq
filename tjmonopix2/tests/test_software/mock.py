@@ -54,6 +54,7 @@ class TJMonopix2Mock(object):
             cls.rx_channels = {}
             cls.rx_channels['rx0'] = mock.Mock()
             self.rx_channels = cls.rx_channels
+            cls.communication_established = False
 
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.init', init_mock)
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.get_tlu_erros', lambda *args, **kwargs_: (0, 0))
