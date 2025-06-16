@@ -570,10 +570,6 @@ class ScanBase(object):
                 self.daq.init()
                 self.log.info('Initializing chips...')
 
-            # Reset CMD state mashine, creates glitch that requires often a new PLL lock and AURORA sync
-            # Likely not required at chip init, was done for RD53A
-            self.daq['cmd'].reset()
-
             for _ in self.iterate_chips():
                 with self._logging_through_handler(self.log_fh):
                     # Initialize chip
