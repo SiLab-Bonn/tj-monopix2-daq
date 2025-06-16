@@ -63,10 +63,15 @@ hw_drivers:
     interface : intf
     base_addr : 0x0600
 
-  - name      : tdc
-    type      : tdc_s3
+  # - name      : tdc
+  #   type      : tdc_s3
+  #   interface : intf
+  #   base_addr : 0x0700
+
+  - name      : pTDC
+    type      : tdl_tdc
     interface : intf
-    base_addr : 0x0700
+    base_addr : 0x5000
 
   - name      : tlu_veto
     type      : pulse_gen

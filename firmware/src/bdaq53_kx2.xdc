@@ -23,7 +23,8 @@
 # Clock inputs
 create_clock -period 10.000 -name CLK_SYS -add [get_ports FCLK_IN]
 create_clock -period 8.000 -name CLK_RGMII_RX -add [get_ports rgmii_rxc]
-create_clock -period 6.250 -name CLK_MGT_REF -add [get_ports MGT_REFCLK1_P]
+create_clock -period 6.250 -name CLK_SI570 -add [get_ports MGT_REFCLK1_P]
+create_clock -period 6.250 -name CLK_SI570 -add [get_ports MGT_REFCLK1_P]
 create_clock -period 25.000 -name CLK_SMA -add [get_ports MGT_REFCLK0_P]
 
 # Derived clocks
@@ -31,7 +32,16 @@ create_generated_clock -name I2C_CLK -source [get_pins PLLE2_BASE_inst_comm/CLKO
 create_generated_clock -name rgmii_txc -source [get_pins rgmii/ODDR_inst/C] -divide_by 1 [get_ports rgmii_txc]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK640_PLL CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group [get_clocks -include_generated_clocks CLK_SMA] -group CLK_RGMII_RX
+set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_SI570] -group [get_clocks -include_generated_clocks CLK_SMA] -group CLK_RGMII_RX
+
+# Constraints for TDL TDC
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */i_controller/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */input_mux_addr_buf_reg*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */conf_en_invert_tdc_synchronizer_dv_clk/* && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1}]
+set_false_path -from [get_clocks CLK160_TDC_PLL] -to [get_clocks CLK480_TDC_PLL]
+set_property LOC SLICE_X38Y2 [get_cells -hier -regexp .*FirstCell/CARRY4_inst]
+# set_property LOC PLLE2_ADV_X0Y0 [get_cells -hier PLLE2_BASE_TDC]
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000
@@ -39,6 +49,16 @@ set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4.000
 set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0]
 set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1]
+
+# Constraints for TDL TDC
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */i_controller/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */input_mux_addr_buf_reg*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */conf_en_invert_tdc_synchronizer_dv_clk/* && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1}]
+set_false_path -from [get_clocks CLK160_TDC_PLL] -to [get_clocks CLK480_TDC_PLL]
+# Fixed TDL TDC location in KX2-160T FPGA
+set_property LOC SLICE_X8Y1 [get_cells -hier -regexp .*FirstCell/CARRY4_inst]
+set_property LOC PLLE2_ADV_X0Y0 [get_cells -hier PLLE2_BASE_TDC]
 
 # LED
 # LED 0..3 are onboard LEDs: Bank 32, 33 running at 1.5 V)

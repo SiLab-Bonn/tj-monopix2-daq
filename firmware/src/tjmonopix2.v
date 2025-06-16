@@ -187,7 +187,6 @@ BUFG BUFG_inst_CLK125RX (  .O(CLK125RX),  .I(rgmii_rxc) );
 BUFG BUFG_inst_CLK200 (  .O(CLK200),  .I(CLK200_PLL) );
 
 // -------  PLL for clk synthesis  ------- //
-(* KEEP = "{TRUE}" *) wire CLK640;  
 (* KEEP = "{TRUE}" *) wire CLK320;  
 (* KEEP = "{TRUE}" *) wire CLK160;
 (* KEEP = "{TRUE}" *) wire CLK32;
@@ -195,7 +194,7 @@ BUFG BUFG_inst_CLK200 (  .O(CLK200),  .I(CLK200_PLL) );
 (* KEEP = "{TRUE}" *) wire CLK16;
 
 wire PLL_FEEDBACK2, LOCKED2;
-wire CLK16_PLL, CLK32_PLL, CLK40_PLL, CLK160_PLL, CLK320_PLL, CLK640_PLL;
+wire CLK16_PLL, CLK32_PLL, CLK40_PLL, CLK160_PLL, CLK320_PLL;
 
 PLLE2_BASE #(
     .BANDWIDTH("OPTIMIZED"),  // OPTIMIZED, HIGH, LOW
@@ -226,7 +225,7 @@ PLLE2_BASE #(
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
     
-    .CLKOUT5_DIVIDE(2),       // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT5_DIVIDE(5),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
@@ -235,7 +234,7 @@ PLLE2_BASE #(
     .CLKOUT2(CLK40_PLL),
     .CLKOUT3(CLK160_PLL),
     .CLKOUT4(CLK320_PLL),
-    .CLKOUT5(CLK640_PLL),
+    .CLKOUT5(),
 
     .CLKFBOUT(PLL_FEEDBACK2),
     
@@ -258,24 +257,28 @@ BUFG BUFG_inst_CLK32   (.O(CLK32),   .I(CLK32_PLL));
 BUFG BUFG_inst_CLK40   (.O(CLK40),   .I(CLK40_PLL));
 BUFG BUFG_inst_CLK160  (.O(CLK160),  .I(CLK160_PLL));
 BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
-BUFG BUFG_inst_CLK640  (.O(CLK640),  .I(CLK640_PLL));
 
-// MGT CLK (from Si570 or SMA input)
-wire CLKCMD, CLK_SMA, EXT_TRIGGER_CLK;
+// CLK_MGT_REF (from Si570)
+wire CLK_SI570, CLK_MGT_REF, CLK_SMA, EXT_TRIGGER_CLK;
 
 IBUFDS_GTE2 IBUFDS_refclk  
 (
-    .O               (CLKCMD),
+    .O               (CLK_SI570),
     .ODIV2           (),
     .CEB             (1'b0),
     .I               (MGT_REFCLK1_P),
     .IB              (MGT_REFCLK1_N)
 );
 
+BUFG bufg_inst_clk_mgt_ref (
+    .I(CLK_SI570),
+    .O(CLK_MGT_REF)
+);
+
 // SMA CLK input from AIDA2020 TLU (MGT_REF_SEL has to be 0!)
 assign MGT_REF_SEL = 1'b0;
 
-IBUFDS_GTE2 IBUFDS_aidatlu_clk  
+IBUFDS_GTE2 IBUFDS_inst_smaclk  
 (
     .O               (CLK_SMA),
     .ODIV2           (),
@@ -288,6 +291,58 @@ BUFG bufg_inst_clksma (
     .I(CLK_SMA),
     .O(EXT_TRIGGER_CLK)
 );
+
+// ------- TDL TDC PLL ------- //
+wire PLL_TDC_FEEDBACK, LOCKED_PLL_TDC;
+wire CLK160_TDC_PLL, CLK480_TDC_PLL;
+PLLE2_BASE #(
+	.BANDWIDTH("HIGH"),       // OPTIMIZED, HIGH, LOW
+	.CLKFBOUT_MULT(6),        // Multiply value for all CLKOUT, (2-64)
+	.CLKFBOUT_PHASE(0.0),     // Phase offset in degrees of CLKFB, (-360.000-360.000).
+	.CLKIN1_PERIOD(6.250),    // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
+
+	.CLKOUT0_DIVIDE(6),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
+	.CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+
+	.CLKOUT1_DIVIDE(2),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT1_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
+	.CLKOUT1_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+
+	.CLKOUT2_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT2_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
+	.CLKOUT2_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+
+	.CLKOUT3_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT3_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
+	.CLKOUT3_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+
+	.CLKOUT4_DIVIDE(8),       // Divide amount for CLKOUT0 (1-128)
+	.CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
+	.CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
+
+	.DIVCLK_DIVIDE(1),        // Master division value, (1-56)
+	.REF_JITTER1(0.0),        // Reference input jitter in UI, (0.000-0.999).
+	.STARTUP_WAIT("FALSE")    // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
+)
+PLLE2_BASE_TDC (
+	.CLKOUT0(CLK160_TDC_PLL),
+	.CLKOUT1(CLK480_TDC_PLL),
+	.CLKOUT2(),
+	.CLKOUT3(),
+	.CLKOUT4(),
+	.CLKOUT5(),
+	.CLKFBOUT(PLL_TDC_FEEDBACK),
+	.LOCKED(LOCKED_PLL_TDC),
+	.CLKIN1(CLK_MGT_REF),
+	.PWRDWN(0),
+	.RST(!RESET_BUTTON),
+	.CLKFBIN(PLL_TDC_FEEDBACK)
+);
+
+wire CLK160_TDC, CLK480_TDC;
+BUFG BUFG_inst_CLK160_TDC  (.O(CLK160_TDC),  .I(CLK160_TDC_PLL));
+BUFG BUFG_inst_CLK480_TDC  (.O(CLK480_TDC),  .I(CLK480_TDC_PLL));
 
 // -------  LEMO TX ------- //
 wire RJ45_CLK, RJ45_BUSY;
@@ -589,39 +644,44 @@ tjmonopix2_core #(
     .VERSION_MINOR(VERSION_MINOR),
     .VERSION_PATCH(VERSION_PATCH)
 ) i_tjmonopix2_core (
-    //local bus
+    // Bus
     .BUS_CLK(BUS_CLK),
     .BUS_DATA(BUS_DATA),
     .BUS_ADD(BUS_ADD),
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .BUS_RST(BUS_RST),
-    //clocks
+    // RX and module clocks
     .CLK16(CLK16),
     .CLK32(CLK32),
     .CLK40(CLK40),
     .CLK160(CLK160),
     .CLK320(CLK320),
-    .CLKCMD(CLKCMD),
-    // .CLKILA(CLK40),  // Integrated Logic analyzer sampling clock
+    // TDL TDC clocks
+    .CLK160_TDC(CLK160_TDC),
+    .CLK480_TDC(CLK480_TDC),
+    .CLKTDC_CALIB(CLK125RX),
+
+    // TLU clock
     .EXT_TRIGGER_CLK(EXT_TRIGGER_CLK),
-    .MGT_REF_SEL(),
 
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),
 
-    //cmd
+    // CMD
     .CMD_LOOP_START_PULSE(CMD_LOOP_START_PULSE),
+    .CLKCMD(CLK_MGT_REF),  // 160 MHz from Si570
+    .MGT_REF_SEL(), // TODO: delete and hardcode
 
-    //fifo
+    // FIFO
     .ARB_READY_OUT(ARB_READY_OUT),
     .ARB_WRITE_OUT(ARB_WRITE_OUT),
     .ARB_DATA_OUT(ARB_DATA_OUT),
     .FIFO_FULL(FIFO_FULL),
     .FIFO_NEAR_FULL(FIFO_NEAR_FULL),
 
-    //LED
-    .LED(LED[4:0]),
+    // LED
+    .LED(LED[3:0]),
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
     .LEMO_MUX({LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0}),
     .RJ45_CLK(RJ45_CLK),
