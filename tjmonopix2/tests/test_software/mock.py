@@ -27,12 +27,13 @@ class TJMonopix2Mock(object):
             Create an h5 file and stores *all* commands send to chip. Useful for testing and debuging.
     """
 
-    def __init__(self, raw_data_file=None, send_commands_file=None, create_chip_data=True):
+    def __init__(self, num_rx_channels=1, raw_data_file=None, send_commands_file=None, create_chip_data=True):
         self.raw_data_file = raw_data_file
         self.send_commands_file = send_commands_file
         self.create_chip_data = create_chip_data
         self.patches = {}
         self.enabled_rx = []
+        self.num_rx_channels = num_rx_channels
 
     def __enter__(self):
         self.start()
@@ -50,12 +51,12 @@ class TJMonopix2Mock(object):
         def init_mock(cls):
             cls.fw_version = '0.0'
             cls.board_version = 'BDAQ53Mock'
-
-            cls.rx_channels = {}
-            cls.rx_channels['rx0'] = mock.Mock()
-            self.rx_channels = cls.rx_channels
             cls.communication_established = False
-
+            cls.rx_channels = {}
+            for i in range(self.num_rx_channels):
+                cls.rx_channels['rx%d' % i] = mock.Mock()
+            self.rx_channels = cls.rx_channels
+            
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.init', init_mock)
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.get_tlu_erros', lambda *args, **kwargs_: (0, 0))
 
@@ -89,7 +90,7 @@ class TJMonopix2Mock(object):
         # Mock fifo readout
         def print_readout_status(_, rx_channel=None):
             if rx_channel is None:
-                return True
+                return [0] * 6, [0] * 6
             return True
 
         self.patch_function('tjmonopix2.system.fifo_readout.FifoReadout.print_readout_status', print_readout_status)
@@ -97,7 +98,7 @@ class TJMonopix2Mock(object):
 
         def get_count(_, rx_channel=None):
             if rx_channel is None:
-                return [0]
+                return [0] * 6
             return 0
 
         self.patch_function('tjmonopix2.system.fifo_readout.FifoReadout.get_rx_fifo_discard_count', get_count)
@@ -127,7 +128,10 @@ class TJMonopix2Mock(object):
                     data = []
                     if not cls.stop_readout.is_set():  # Create some fake data
                         # Create one data word per active readout channel with correct rx id to be able to check filtering
-                        data.append(0x0 | (0x1 << 20))
+                        for channel in cls.channels:
+                            rx_id = int(channel[2])
+                            # print(rx_id)
+                            data.append(0x0 | ((0x4 + rx_id) << 28))
                     return np.array(data, dtype=np.int32)
 
         self.patch_function('tjmonopix2.system.fifo_readout.FifoReadout.read_data', read_data)
