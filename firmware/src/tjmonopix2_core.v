@@ -697,7 +697,7 @@ tdl_tdc #(
 	.CLK480(CLK480_TDC),
 	.CLK160(CLK160_TDC),
 	.CALIB_CLK(CLKTDC_CALIB), // Must be uncorrelated to CLK160 & CLK480
-	.tdc_in(LEMO_RX[1]), // (sig_out_buf), // (sig_in),
+	.tdc_in(LVDS_HITOR), // (sig_out_buf), // (sig_in),
 	.trig_in(LEMO_RX[0]), // (trig_out_buf), // (trig_in),
 
 	.timestamp(TIMESTAMP[24:0]),
