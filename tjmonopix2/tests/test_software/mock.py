@@ -56,7 +56,7 @@ class TJMonopix2Mock(object):
             for i in range(self.num_rx_channels):
                 cls.rx_channels['rx%d' % i] = mock.Mock()
             self.rx_channels = cls.rx_channels
-            
+
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.init', init_mock)
         self.patch_function('tjmonopix2.system.bdaq53.BDAQ53.get_tlu_erros', lambda *args, **kwargs_: (0, 0))
 
