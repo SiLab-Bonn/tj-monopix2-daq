@@ -122,17 +122,16 @@ class TJMonopix2Mock(object):
                         i_start = self.meta_data['index_start'][self.i_ro]
                         i_stop = self.meta_data['index_stop'][self.i_ro]
                         self.i_ro += 1
-                        return self.raw_data[i_start:i_stop] | (self.enabled_rx[0] << 20)  # add channel id
-                    return np.array([], dtype=np.int32)
+                        return self.raw_data[i_start:i_stop] | (self.enabled_rx[0] << 20)  # TODO: Fix channel id
+                    return np.array([], dtype=np.uint32)
                 else:  # just count upwards
                     data = []
                     if not cls.stop_readout.is_set():  # Create some fake data
                         # Create one data word per active readout channel with correct rx id to be able to check filtering
                         for channel in cls.channels:
                             rx_id = int(channel[2])
-                            # print(rx_id)
                             data.append(0x0 | ((0x4 + rx_id) << 28))
-                    return np.array(data, dtype=np.int32)
+                    return np.array(data, dtype=np.uint32)
 
         self.patch_function('tjmonopix2.system.fifo_readout.FifoReadout.read_data', read_data)
 
