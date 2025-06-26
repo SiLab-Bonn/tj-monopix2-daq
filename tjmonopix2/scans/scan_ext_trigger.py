@@ -19,7 +19,7 @@ scan_configuration = {
     'stop_row': 512,
 
     'scan_timeout': False,    # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
-    'max_triggers': 1000000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
+    'max_triggers': 15000000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
 
     'tot_calib_file': None    # path to ToT calibration file for charge to e⁻ conversion, if None no conversion will be done
 }
@@ -37,13 +37,15 @@ class ExtTriggerScan(ScanBase):
             self.log.warning('You should only use one of the stop conditions at a time.')
 
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
+        self.chip.masks['hitor'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks.apply_disable_mask()
-        self.chip.masks.update()
+        self.chip.masks.update(force=True)
 
-        self.daq.configure_tlu_veto_pulse(veto_length=500)
+        self.daq.configure_tlu_veto_pulse(veto_length=750)
         if max_triggers:
             # self.daq.configure_tlu_module(max_triggers=max_triggers)
             self.daq.configure_tlu_module(max_triggers=max_triggers, aidamode=True) # TODO: add in Testbench.yaml
+        self.daq.configure_ptdc_module()
 
     def _scan(self, scan_timeout=False, max_triggers=1000, **_):
         def timed_out():
@@ -62,6 +64,8 @@ class ExtTriggerScan(ScanBase):
 
         with self.readout():
             self.stop_scan.clear()
+            self.daq.enable_ptdc_module()
+            self.daq.calibrate_ptdc_module()
             self.daq.enable_tlu_module()
 
             while not (self.stop_scan.is_set() or timed_out()):
@@ -90,6 +94,7 @@ class ExtTriggerScan(ScanBase):
 
         self.pbar.close()
         self.daq.disable_tlu_module()
+        self.daq.disable_ptdc_module()
         self.log.success('Scan finished')
 
     def _analyze(self):
@@ -97,7 +102,7 @@ class ExtTriggerScan(ScanBase):
         if tot_calib_file is not None:
             self.configuration['bench']['analysis']['cluster_hits'] = True
 
-        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', tot_calib_file=tot_calib_file, **self.configuration['bench']['analysis']) as a:
+        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', tot_calib_file=tot_calib_file, build_events=True, chunk_size=5000000, **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
         if self.configuration['bench']['analysis']['create_pdf']:

@@ -313,7 +313,7 @@ class Analysis(object):
                     if self.tot_calib_file:
                         cs_tot_size = 2048
                     else:
-                        cs_tot_size = 256
+                        cs_tot_size = 512
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
                     hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
@@ -336,14 +336,14 @@ class Analysis(object):
                         hit_table.append(hit_dat)
                         hit_table.flush()
                     if self.build_events:
-                        if np.count_nonzero(hit_dat["col"] == 1023) > 0:
-                            event_buffer = np.zeros(len(hit_dat), dtype=au.event_dtype)
-                            event_dat, trigger_n, trigger_ts, event_n = build_events(hit_dat, event_buffer, trigger_n, trigger_ts, event_n)
-                            event_table.append(event_dat)
-                            event_table.flush()
-                        else:
-                            self.log.error("No TLU data found in raw data. Check data or disable event building")
-                            raise Exception
+                        # if np.count_nonzero(hit_dat["col"] == 1023) > 0:
+                        event_buffer = np.zeros(len(hit_dat), dtype=au.event_dtype)
+                        event_dat, trigger_n, trigger_ts, event_n = build_events(hit_dat, event_buffer, trigger_n, trigger_ts, event_n)
+                        event_table.append(event_dat)
+                        event_table.flush()
+                        # else:
+                        #     self.log.error("No TLU data found in raw data. Check data or disable event building")
+                        #     # raise Exception
                     if self.cluster_hits:
                         if self.build_events:
                             data_to_clusterizer = event_dat

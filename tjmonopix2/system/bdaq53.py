@@ -277,9 +277,9 @@ class BDAQ53(Dut):
         # Run calibration for two seconds. FPGA should be up and running for some time
         self.log.info("Calibrating tapped delay line for TDC module")
         self.reset_fifo()
-        self['pTDC'].EN_CALIBRATION_MOD = 1
+        self['pTDC'].EN_CALIBRATION_MODE = 1
         time.sleep(2)
-        self['pTDC'].EN_CALIBRATION_MOD = 0
+        self['pTDC'].EN_CALIBRATION_MODE = 0
         # TODO: Figure out where and how to store TDC calibration words...
 
     def enable_ptdc_module(self):

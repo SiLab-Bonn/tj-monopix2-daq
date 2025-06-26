@@ -1,19 +1,19 @@
 general: # General configuration
   readout_system: # Readout system, available platforms are BDAQ53 or MIO3 (+ GPAC). BDAQ53 is default
-  output_directory: #'/media/raid/data/tjmonopix2/2021-10-25_elsa/tuning' # Top-level output data directory, default is the current folder where the script is started
+  output_directory: '/home/silab/data/DESY-06-2025/tj' #'/media/raid/data/tjmonopix2/2021-10-25_elsa/tuning' # Top-level output data directory, default is the current folder where the script is started
 
 # Connected Modules
 modules:
   module_0: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_0: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W11R07"
+      chip_sn: "W12R11"
       chip_id: 0
       receiver: "rx0"
       chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
       record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
       use_good_pixels_diff: False
-      send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor
+      send_data: "tcp://127.0.0.1:5800" # Socket address of online monitor
 
 TLU:
   TRIGGER_MODE: 2 # Selecting trigger mode: Use trigger inputs/trigger select (0), TLU no handshake (1), TLU simple handshake (2), TLU data handshake (3)
@@ -28,7 +28,7 @@ TLU:
 
 TDC:
   EN_WRITE_TIMESTAMP: 1 # Writing trigger timestamp
-  EN_TRIGGER_DIST: 0 # Measuring trigger to TDC delay with 640MHz clock
+  EN_TRIGGER_DIST: 1 # Measuring trigger to TDC delay with 640MHz clock
   EN_NO_WRITE_TRIG_ERR: 1 # Writing TDC word only if valid trigger occurred
   EN_INVERT_TDC: 0 # Inverting TDC input
   EN_INVERT_TRIGGER: 0 # Inverting trigger input, e.g. for using Test output from EUDET TLU
