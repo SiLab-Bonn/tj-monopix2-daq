@@ -5,7 +5,7 @@ from tj_satellite import TJ
 def main(args=None):
     parser = SatelliteArgumentParser()
     args = vars(parser.parse_args(args))
-    setup_cli_logging(args.pop("log_level"))
+    setup_cli_logging(args.pop("level"))
     s = TJ(**args)
     s.run_satellite()
 
