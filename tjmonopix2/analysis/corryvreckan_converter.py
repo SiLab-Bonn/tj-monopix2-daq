@@ -14,7 +14,7 @@ from tjmonopix2.analysis import analysis
 
 
 def format_dut(input_filename: str | Path, output_filename: str | Path = None, trigger_mode: str = "AIDA") -> None:
-    """Format hit table to be compatible with corryvreckan EventLoaderHDF5 as of commit 149e937f
+    """Format hit table to be compatible with corryvreckan EventLoaderHDF5 as of commit c2e57986
 
     Parameters
     ----------
@@ -33,7 +33,7 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
         Invalid trigger mode selected
     """
     hit_dtype_converted = np.dtype(
-        [("column", "<u2"), ("row", "<u2"), ("charge", "<u2"), ("timestamp", "<u8"), ("trigger_number", "<u4")]
+        [("column", "<u2"), ("row", "<u2"), ("raw", "<u2"), ("charge", "<f8"), ("timestamp", "<f8"), ("trigger_number", "<u4")]
     )
 
     if type(input_filename) is str:
@@ -51,7 +51,8 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                 hit_table_out = out_file.create_table(out_file.root, name="Hits", description=hit_dtype_converted)
                 hit_table_converted["column"] = hits_selected["col"]
                 hit_table_converted["row"] = hits_selected["row"]
-                hit_table_converted["charge"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # calculate TOT
+                hit_table_converted["raw"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # calculate TOT
+                hit_table_converted["charge"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # TODO: add calibration option
                 hit_table_converted["timestamp"] = 25 * hits_selected["timestamp"].astype(np.uint64)  # convert to ns
                 hit_table_converted["trigger_number"] = 0
                 hit_table_out.append(hit_table_converted)
@@ -68,6 +69,7 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                 # Only convert column names and types
                 hit_table_converted["column"] = hits_selected["column"]
                 hit_table_converted["row"] = hits_selected["row"]
+                hit_table_converted["raw"] = hits_selected["charge"]
                 hit_table_converted["charge"] = hits_selected["charge"]
                 hit_table_converted["timestamp"] = 0
                 hit_table_converted["trigger_number"] = hits_selected["event_number"].astype(np.uint64)
