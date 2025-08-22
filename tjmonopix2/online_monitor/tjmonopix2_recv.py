@@ -27,9 +27,9 @@ class TJMonopix2(Receiver):
         dock_tot = Dock("Time over threshold values (TOT)", size=(400, 400))
         dock_tdc = Dock("TDC", size=(400, 400))
         dock_status = Dock("Status", size=(800, 40))
-        dock_area.addDock(dock_occcupancy, 'top')
-        dock_area.addDock(dock_tot, 'bottom', dock_occcupancy)
-        dock_area.addDock(dock_tdc, 'right', dock_tot)
+        dock_area.addDock(dock_occcupancy, 'left')
+        dock_area.addDock(dock_tot, 'right', dock_occcupancy)
+        dock_area.addDock(dock_tdc, 'bottom', dock_tot)
         dock_area.addDock(dock_status, 'top')
 
         # Status dock on top
@@ -109,14 +109,14 @@ class TJMonopix2(Receiver):
         self.occupancy_data = data['occupancy']
         self.tot_data = data['tot_hist']
         self.tdc_data = data['tdc_hist']
-        
+
         # Meta data
         self._update_rate(data['meta_data']['fps'],
                           data['meta_data']['hps'],
                           data['meta_data']['tps'],
                           data['meta_data']['total_hits'],
                           data['meta_data']['total_triggers'])
-                          
+
         self.timestamp_label.setText("Data Timestamp\n%s" % time.asctime(time.localtime(data['meta_data']['timestamp_stop'])))
         self.scan_parameter_label.setText("Parameter ID\n%d" % data['meta_data']['scan_param_id'])
         now = time.time()
@@ -124,7 +124,7 @@ class TJMonopix2(Receiver):
         self.plot_delay_label.setText("Plot Delay\n%s" % 'not realtime' if abs(self.plot_delay) > 5 else "Plot Delay\n%1.2f ms" % (self.plot_delay * 1.e3))
 
     def refresh_data(self):
-        
+
         if self.occupancy_data is not None:
             self.occupancy_img.setImage(self.occupancy_data[:, :], autoDownSample=True)
         if self.tot_data is not None:

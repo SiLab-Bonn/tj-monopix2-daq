@@ -96,7 +96,7 @@ class TJMonopix2(Transceiver):
         self.total_trigger_words = n_triggers
         self.readout += 1
 
-        self.hist_occ, self.hist_tot, self.hist_tdc = self.interpreter.get_histograms()
+        self.hist_occ, self.hist_tot, self.hist_tdc, _ = self.interpreter.get_histograms()
         occupancy_hist = self.hist_occ.sum(axis=2)
 
         # Mask noisy pixels

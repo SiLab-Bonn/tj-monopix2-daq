@@ -12,12 +12,15 @@ class_spec = [
     ('le', numba.int8),
     ('te', numba.int8),
     ('tj_timestamp', numba.int64),
+
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
+    ('en_trigger_dist', numba.uint8),
 
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
+    ('hist_trigger_dist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
@@ -59,13 +62,26 @@ def get_tlu_word(word, trigger_data_format):
 
 
 @numba.njit
-def get_tdc_value(word):
-    return word & 0xFFF
+def get_tdc_word(word, en_trigger_dist):
+    """Get TDC module data depending on data format
+
+    Args:
+        word (int): raw data word
+        en_trigger_dist (bool): TDC module data format to record trigger distance
+
+    Returns:
+        (tuple): triggerdist, timestamp/event counter (interpretation by user), tdc value
+    """
+
+    if not en_trigger_dist:
+        return 255, (word & 0xFFFF000) >> 12, word & 0xFFF
+    else:
+        return (word & 0xFF00000) >> 20, (word & 0xFF000) >> 12, word & 0xFFF
 
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, en_trigger_dist=False):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
@@ -74,6 +90,7 @@ class RawDataInterpreter(object):
 
         self.n_scan_params = n_scan_params
         self.trigger_data_format = trigger_data_format
+        self.en_trigger_dist = en_trigger_dist
 
         self.n_triggers = 0
         self.n_tdc = 0
@@ -168,18 +185,19 @@ class RawDataInterpreter(object):
             # Part 3: interpret TDC word #
             ##############################
             elif is_tdc(raw_data_word):
-                tdc_value = get_tdc_value(raw_data_word)
+                trigger_dist, tdc_timestamp, tdc_value = get_tdc_word(raw_data_word, self.en_trigger_dist)
 
                 hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
                 hit_data[hit_index]["row"] = 0
                 hit_data[hit_index]["le"] = 0
-                hit_data[hit_index]["te"] = 0
+                hit_data[hit_index]["te"] = trigger_dist
                 hit_data[hit_index]["token_id"] = tdc_value
-                hit_data[hit_index]["timestamp"] = 0
+                hit_data[hit_index]["timestamp"] = tdc_timestamp
                 hit_data[hit_index]["scan_param_id"] = scan_param_id
                 self.n_tdc += 1
 
                 self.hist_tdc[tdc_value] += 1
+                self.hist_trigger_dist[trigger_dist] += 1
 
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
@@ -189,7 +207,7 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hist_tdc
+        return self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_trigger_dist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -201,6 +219,7 @@ class RawDataInterpreter(object):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_trigger_dist = np.zeros(256, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
 

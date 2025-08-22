@@ -28,10 +28,10 @@ TLU:
 
 TDC:
   EN_WRITE_TIMESTAMP: 1 # Writing trigger timestamp
-  EN_TRIGGER_DIST: 0 # Measuring trigger to TDC delay with 640MHz clock
+  EN_TRIGGER_DIST: 1 # Measuring trigger to TDC delay with 640MHz clock
   EN_NO_WRITE_TRIG_ERR: 1 # Writing TDC word only if valid trigger occurred
   EN_INVERT_TDC: 0 # Inverting TDC input
-  EN_INVERT_TRIGGER: 0 # Inverting trigger input, e.g. for using Test output from EUDET TLU
+  EN_INVERT_TRIGGER: 1 # Inverting trigger input, e.g. for using Test output from EUDET TLU
 
 hardware: # Setup-specific hardware settings
   enable_NTC: False # Only enable if you know you have the correct resistors mounted on the BDAQ board!

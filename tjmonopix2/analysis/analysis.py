@@ -63,6 +63,7 @@ class Analysis(object):
             self.scan_config = au.ConfigDict(in_file.root.configuration_in.scan.scan_config[:])
             self.chip_settings = au.ConfigDict(in_file.root.configuration_in.chip.settings[:])
             self.tlu_config = au.ConfigDict(in_file.root.configuration_in.bench.TLU[:])
+            self.tdc_config = au.ConfigDict(in_file.root.configuration_in.bench.TDC[:])
 
     def __enter__(self):
         return self
@@ -318,7 +319,13 @@ class Analysis(object):
                     hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
+                # Setup interpreter
+                interpreter = RawDataInterpreter(
+                    n_scan_params=n_scan_params,
+                    trigger_data_format=self.tlu_config['DATA_FORMAT'],
+                    en_trigger_dist=self.tdc_config['EN_TRIGGER_DIST']
+                )
+
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
@@ -381,13 +388,13 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                hist_occ, hist_tot, hist_tdc, hist_trigger_dist = interpreter.get_histograms()
 
-        self._create_additional_hit_data(hist_occ, hist_tot)
+        self._create_additional_hit_data(hist_occ, hist_tot, hist_tdc, hist_trigger_dist)
         if self.cluster_hits:
             self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
-    def _create_additional_hit_data(self, hist_occ, hist_tot):
+    def _create_additional_hit_data(self, hist_occ, hist_tot, hist_tdc, hist_trigger_dist):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
 
@@ -406,7 +413,23 @@ class Analysis(object):
                                                       complevel=5,
                                                       fletcher32=False))
 
-            # if self.analyze_tdc:  # Only store if TDC analysis is used.
+            if self.analyze_tdc:  # Only store if TDC analysis is used.
+                out_file.create_carray(out_file.root,
+                                       name='HistTdc',
+                                       title='TDC Histogram',
+                                       obj=hist_tdc,
+                                       filters=tb.Filters(complib='blosc',
+                                                          complevel=5,
+                                                          fletcher32=False))
+
+                out_file.create_carray(out_file.root,
+                                       name='HistTriggerDist',
+                                       title='Trigger Dist Histogram',
+                                       obj=hist_trigger_dist,
+                                       filters=tb.Filters(complib='blosc',
+                                                          complevel=5,
+                                                          fletcher32=False))
+
             #     out_file.create_carray(out_file.root,
             #                            name='HistTdcStatus',
             #                            title='Tdc status Histogram',
