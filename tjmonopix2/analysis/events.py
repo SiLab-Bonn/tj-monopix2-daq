@@ -43,7 +43,7 @@ def build_events(hits, buffer, trigger_n=0, trigger_ts=0, event_n=0):
                 buffer[event_i]['trigger_number'] = trigger_n
                 buffer[event_i]['column'] = hits[hit_i]["col"] + 1
                 buffer[event_i]['row'] = hits[hit_i]["row"] + 1
-                buffer[event_i]['charge'] = ((hits[hit_i]["te"] - hits[hit_i]["le"]) & 0x7F) + 1
+                buffer[event_i]['charge'] = ((hits[hit_i]["te"] - hits[hit_i]["le"]) & 0x7F)
                 buffer[event_i]['timestamp'] = hits[hit_i]["timestamp"]
                 event_i += 1
         hit_i += 1
