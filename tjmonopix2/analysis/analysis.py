@@ -343,7 +343,7 @@ class Analysis(object):
                             event_table.flush()
                         else:
                             self.log.error("No TLU data found in raw data. Check data or disable event building")
-                            # raise Exception
+                            raise Exception
                     if self.cluster_hits:
                         if self.build_events:
                             data_to_clusterizer = event_dat
