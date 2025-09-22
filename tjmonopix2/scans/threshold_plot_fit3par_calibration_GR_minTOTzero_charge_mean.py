@@ -635,7 +635,7 @@ if __name__ == '__main__':
     print('start_col, stop_col, start_row, stop_row, n_inj,v_low_start,v_low_stop,v_step,v_high, nsteps ')
     print(start_col, stop_col, start_row, stop_row, n_inj,v_low_start,v_low_stop,v_step,v_high, range(np.min(delta_v),np.max(delta_v)+1))
     #Nmin=(stop_col-start_col)*(stop_row-start_row)*(v_high-(v_low_stop-v_low_start))/np.abs(v_step)*n_inj/2.
-    Nmin=(stop_col-start_col)*(stop_row-start_row)*n_inj/10.
+    Nmin=(stop_col-start_col)*(stop_row-start_row)*n_inj/5.
     #print('stop_col-start_col',stop_col-start_col)
     print('Nmin=(stop_col-start_col)*(stop_row-start_row)*n_inj/2.=',Nmin)
     #print(xdata)
@@ -984,19 +984,25 @@ if __name__ == '__main__':
             try:
                 #print(tot_cal)
                 folder_name = os.path.basename(os.path.normpath(folder_path))
-                if i == 1:
-                    print ('flavor i=',i)
-                    #means, stds, rows = clean_data_debug(tot_cal)
-                    means, stds, rows = clean_data_by_charge(tot_cal)
-                    thr, thr_std = thresholds[i]
-                    print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
-                else:
-                    print ('flavor i=',i)
-                    means, stds, rows = clean_data(tot_cal)
-                    # means, stds, rows = clean_data_debug(tot_cal)
-                    thr, thr_std = thresholds[i]
-                    print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
-                #means, stds, rows = clean_data(tot_cal)
+                # if i == 1:
+                #     print ('flavor i=',i)
+                #     #means, stds, rows = clean_data_debug(tot_cal)
+                #     means, stds, rows = clean_data_by_charge(tot_cal)
+                #     thr, thr_std = thresholds[i]
+                #     print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
+                # else:
+                #     print ('flavor i=',i)
+                #     means, stds, rows = clean_data(tot_cal)
+                #     # means, stds, rows = clean_data_debug(tot_cal)
+                #     thr, thr_std = thresholds[i]
+                #     print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
+
+                print ('flavor i=',i)
+                #means, stds, rows = clean_data_debug(tot_cal)
+                means, stds, rows = clean_data_by_charge(tot_cal)
+                thr, thr_std = thresholds[i]
+                print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
+
 
                 # get the TOT bins that have been measured and have the corresponding mean charge
                 tot_int = rows
