@@ -265,7 +265,7 @@ class Analysis(object):
                 hit_dtype=hit_dtype,
                 cluster_fields=cluster_fields,
                 cluster_dtype=self.cluster_dtype,
-                min_hit_charge=0,
+                min_hit_charge=1,
                 max_hit_charge=max_hit_charge,
                 column_cluster_distance=5,
                 row_cluster_distance=5,
@@ -355,7 +355,7 @@ class Analysis(object):
                             hit_data_cs_fmt['frame'][:] = -1
                             hit_data_cs_fmt['column'][:] = hit_dat['col'][:]
                             hit_data_cs_fmt['row'][:] = hit_dat['row'][:]
-                            hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F)
+                            hit_data_cs_fmt['charge'][:] = ((hit_dat[:]["te"] - hit_dat[:]["le"]) & 0x7F) + 1
                             hit_data_cs_fmt['timestamp'][:] = hit_dat['timestamp'][:]
                             data_to_clusterizer = hit_data_cs_fmt
 
@@ -371,7 +371,9 @@ class Analysis(object):
                         cluster_table.append(cluster)
                         # Create actual cluster hists
                         cs_size = np.bincount(cluster['size'], minlength=30)[:30]
-                        cs_tot = np.bincount(cluster['tot'], minlength=512)[:512]
+                        cs_tot = np.bincount(cluster['tot'], minlength=cs_tot_size)[:cs_tot_size]
+                        # cs_tot = np.bincount(cluster['tot'], minlength=256)[:256]
+                        # cs_tot = np.bincount(cluster['tot'], minlength=512)[:512]
                         sel = np.logical_and(cluster['cluster_shape'] > 0, cluster['cluster_shape'] < 300)
                         cs_shape = np.bincount(cluster['cluster_shape'][sel], minlength=300)[:300]
                         # Add to total hists

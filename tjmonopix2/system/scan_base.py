@@ -10,9 +10,9 @@ import collections
 import inspect
 import multiprocessing
 import os
-import sys
 import time
 import traceback
+from datetime import datetime
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
@@ -213,8 +213,6 @@ class ScanBase(object):
         self.initialized = False
 
         self.daq = None  # readout system, defined during scan init if not existing
-
-        self.last_exception = None  # query last exception
 
         # Needed for parallel scans where several readout threads change the chip handles
         self.chip_handle_lock = Lock()
@@ -730,7 +728,11 @@ class ScanBase(object):
             for k, v in mod_cfg.items():
                 # Detect chips defined in testbench by the definition of a chip serial number
                 if isinstance(v, collections.abc.Mapping) and 'chip_sn' in v:
+                    now = datetime.now()
+                    formatted_date = now.strftime("%Y-%m-%d")
                     output_dir = self.working_dir + os.sep + mod_name + os.sep + k
+                    # output_data folder is auto setted to module_0_current-date
+                    # output_dir = self.working_dir + os.sep + mod_name + "_" + formatted_date + os.sep + k
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     name = k  # chip name
@@ -1019,7 +1021,6 @@ class ScanBase(object):
 
     def _on_exception(self):
         ''' Called when exception occurs in main process '''
-        self.last_exception = sys.exc_info()
         self.errors_occured = traceback.format_exc()
         self.close()
 
@@ -1132,7 +1133,6 @@ class ScanBase(object):
 
     def handle_err(self, exc):
         ''' Handle errors when readout is started '''
-        self.last_exception = exc
         msg = '%s' % exc[1]
         if msg:
             self.log.error('%s', msg)

@@ -86,8 +86,8 @@ class ExtTriggerScan(ScanBase):
                 except KeyboardInterrupt:  # React on keyboard interupt
                     self.stop_scan.set()
                     self.log.info('Scan was stopped due to keyboard interrupt')
-        if scan_timeout or max_triggers:
-            self.pbar.close()
+
+        self.pbar.close()
         self.daq.disable_tlu_module()
         self.log.success('Scan finished')
 

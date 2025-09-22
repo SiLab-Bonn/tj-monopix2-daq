@@ -24,7 +24,7 @@ registers:
     description: ''
     reset: 1
     mode: 1
-  - address: 1 
+  - address: 1
     offset: 8
     default: '100'
     name: IDB
@@ -336,7 +336,7 @@ registers:
     default: '115'
     name: VH
     size: 8
-    description: Injection voltage high level 
+    description: Injection voltage high level
     reset: 1
     mode: 1
 # Analog pixels

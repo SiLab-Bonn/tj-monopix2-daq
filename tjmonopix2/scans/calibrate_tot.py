@@ -15,15 +15,15 @@ from tjmonopix2.analysis import analysis, plotting
 from tjmonopix2.scans.scan_threshold import ThresholdScan
 
 scan_configuration = {
-    'start_column': 0,
-    'stop_column': 32,
+    'start_column': 450,
+    'stop_column': 460,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
-    'VCAL_HIGH': 145,
-    'VCAL_LOW_start': 130,
-    'VCAL_LOW_stop': 0,
+    'VCAL_HIGH': 140,
+    'VCAL_LOW_start': 140-0,
+    'VCAL_LOW_stop': 140-140,
     'VCAL_LOW_step': -1,
 }
 
@@ -64,7 +64,8 @@ class CalibrateToT(ThresholdScan):
 
         scan_parameter_range = np.array(scan_params['vcal_high'] - scan_params['vcal_low'], dtype=float)
         tot_avg = _create_tot_avg(HistTot)
-        inj_tot_cal = au.fit_tot_inj_multithread(tot_avg=tot_avg.reshape(512 * 512, -1), scan_params=scan_parameter_range)
+        #inj_tot_cal = au.fit_tot_inj_multithread(tot_avg=tot_avg.reshape(512 * 512, -1), scan_params=scan_parameter_range)
+        inj_tot_cal = au.fit_tot_response_multithread(tot_avg=tot_avg.reshape(512 * 512, -1), scan_params=scan_parameter_range)
 
         self.log.success("{0} pixels with successful ToT calibration".format(int(np.count_nonzero(inj_tot_cal[:, :]) / 4)))
 

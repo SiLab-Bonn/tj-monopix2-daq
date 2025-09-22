@@ -87,10 +87,6 @@ def _inv_tot_response_func(tot, a, b, d):
     return (np.sqrt(b**2 * (a - tot)**2 + 2 * b * d * (a + tot) + d**2) - b * a + b * tot + d) * 0.5
 
 
-def line(x, m, n):
-    return m * x + n
-
-
 def scurve(x, A, mu, sigma):
     return 0.5 * A * erf((x - mu) / (np.sqrt(2) * sigma)) + 0.5 * A
 
@@ -488,46 +484,3 @@ def _fit_tot_response(data, scan_params):
         return (0., 0., 0., 0.)
 
     return (*popt, chi2 / (y.shape[0] - 3 - 1))
-
-
-def get_mean_from_histogram(counts, bin_positions, axis=0):
-    ''' Compute average of an array that represents a histogram along the specified axis.
-
-        The bin positions are the values and counts the occurences of these values.
-
-        Uses vectorized numpy function without looping and is therefore fast.
-
-        Parameters
-        ----------
-        counts: Array containing occurences of values to be averaged
-        axis: None or int
-        bin_positions: array_like associated with the values in counts.
-                        Shape of count array or 1D array with shape of axis.
-    '''
-    weights = bin_positions
-    with np.errstate(divide='ignore', invalid='ignore'):
-        return np.average(counts, axis=axis, weights=weights) * weights.sum(axis=min(axis, len(weights.shape) - 1)) / np.nansum(counts, axis=axis)
-
-
-def get_std_from_histogram(counts, bin_positions, axis=0):
-    ''' Compute RMS of an array that represents a histogram along the specified axis.
-
-        The bin positions are the values and counts the occurences of these values.
-
-        Uses vectorized numpy function without looping and is therefore fast.
-
-        Parameters
-        ----------
-        counts: Array containing occurences of values to be averaged
-        axis: None or int
-        bin_positions: array_like associated with the values in counts.
-                        Same shape like count array is needed!
-    '''
-
-    if np.any(bin_positions.sum(axis=axis) == 0):
-        raise ValueError('The bin position are all 0 for at least one axis. Maybe you forgot to transpose the bin position array?')
-    # Mean for each pixel
-    mean = get_mean_from_histogram(counts, bin_positions, axis=axis)
-    weights = (bin_positions - np.expand_dims(mean, axis=axis)) ** 2
-    rms_2 = get_mean_from_histogram(counts, bin_positions=weights, axis=axis)
-    return np.sqrt(rms_2)

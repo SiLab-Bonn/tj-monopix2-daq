@@ -27,8 +27,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
 
-from tjmonopix2.system import telegram_bot
-
 TITLE_COLOR = '#07529a'
 OVERTEXT_COLOR = '#07529a'
 
@@ -167,7 +165,6 @@ class Plotting(object):
             self.log.info('Closing output PDF file: {0}'.format(self.out_file._file.fh.name))
             self.out_file.close()
             shutil.copyfile(self.filename, os.path.join(os.path.split(self.filename)[0], 'last_scan.pdf'))
-        telegram_bot.send_message_scan(self.run_config, self.filename)
 
     ''' User callable plotting functions '''
     def create_standard_plots(self):
@@ -180,9 +177,9 @@ class Plotting(object):
         else:
             self.create_parameter_page()
             self.create_occupancy_map()
-            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan','noise_occupancy_scan']:
+            if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan']:
                 self.create_fancy_occupancy()
-            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'calibrate_tot','noise_occupancy_scan']:
+            if self.run_config['scan_id'] in ['analog_scan', 'threshold_scan', 'global_threshold_tuning', 'source_scan', 'ext_trigger_scan', 'calibrate_tot']:
                 self.create_hit_pix_plot()
                 self.create_tdac_plot()
                 self.create_tdac_map()
@@ -201,7 +198,6 @@ class Plotting(object):
                 self.create_threshold_map()
                 self.create_noise_plot()
                 self.create_noise_map()
-
             if self.clustered:
                 self.create_cluster_tot_plot()
                 self.create_cluster_shape_plot()
@@ -220,6 +216,9 @@ class Plotting(object):
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'autorange_threshold_scan', 'global_threshold_tuning', 'injection_delay_scan', 'in_time_threshold_scan', 'injection_delay_scan', 'crosstalk_scan']:
                 title = 'Integrated occupancy'
                 z_max = 'maximum'
+            elif self.run_config['scan_id'] in ['noise_occupancy_scan']:
+                title = 'Occupancy (%s pixels disabled)' %(len(self.n_enabled_pixels) - np.sum(self.n_enabled_pixels))
+                z_max = None
             else:
                 title = 'Occupancy'
                 z_max = None
@@ -244,8 +243,7 @@ class Plotting(object):
             self._plot_1d_hist(hist=self.HistTot.sum(axis=(0, 1, 2)).T,
                                title=title,
                                log_y=False,
-                               #plot_range=range(0, self.HistTot.shape[3]),
-                               plot_range=range(0, 40),
+                               plot_range=range(0, self.HistTot.shape[3]),
                                x_axis_title='ToT code',
                                y_axis_title='# of hits',
                                color='b',
@@ -493,36 +491,20 @@ class Plotting(object):
         try:
             if np.max(np.nonzero(self.HistClusterTot)) < 128:
                 plot_range = range(0, 128)
-                #plot_range = range(0, 50)
-                print('step1')
             else:
                 plot_range = range(0, np.max(np.nonzero(self.HistClusterTot)))
-                #plot_range = range(0, 50)
-                print('step2')
 
-            #tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
-
-            tot_calib_file = None
-            #tot_calib_file ='/home/labb2/tj-monopix2-daq-development/tjmonopix2/scans/output_data/module_0/chip_0/20241212_162859_calibrate_tot_interpreted.h5'
-            print('tot_calib file ',tot_calib_file)
-            print('plot range ',plot_range)
-            #plot_range = [x * self.electron_conversion for x in plot_range]
-            #print('new range ',plot_range)
+            tot_calib_file = self.configuration['scan'].get('tot_calib_file', None)
             if tot_calib_file is not None:
-                print('step3')
-                x_axis_title = 'Cluster charge [DAC]'
-                # x_axis_title = 'Cluster charge [e⁻]'
-                # plot_range = [x * self.electron_conversion for x in plot_range]
-                #plot_range = plot_range * self.electron_conversion
+                x_axis_title = 'Cluster charge [e⁻]'
+                plot_range = plot_range * self.electron_conversion
             else:
                 x_axis_title = 'Cluster ToT [25 ns]'
-                print('step4')
 
             self._plot_1d_hist(hist=self.HistClusterTot[:], title='Cluster ToT',
-                               log_y=True, plot_range=plot_range,
+                               log_y=False, plot_range=plot_range,
                                x_axis_title=x_axis_title,
                                y_axis_title='# of clusters', suffix='cluster_tot')
-            print('step_last')
         except Exception:
             self.log.error('Could not create cluster TOT plot!')
 
@@ -811,11 +793,9 @@ class Plotting(object):
         # log scale
         norm = colors.LogNorm()
 
-        im = ax.pcolormesh(x_bins, y_bins, hist, norm=norm,shading='auto', rasterized=True)
+        im = ax.pcolormesh(x_bins, y_bins, hist, norm=norm, rasterized=True)
         ax.set_xlim(x_bins[0], x_bins[-1])
-        # ax.set_xlim(x_bins[0], 200)
-        # ax.set_ylim(-0.5, y_max)
-        ax.set_ylim(-0.5, 20)
+        ax.set_ylim(-0.5, y_max)
 
         cb = fig.colorbar(im, fraction=0.04, pad=0.05)
 
@@ -826,7 +806,6 @@ class Plotting(object):
         else:
             ax.set_xlabel(scan_parameter_name)
         ax.set_ylabel(ylabel)
-        ax.grid(True)
 
         if electron_axis:
             self._add_electron_axis(fig, ax)
@@ -1047,7 +1026,7 @@ class Plotting(object):
             data_thres_tdac[tdac] = data[tdac_mask == tdac]
             # histogram threshold data for each tdac
             hist_tdac[tdac], _ = np.histogram(np.ravel(data_thres_tdac[tdac]), bins=bins)
-            tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], bottom=np.sum([hist_tdac[i] for i in range(tdac)], axis=0), width=tick_size, align='edge', color=cmap(1. / (range_tdac+1) * tdac), linewidth=0)
+            tdac_bar[tdac] = ax.bar(bins[:-1], hist_tdac[tdac], bottom=np.sum([hist_tdac[i] for i in range(tdac)], axis=0), width=tick_size, align='edge', color=cmap(1. / range_tdac * tdac), linewidth=0)
 
         fig.subplots_adjust(right=0.85)
         cax = fig.add_axes([0.89, 0.11, 0.02, 0.645])
@@ -1070,7 +1049,6 @@ class Plotting(object):
         if y_axis_title is not None:
             ax.set_ylabel(y_axis_title)
         ax.grid(True)
-
 
         if plot_legend:
             sel = (data < 1e5)
@@ -1140,11 +1118,6 @@ class Plotting(object):
                 title += ' (logscale)'
             ax.set_yscale('log')
 
-        # if log_x:
-        #     if title is not None:
-        #         title += ' (logscale)'
-        #     ax.set_xscale('log')
-
         ax.set_xlim(min(plot_range), max(plot_range))
         ax.set_title(title, color=TITLE_COLOR)
         if x_axis_title is not None:
@@ -1183,7 +1156,7 @@ class Plotting(object):
         self._save_plots(fig, suffix=suffix)
 
     def _plot_1d_hist(self, hist, yerr=None, title=None, x_axis_title=None, y_axis_title=None, x_ticks=None, color='r',
-                      plot_range=None, log_y=False, suffix=None, plot_legend=True):
+                      plot_range=None, log_y=False, suffix=None):
         fig = Figure()
         FigureCanvas(fig)
         ax = fig.add_subplot(111)
@@ -1216,13 +1189,6 @@ class Plotting(object):
                 ax.set_yscale('log')
                 ax.set_ylim((1e-1, np.amax(hist) * 2))
         ax.grid(True)
-
-        # if plot_legend:
-        #     sel = (hist < 1e5)
-        #     mean = np.nanmean(hist[sel])
-        #     rms = np.nanstd(hist[sel])
-        #     print('mean',mean)
-        #     textright = '$\\mu={0:1.2f}\\;\\Delta$VCAL\n$\\sigma={1:1.2f}\\;\\Delta$VCAL'.format(mean, rms)
 
         self._save_plots(fig, suffix=suffix)
 

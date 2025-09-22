@@ -9,9 +9,10 @@
     This module takes care of the mask shifting and injection of the supported chips
     in order to keep actual scans cleaner.
 '''
+import os
+PSC = int(os.environ.get('PULSE_START_CONFIG', 11))
 
-
-def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True, PulseStartCnfg=19, wait_cycles=1, latency=1400):
+def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['injection', 'enable'], pattern='default', cache=False, skip_empty=True):
     ''' Regular mask shift and analog injection function.
 
     Parameters:
@@ -35,8 +36,7 @@ def shift_and_inject(chip, n_injections, pbar=None, scan_param_id=0, masks=['inj
     '''
     for fe, active_pixels in chip.masks.shift(masks=masks, pattern=pattern, cache=cache, skip_empty=skip_empty):
         if not fe == 'skipped':
-            chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 900, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency)
-            # chip.inject(PulseStartCnfg=PulseStartCnfg, PulseStopCnfg=PulseStartCnfg + 512, repetitions=n_injections, wait_cycles=wait_cycles, latency=latency) --> default in dev branch
+            chip.inject(PulseStartCnfg=PSC, PulseStopCnfg=511, repetitions=n_injections, latency=1400)
         if pbar is not None:
             pbar.update(1)
 

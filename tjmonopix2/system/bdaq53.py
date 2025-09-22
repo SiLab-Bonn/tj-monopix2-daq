@@ -5,19 +5,19 @@
 # ------------------------------------------------------------
 #
 import collections
-import math
 import os
 import time
-from importlib.metadata import version
 
-import numpy as np
+import pkg_resources
 import yaml
+import numpy as np
+import math
 from basil.dut import Dut
 
 from tjmonopix2.system import logger
 from tjmonopix2.system.tjmono2_rx import tjmono2_rx
 
-VERSION = version('tjmonopix2')
+VERSION = pkg_resources.get_distribution("tjmonopix2").version
 
 
 class BDAQ53(Dut):
@@ -161,7 +161,8 @@ class BDAQ53(Dut):
         if all(v == 255 for v in vpvn_raw):
             self.log.warning('BDAQ ADC in saturation! Raw values: {}'.format(vpvn_raw))
         Vmeas = float((vpvn_raw[1] + vpvn_raw[0] * 256) / 16) * 1 / (2 ** 12 - 1)
-
+        # print(vpvn_raw)
+        # print(vpvn_raw[0])
         if 0.26 < Vmeas < 0.28:  # Very old BDAQ: No MUX, resistors, ... mounted
             self.log.warning('NTC measurement is ambiguous! Are you sure you have all necessary devices mounted on your BDAQ board?')
         elif 0.017 < Vmeas < 0.02:  # Wrong resistor values or solder jumpers open
@@ -192,6 +193,7 @@ class BDAQ53(Dut):
         k = 1.0 / (math.log(r_ratio / R_RATIO[j]) / B_CONST[j] + 1 / TEMP[j])[0]
         self.log.debug("Temperature of NTC %s: %.2f [°C]", NTC_type, k - 273.15)
 
+        # return round(Vmeas, 5)
         return round(k - 273.15, 3)
 
     def _bdaq_get_temperature_FPGA(self):
@@ -269,7 +271,7 @@ class BDAQ53(Dut):
     def set_trigger_data_delay(self, trigger_data_delay):
         self['tlu']['TRIGGER_DATA_DELAY'] = trigger_data_delay
 
-    def configure_tlu_module(self, aidamode=False, max_triggers=False):
+    def configure_tlu_module(self, max_triggers=False):
         self.log.info('Configuring TLU module...')
         self['tlu']['RESET'] = 1    # Reset first TLU module
         for key, value in self.configuration['TLU'].items():    # Set specified registers
@@ -280,17 +282,6 @@ class BDAQ53(Dut):
             self['tlu']['MAX_TRIGGERS'] = int(max_triggers)  # Set maximum number of triggers
         else:
             self['tlu']['MAX_TRIGGERS'] = 0  # unlimited number of triggers
-
-        # AIDA mode
-        if aidamode:
-            self['tlu']["TRIGGER_MODE"] = 2
-            self['tlu']["TRIGGER_LOW_TIMEOUT"] = 4
-            self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 1
-            self['tlu']['EN_TLU_RESET_TIMESTAMP'] = 1
-        else:
-            self['tlu']["TRIGGER_MODE"] = 3
-            self['tlu']["TRIGGER_LOW_TIMEOUT"] = 0
-            self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 5
 
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])
