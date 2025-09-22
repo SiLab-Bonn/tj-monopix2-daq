@@ -7,7 +7,12 @@ modules:
   module_0: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_0: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W11R07"
+      #chip_sn: "W14R12"
+      # chip_sn: "W8R06" # NIEL 5E14
+      # chip_sn: "W8R13" # not irradiated
+      chip_sn: "W2R17" # NIEL 2.5E14
+      # chip_sn: "W8R04" # NIEL 1E14
+
       chip_id: 0
       receiver: "rx0"
       chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
@@ -37,8 +42,8 @@ hardware: # Setup-specific hardware settings
   enable_NTC: False # Only enable if you know you have the correct resistors mounted on the BDAQ board!
 
 electron_conversion: # Charge conversion from DAC to e⁻, typically 8.8 for DC and 13.3 for AC (slightly chip dependent!)
-  DC_coupled: 8.8
-  AC_coupled: 13.3
+  DC_coupled: 9.
+  AC_coupled: 16.
 calibration: # Setup-specific calibration constants
   bdaq_ntc: # Resistors on BDAQ board for NTC readout
     R16: 412.00e3
