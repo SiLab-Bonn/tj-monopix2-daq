@@ -367,6 +367,13 @@ def clean_data_by_charge(results):
     Returns:
     Tuple of three 1D numpy arrays: (means, stds, rows).
     """
+
+    # Filter out points with less than 5% in slices of per charge unit
+    row_max = np.nanmax(results, axis=1, keepdims=True)
+    threshold = row_max * 0.05
+    results_clean = np.where(results < threshold, np.nan, results)
+    results = results_clean
+
     # Create the x array
     #x = np.arange(0, 140) # can change depending on the charge injected
     means, stds, rows = [], [], []
@@ -386,15 +393,17 @@ def clean_data_by_charge(results):
             # pdf.savefig()  # salva la figura corrente nel PDF
             # plt.close()
 
+            try:
+                p0 = [np.nanmax(row), np.nanargmax(row), 4]
+            except:
+                p0 = [0, 0, 0]
 
-
-
-
-            p0 = [row.max(), np.argmax(row), 3]
             # if i == 100:
-            N = np.sum(row)
+            N = np.nansum(row)
             amplitude, mean, std1 = p0
-            #print ('i=TOT, p0,  N, Nmin', i, p0, N, Nmin)
+            # print ('i=TOT, p0,  N, Nmin', i, p0, N, Nmin)
+
+
 
             # # Initial guesses for parameters
             # #x = np.arange(len(row))  # valori di charge corrispondenti a row
@@ -423,11 +432,19 @@ def clean_data_by_charge(results):
 
             # Fit with curve_fit
             try:
-                popt, pcov = curve_fit(gauss, x, row, p0=p0)
-                amplitude, mean, std1 = popt
-                #print(f'for ToT={i:.0f} got Q distribution mean={mean:.2f} std={std:.2f} N={N:.0f}')
-                perr = np.sqrt(np.diag(pcov))  # errori standard sui parametri
-                A_err, mean_err, std_err = perr
+
+                mask = ~np.isnan(row)
+                x_clean = x[mask]
+                row_clean = row[mask]
+
+                if np.sum(row_clean) > 0:
+                    # --- Fit ---
+                    popt, pcov = curve_fit(gauss, x_clean, row_clean, p0=p0)
+                    # popt, pcov = curve_fit(gauss, x, row, p0=p0)
+                    amplitude, mean, std1 = popt
+                    # print(f'for ToT={i:.0f} got Q distribution mean={mean:.2f} std={std:.2f} N={N:.0f}')
+                    perr = np.sqrt(np.diag(pcov))  # errori standard sui parametri
+                    A_err, mean_err, std_err = perr
                 #std = std1/np.sqrt(N)
                 #print('mean , error on mean used=std1/sqrt(N)',mean, std)
                 #std = mean_err
@@ -453,19 +470,21 @@ def clean_data_by_charge(results):
                 plt.close()
 
                 #if mean != 0:
-                if mean != 0 and mean <= len(row):
+                if mean > 0 and mean <= len(row):
+                    # print('mean append: ', mean)
                     rows.append(i)
                     means.append(mean)
                     stds.append(std)
-            except:
+            except Exception as e:
+                # print("Curve fit failed:", e)
                 # Fit failed, skip this column
                 std = std1
                 print('fit failed')
                 #print('i. in except amplitude, mean std N',i, amplitude, mean, std1,N)
-                if mean != 0 and mean <= len(row):
-                    rows.append(i)
-                    means.append(mean)
-                    stds.append(std)
+                # if mean != 0 and mean <= len(row):
+                #     rows.append(i)
+                #     means.append(mean)
+                #     stds.append(std)
                 pdf.savefig()  # salva la figura corrente nel PDF
                 plt.close()
                 # continue
@@ -490,7 +509,7 @@ def clean_data_by_charge(results):
     print([f'{m:.2f}' for m in stds])
     print ('rows=TOT for which we have Qinj mean fitted')
     print([f'{m:.0f}' for m in rows])
-    return np.array(means), np.array(stds), np.array(rows)
+    return np.array(means), np.array(stds), np.array(rows), results_clean
 
 def clean_data(results):
     """
@@ -984,10 +1003,10 @@ if __name__ == '__main__':
             try:
                 #print(tot_cal)
                 folder_name = os.path.basename(os.path.normpath(folder_path))
-                # if i == 1:
+                # if i == 2:
                 #     print ('flavor i=',i)
                 #     #means, stds, rows = clean_data_debug(tot_cal)
-                #     means, stds, rows = clean_data_by_charge(tot_cal)
+                #     means, stds, rows, results_clean = clean_data_by_charge(tot_cal)
                 #     thr, thr_std = thresholds[i]
                 #     print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
                 # else:
@@ -999,7 +1018,7 @@ if __name__ == '__main__':
 
                 print ('flavor i=',i)
                 #means, stds, rows = clean_data_debug(tot_cal)
-                means, stds, rows = clean_data_by_charge(tot_cal)
+                means, stds, rows, results_clean = clean_data_by_charge(tot_cal)
                 thr, thr_std = thresholds[i]
                 print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
 
@@ -1018,6 +1037,7 @@ if __name__ == '__main__':
                 print('charge_err')
                 print([f'{m:.2f}' for m in charge_err])
 
+
                 fig = plt.figure(figsize=(8, 6))
                 #x = rows  # Use rows for x-axis dimension
                 x = np.arange(tot_cal.shape[0])  # Use tot_cal.shape[0] for x-axis dimension
@@ -1031,7 +1051,7 @@ if __name__ == '__main__':
                 cmap = newcmp
 
                 # Plot the colormesh
-                mesh = plt.pcolormesh(x, y, tot_cal.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
+                mesh = plt.pcolormesh(x, y, results_clean.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
 
                 colorbar = plt.colorbar(mesh)
                 colorbar.ax.tick_params(labelsize=12)
@@ -1298,6 +1318,48 @@ if __name__ == '__main__':
                         # plt.tight_layout()
                         # pdf_file.savefig()
                         # plt.close(fig2)
+
+                        # terzo plot
+                        fig = plt.figure(figsize=(8, 6))
+                        mesh = plt.pcolormesh(x, y, tot_cal.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
+
+                        colorbar = plt.colorbar(mesh)
+                        colorbar.ax.tick_params(labelsize=12)
+                        colorbar.set_label('# of pixel', fontsize=14)
+
+                        ax = plt.gca()
+                        #ax.xaxis.set_major_formatter(ticker.FuncFormatter(multiply_by_10))
+                        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+                        ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.7)
+                        plt.xticks(rotation=45, fontsize=12)
+
+                        # Set up y-axis tick labels
+                        ax = plt.gca()
+                        #ax.xaxis.set_major_formatter(ticker.FuncFormatter(multiply_by_10))
+                        ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
+                        ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.7)
+                        plt.yticks(rotation=45, fontsize=12)
+
+                        plt.errorbar(charge_mean, tot_int, yerr=tot_err, fmt='ro', label='mean charge', markersize=3)
+
+                        plt.plot(x_plot, func(x_plot, *popt_cal), color='k', label='fit')
+                        #plt.text(10, 40, '$f_{3par}(x)=(a/x +1/b)*(x-d) +1 $', color='k', fontsize=14)
+                        plt.text(10, 40, '$f_{3par}(x)=(a/x +1/b)*(x-d)$', color='k', fontsize=14)
+
+                        plt.xlabel('Injected Charge [DAC]', fontsize=14)
+                        plt.ylabel('ToT  [25ns]', fontsize=14)
+                        plt.title(f'Raw data {section_name}')
+                        plt.ylim(0, 50)
+                        plt.xlim(0, 250)
+                        plt.gca().set_aspect('auto', adjustable='box')
+                        plt.tick_params(axis='both', which='both', labelsize=12)
+                        plt.legend(fontsize=14)
+                        plt.tight_layout()
+                        plt.grid(True)
+
+                        pdf_file.savefig()
+                        plt.close(fig)
+
 
                 except Exception as e:
                     print(f"[{section_name}] ERROR during fit: {e}")
