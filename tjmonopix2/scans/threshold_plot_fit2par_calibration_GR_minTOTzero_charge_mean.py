@@ -367,6 +367,13 @@ def clean_data_by_charge(results):
     Returns:
     Tuple of three 1D numpy arrays: (means, stds, rows).
     """
+
+    # Filter out points with less than 5% in slices of per charge unit
+    row_max = np.nanmax(results, axis=1, keepdims=True)
+    threshold = row_max * 0.05
+    results_clean = np.where(results < threshold, np.nan, results)
+    results = results_clean
+
     # Create the x array
     #x = np.arange(0, 140) # can change depending on the charge injected
     means, stds, rows = [], [], []
@@ -386,10 +393,13 @@ def clean_data_by_charge(results):
             # pdf.savefig()  # salva la figura corrente nel PDF
             # plt.close()
 
-            # Initial guesses for parameters
-            p0 = [row.max(), np.argmax(row), 3]
+            try:
+                p0 = [np.nanmax(row), np.nanargmax(row), 4]
+            except:
+                p0 = [0, 0, 0]
+
             # if i == 100:
-            N = np.sum(row)
+            N = np.nansum(row)
             amplitude, mean, std1 = p0
             #print ('i=TOT, p0,  N, Nmin', i, p0, N, Nmin)
             #print ('row Q distribution for ToT=', i, row)
@@ -414,7 +424,11 @@ def clean_data_by_charge(results):
 
             # Fit with curve_fit
             try:
-                popt, pcov = curve_fit(gauss, x, row, p0=p0)
+                mask = ~np.isnan(row)
+                x_clean = x[mask]
+                row_clean = row[mask]
+
+                popt, pcov = curve_fit(gauss, x_clean, row_clean, p0=p0)
                 amplitude, mean, std1 = popt
                 #print(f'for ToT={i:.0f} got Q distribution mean={mean:.2f} std={std:.2f} N={N:.0f}')
                 perr = np.sqrt(np.diag(pcov))  # errori standard sui parametri
@@ -443,19 +457,22 @@ def clean_data_by_charge(results):
                 pdf.savefig()  # salva la figura corrente nel PDF
                 plt.close()
 
-                if mean != 0 and mean <= len(row):
+                #if mean != 0:
+                if mean > 0 and mean <= len(row):
+                    # print('mean append: ', mean)
                     rows.append(i)
                     means.append(mean)
                     stds.append(std)
-            except:
+            except Exception as e:
+                # print("Curve fit failed:", e)
                 # Fit failed, skip this column
                 std = std1
                 print('fit failed')
                 #print('i. in except amplitude, mean std N',i, amplitude, mean, std1,N)
-                if mean != 0 and mean <= len(row):
-                    rows.append(i)
-                    means.append(mean)
-                    stds.append(std)
+                # if mean != 0 and mean <= len(row):
+                #     rows.append(i)
+                #     means.append(mean)
+                #     stds.append(std)
                 pdf.savefig()  # salva la figura corrente nel PDF
                 plt.close()
                 # continue
@@ -466,6 +483,7 @@ def clean_data_by_charge(results):
                 # continue
             #except RuntimeWarning:
             #    continue
+
     nan_indices = np.isnan(means)
 
     # Remove NaN values and their corresponding elements from both lists
@@ -479,7 +497,7 @@ def clean_data_by_charge(results):
     print([f'{m:.2f}' for m in stds])
     print ('rows=TOT for which we have Qinj mean fitted')
     print([f'{m:.0f}' for m in rows])
-    return np.array(means), np.array(stds), np.array(rows)
+    return np.array(means), np.array(stds), np.array(rows), results_clean
 
 def clean_data(results):
     """
@@ -531,8 +549,6 @@ def func(x, a, b, d):
 
 def func_d_fixed(x, a, b, d=d_fixed):
     #d=27.
-    print('func_d_fixed, d_fixed',d_fixed)
-    print('d',d)
     return (a / x + 1 / b) * (x - d)
     # return (a / x + 1 / b) * (x - d) + 1 # to have d=thr and with TOT defined as Te-Le +1
 
@@ -1001,7 +1017,7 @@ if __name__ == '__main__':
 
                 print ('flavor i=',i)
                 #means, stds, rows = clean_data_debug(tot_cal)
-                means, stds, rows = clean_data_by_charge(tot_cal)
+                means, stds, rows, results_clean = clean_data_by_charge(tot_cal)
                 thr, thr_std = thresholds[i]
                 print(f"in tot_cal loop i={i}: threshold={thr:.1f}, std={thr_std:.1f}")
 
@@ -1032,7 +1048,7 @@ if __name__ == '__main__':
                 cmap = newcmp
 
                 # Plot the colormesh
-                mesh = plt.pcolormesh(x, y, tot_cal.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
+                mesh = plt.pcolormesh(x, y, results_clean.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
 
                 colorbar = plt.colorbar(mesh)
                 colorbar.ax.tick_params(labelsize=12)
@@ -1179,18 +1195,18 @@ if __name__ == '__main__':
 
 
                     # Parameters to compare fit 3 par vs fit 4 par for debugging
-                    print()
-                    print("Comparison parameters from fit 3 par to fit 4 par, assuming t=0 in fit 4 par")
-                    print(f'slope=a_4par=1/b_3par={1/popt_cal[1]:.2f}')
-                    print(f'cost=b_4par=a_3par-d_3par/b_3par={popt_cal[0]-d_fixed/popt_cal[1]:.2f}')
-                    print(f'c_4par=a_3par*d_3par={popt_cal[0]*d_fixed:.2f}')
-                    print()
-                    print('debug 1')
+                    # print()
+                    # print("Comparison parameters from fit 3 par to fit 4 par, assuming t=0 in fit 4 par")
+                    # print(f'slope=a_4par=1/b_3par={1/popt_cal[1]:.2f}')
+                    # print(f'cost=b_4par=a_3par-d_3par/b_3par={popt_cal[0]-d_fixed/popt_cal[1]:.2f}')
+                    # print(f'c_4par=a_3par*d_3par={popt_cal[0]*d_fixed:.2f}')
+                    # print()
+                    # print('debug 1')
                     plt.text(100, 35, f'slope=$a_{{4par}}$=1/b={1/popt_cal[1]:.2f}', color='k', fontsize=14)
                     plt.text(100, 35 - 5, f'cost=$b_{{4par}}$=a-d/b={popt_cal[0]-d_fixed/popt_cal[1]:.2f}', color='k', fontsize=14)
                     plt.text(100, 35 - 10, f'$c_{{4par}}$=a*d={popt_cal[0]*d_fixed:.2f}', color='k', fontsize=14)
                     #plt.text(100, 35 - f'slope=a_marilke={1/popt_cal[1]:.2f}', color='k', fontsize=14)
-                    print('debug 2')
+                    # print('debug 2')
 
                     # Evidenzia la regione di fit
                     #plt.axvspan(x[i_start], x[-1], facecolor='#2ca02c', alpha=0.3)
@@ -1296,8 +1312,51 @@ if __name__ == '__main__':
                         # pdf_file.savefig()
                         # plt.close(fig2)
 
+                        # terzo plot
+                        fig = plt.figure(figsize=(8, 6))
+                        mesh = plt.pcolormesh(x, y, tot_cal.T[:,-len(x):], cmap=cmap, norm=colors.LogNorm())
+
+                        colorbar = plt.colorbar(mesh)
+                        colorbar.ax.tick_params(labelsize=12)
+                        colorbar.set_label('# of pixel', fontsize=14)
+
+                        ax = plt.gca()
+                        #ax.xaxis.set_major_formatter(ticker.FuncFormatter(multiply_by_10))
+                        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+                        ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.7)
+                        plt.xticks(rotation=45, fontsize=12)
+
+                        # Set up y-axis tick labels
+                        ax = plt.gca()
+                        #ax.xaxis.set_major_formatter(ticker.FuncFormatter(multiply_by_10))
+                        ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
+                        ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.7)
+                        plt.yticks(rotation=45, fontsize=12)
+
+                        plt.errorbar(charge_mean, tot_int, yerr=tot_err, fmt='ro', label='mean charge', markersize=3)
+
+                        plt.plot(x_plot, func(x_plot, *params), color='k', label='fit')
+                        #plt.text(10, 40, '$f_{3par}(x)=(a/x +1/b)*(x-d) +1 $', color='k', fontsize=14)
+                        plt.text(10, 40, '$f_{3par}(x)=(a/x +1/b)*(x-d)$', color='k', fontsize=14)
+
+                        plt.xlabel('Injected Charge [DAC]', fontsize=14)
+                        plt.ylabel('ToT  [25ns]', fontsize=14)
+                        plt.title(f'Raw data {section_name}')
+                        plt.ylim(0, 50)
+                        plt.xlim(0, 250)
+                        plt.gca().set_aspect('auto', adjustable='box')
+                        plt.tick_params(axis='both', which='both', labelsize=12)
+                        plt.legend(fontsize=14)
+                        plt.tight_layout()
+                        plt.grid(True)
+
+                        pdf_file.savefig()
+                        plt.close(fig)
+
+
                 except Exception as e:
                     print(f"[{section_name}] ERROR during fit: {e}")
+
 
                 if i ==0:
                     popt_cal_NF = list(popt_cal) + [d_fixed]
