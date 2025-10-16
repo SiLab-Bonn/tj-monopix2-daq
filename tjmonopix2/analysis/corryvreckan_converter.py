@@ -12,6 +12,9 @@ import numpy as np
 import tables as tb
 
 from tjmonopix2.analysis import analysis
+from tjmonopix2.analysis import analysis_utils as au
+
+ELECTRON_CONVERSION = 8.8
 
 
 def format_dut(input_filename: str | Path, output_filename: str | Path = None, trigger_mode: str = "AIDA", chunk_size: int = 1000000) -> None:
@@ -29,6 +32,8 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
         taking. By default "AIDA"
     chunk_size : int, optional
         Set the chunk size as integer defaults to 1000000.
+    tot_calib_file : str | Path, optional
+        Additional file with InjTotCalibration node containing TOT response fit parameters per pixel.
 
     Raises
     ------
@@ -43,12 +48,21 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
         input_filename = Path(input_filename)
     if output_filename is None:
         output_filename = Path(input_filename.parent) / Path(input_filename.stem + "_converted" + input_filename.suffix)
+
+    if tot_calib_file:
+        with tb.open_file(tot_calib_file, "r") as calib_file:
+            calib_data = calib_file.root.InjTotCalibration[:]
+
     with tb.open_file(input_filename, "r") as in_file:
         n_words = in_file.root.Dut.shape[0]
 
         if trigger_mode.lower() == "aida":
             with tb.open_file(output_filename, "w") as out_file:
-                hit_table_out = out_file.create_table(out_file.root, name="Hits", description=hit_dtype_converted)
+                hit_table_out = out_file.create_table(
+                    out_file.root, name="Hits",
+                    description=hit_dtype_converted,
+                    filters=tb.Filters(complib="blosc", complevel=5, fletcher32=False)
+                )
                 for chunk in tqdm(range(0, n_words, chunk_size)):
                     chunk_offset = chunk
                     stop = chunk_offset + chunk_size
@@ -61,8 +75,16 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                     hit_table_converted["column"] = hits_selected["col"]
                     hit_table_converted["row"] = hits_selected["row"]
                     hit_table_converted["raw"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # calculate TOT
-                    hit_table_converted["charge"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # TODO: add calibration option
-                    hit_table_converted["timestamp"] = 25 * hits_selected["timestamp"].astype(np.uint64)  # convert to ns
+                    if tot_calib_file:
+                        hit_table_converted["charge"] = ELECTRON_CONVERSION * au._inv_tot_response_func(
+                            (hits_selected["te"] - hits_selected["le"]) & 0x7F,
+                            calib_data[hits_selected[:]["col"], hits_selected[:]["row"]][:, 0],
+                            calib_data[hits_selected[:]["col"], hits_selected[:]["row"]][:, 1],
+                            calib_data[hits_selected[:]["col"], hits_selected[:]["row"]][:, 2],
+                        )
+                    else:
+                        hit_table_converted["charge"] = hit_table_converted["raw"]
+                    hit_table_converted["timestamp"] = 25. * hits_selected["timestamp"].astype(np.uint64)  # convert to ns
                     hit_table_converted["trigger_number"] = 0
                     hit_table_out.append(hit_table_converted)
                 hit_table_out.flush()
@@ -84,7 +106,13 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                     hit_table_converted["column"] = hits_selected["column"]
                     hit_table_converted["row"] = hits_selected["row"]
                     hit_table_converted["raw"] = hits_selected["charge"]
-                    hit_table_converted["charge"] = hits_selected["charge"]
+                    if tot_calib_file:
+                        hit_table_converted["charge"] = ELECTRON_CONVERSION * au._inv_tot_response_func(
+                            hits_selected["charge"],
+                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 0],
+                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 1],
+                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 2],
+                        )
                     hit_table_converted["timestamp"] = 0
                     hit_table_converted["trigger_number"] = hits_selected["event_number"].astype(np.uint64)
                     hit_table_out.append(hit_table_converted)
@@ -95,9 +123,10 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
 
 if __name__ == "__main__":
     input_file = "/path/to/file.h5"
+    tot_calib_file = None
     trigger_mode = "aida"
 
-    if "_interpreted.h5" not in input_file:
+    if "_interpreted" not in input_file:
         with analysis.Analysis(
             raw_data_file=input_file,
             store_hits=True,
@@ -107,4 +136,4 @@ if __name__ == "__main__":
             a.analyze_data()
             input_file = a.analyzed_data_file
 
-    format_dut(input_filename=input_file, trigger_mode=trigger_mode)
+    format_dut(input_filename=input_file, output_filename=output_file, trigger_mode=trigger_mode, tot_calib_file=tot_calib_file)
