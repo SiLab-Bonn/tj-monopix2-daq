@@ -968,7 +968,7 @@ class ScanBase(object):
 
         scan_par_table = h5_file.create_table(h5_file.root.configuration_out.scan, name='scan_params', title='Scan parameter values per scan parameter id', description=np.dtype(fields))
         for par_id, par_values in self.scan_parameters.items():
-            a = np.full(shape=(1,), fill_value=np.NaN).astype(np.dtype(fields))
+            a = np.full(shape=(1,), fill_value=np.nan).astype(np.dtype(fields))
             for key, val in par_values.items():
                 a['scan_param_id'] = par_id
                 a[key] = np.float32(val)
