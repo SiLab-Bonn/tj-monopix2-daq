@@ -123,8 +123,8 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
 
 if __name__ == "__main__":
     input_file = "/path/to/file.h5"
-    tot_calib_file = None
     trigger_mode = "aida"
+    tot_calib_file = None
 
     if "_interpreted" not in input_file:
         with analysis.Analysis(
@@ -136,4 +136,4 @@ if __name__ == "__main__":
             a.analyze_data()
             input_file = a.analyzed_data_file
 
-    format_dut(input_filename=input_file, output_filename=output_file, trigger_mode=trigger_mode, tot_calib_file=tot_calib_file)
+    format_dut(input_filename=input_file, trigger_mode=trigger_mode, tot_calib_file=tot_calib_file)
