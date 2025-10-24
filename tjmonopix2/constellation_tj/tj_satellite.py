@@ -1,10 +1,14 @@
 from constellation.core.configuration import Configuration
 from constellation.core.satellite import Satellite
+from constellation.core.cmdp import MetricsType
+from constellation.core.fsm import SatelliteState
+from constellation.core.monitoring import schedule_metric
 import time
 from tjmonopix2.scans.scan_ext_trigger import ExtTriggerScan
 import threading
 import yaml
 import os
+from typing import Any
 
 PROJECT_FOLDER = os.path.join(os.path.dirname(__file__), '..')
 TESTBENCH_DEFAULT_FILE = os.path.join(PROJECT_FOLDER, 'testbench.yaml')
@@ -47,3 +51,10 @@ class TJ(Satellite):
         self.ext_trg_scan.close()
         self.ext_trg_scan.analyze()
         return "running done"
+    
+    @schedule_metric("", MetricsType.LAST_VALUE, 1)
+    def trigger_number(self) -> Any:
+        if self.fsm.current_state_value == SatelliteState.RUN:
+            return self.ext_trg_scan.daq.get_trigger_counter()
+        else:
+            return None
