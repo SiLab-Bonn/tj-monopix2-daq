@@ -64,7 +64,7 @@ class CalibrateToT(ThresholdScan):
 
         scan_parameter_range = np.array(scan_params['vcal_high'] - scan_params['vcal_low'], dtype=float)
         tot_avg = _create_tot_avg(HistTot)
-        inj_tot_cal = au.fit_tot_inj_multithread(tot_avg=tot_avg.reshape(512 * 512, -1), scan_params=scan_parameter_range)
+        inj_tot_cal = au.fit_tot_response_multithread(tot_avg=tot_avg.reshape(512 * 512, -1), scan_params=scan_parameter_range)
 
         self.log.success("{0} pixels with successful ToT calibration".format(int(np.count_nonzero(inj_tot_cal[:, :]) / 4)))
 
