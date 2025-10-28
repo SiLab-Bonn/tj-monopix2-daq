@@ -342,7 +342,7 @@ class Analysis(object):
                             event_table.append(event_dat)
                             event_table.flush()
                         else:
-                            self.log.warning("No TLU data found in raw data. Check data or disable event building")
+                            self.log.warning("No TLU data found in raw data chunk.")
                             continue
                     if self.cluster_hits:
                         if self.build_events:
