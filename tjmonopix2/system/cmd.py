@@ -31,7 +31,7 @@ class cmd(RegisterHardwareLayer):
                   'AUTO_SYNC': {'descr': {'addr': 11, 'size': 1, 'offset': 2, 'properties': ['wr']}}
                   }
 
-    _require_version = "==2"
+    _require_version = "==3"
 
     cmd_data_map = {
         0: 0b01101010,

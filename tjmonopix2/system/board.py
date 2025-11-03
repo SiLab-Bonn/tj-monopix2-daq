@@ -21,7 +21,7 @@ class DAQBoard(RegisterHardwareLayer):
                   'N_CHIPS': {'descr': {'addr': 5, 'size': 3, 'properties': ['ro']}}
                   }
 
-    _require_version = "==1"
+    _require_version = "==2"
 
     ''' Map hardware IDs for board identification '''
     hw_map = {

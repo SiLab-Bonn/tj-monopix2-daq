@@ -148,7 +148,7 @@ localparam N_CHIPS = N_RX;
 reg SI570_IS_CONFIGURED = 1'b0;
 
 // VERSION/BOARD READBACK
-localparam VERSION = 1; // Module version
+localparam VERSION = 2; // Module version
 
 // -------  MODULE ADREESSES  ------- //
 localparam GPIO_BASEADDR = 32'h0010;

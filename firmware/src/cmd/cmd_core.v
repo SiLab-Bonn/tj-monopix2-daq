@@ -38,7 +38,7 @@ module cmd_core
     output wire                 BYPASS_CDR
 );
 
-localparam VERSION = 2;
+localparam VERSION = 3;
 localparam REGSIZE = 16;
 localparam BRAM_ABUSWIDTH = 12;
 localparam CMD_MEM_SIZE = 2**BRAM_ABUSWIDTH;
