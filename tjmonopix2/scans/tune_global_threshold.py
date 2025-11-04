@@ -165,14 +165,14 @@ class GDACTuning(ScanBase):
 
         return occupancy
 
-    def analyze_data_online(self, data_tuple):
+    def analyze_data_online(self, data_tuple, receiver):
         raw_data = data_tuple[0]
         self.data.hist_occ.add(raw_data)
-        super(GDACTuning, self).handle_data(data_tuple)
+        super(GDACTuning, self).handle_data(data_tuple, receiver)
 
-    def analyze_data_online_no_save(self, data_tuple):
+    def analyze_data_online_no_save(self, data_tuple, receiver):
         raw_data = data_tuple[0]
-        self.data.hist_occ.add(raw_data)
+        self.data.hist_occ.add(raw_data, receiver)
 
     def _analyze(self):
         pass

@@ -93,17 +93,16 @@ wire LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
 wire RJ45_CLK, RJ45_BUSY, RJ45_RESET, RJ45_TRIGGER;
 wire RESETB_EXT /* verilator public_flat_rd */;
 
-wire LVDS_CMD, LVDS_CMD_CLK;
-wire LVDS_SER_CLK;
+wire CMD, LVDS_CMD_CLK;
 wire LVDS_DATA;
 wire LVDS_HITOR;
-wire LVDS_PULSE_EXT;
 wire LVDS_CHSYNC_LOCK;
 
 tjmonopix2_core #(
     .VERSION_MAJOR(VERSION_MAJOR),
     .VERSION_MINOR(VERSION_MINOR),
-    .VERSION_PATCH(VERSION_PATCH)
+    .VERSION_PATCH(VERSION_PATCH),
+    .N_RX(1)
 ) fpga (
     //local bus
     .BUS_CLK(BUS_CLK),
@@ -129,17 +128,17 @@ tjmonopix2_core #(
 
     .GPIO_SENSE(4'b0),
 
-    //fifo
+    // FIFO
     .ARB_READY_OUT(ARB_READY_OUT),
     .ARB_WRITE_OUT(ARB_WRITE_OUT),
     .ARB_DATA_OUT(ARB_DATA_OUT),
     .FIFO_FULL(FIFO_FULL),
     .FIFO_NEAR_FULL(FIFO_NEAR_FULL),
 
-    //LED
-    .LED(LED[4:0]),
     .LEMO_RX({LEMO_RX1, LEMO_RX0}),
     .LEMO_MUX({LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0}),
+
+    // TLU
     .RJ45_CLK(RJ45_CLK),
     .RJ45_BUSY(RJ45_BUSY),
     .RJ45_RESET(RJ45_RESET),
@@ -147,12 +146,10 @@ tjmonopix2_core #(
 
     .RESETB_EXT(RESETB_EXT), 
 
-    .LVDS_CMD(LVDS_CMD),
-    .LVDS_CMD_CLK(LVDS_CMD_CLK),
-    .LVDS_SER_CLK(LVDS_SER_CLK),
+    // LVDS IO
+    .CMD_OUT(CMD),
     .LVDS_DATA(LVDS_DATA),
-    .LVDS_HITOR(LVDS_HITOR),
-    .LVDS_PULSE_EXT(LVDS_PULSE_EXT)
+    .LVDS_HITOR(LVDS_HITOR)
 );
 
 tlu_master #(
@@ -211,12 +208,12 @@ monopix2 dut (
     .RESETB_EXT(1'b1),  // No need to reset chip in tests
     .ANALOG_HIT(ANALOG_HIT),
     
-    .LVDS_CMD(~LVDS_CMD),  // invert for simulation only
-    .LVDS_CMD_CLK(LVDS_CMD_CLK), 
-    .LVDS_SER_CLK(LVDS_SER_CLK), 
+    .LVDS_CMD(CMD),
+    .LVDS_CMD_CLK(~CLKCMD), 
+    .LVDS_SER_CLK(CLK160), 
     .LVDS_DATA_OUT(LVDS_DATA), 
     .LVDS_HITOR_OUT(LVDS_HITOR),
-    .LVDS_PULSE_EXT(LVDS_PULSE_EXT),
+    .LVDS_PULSE_EXT(),
 
     .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCK),
     .LVDS_CHSYNC_CLK_OUT()

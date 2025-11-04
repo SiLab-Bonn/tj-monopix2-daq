@@ -22,7 +22,7 @@ hw_drivers:
   - name      : i2c
     type      : i2c
     interface : intf
-    base_addr : 0x3000
+    base_addr : 0x4000
 
   - name      : gpio
     type      : gpio
@@ -81,7 +81,7 @@ hw_drivers:
   - name      : cmd
     type      : tjmonopix2.system.cmd
     interface : intf
-    base_addr : 0x1000
+    base_addr : 0x2000
 
 registers:
   - name        : DAQ_CONTROL

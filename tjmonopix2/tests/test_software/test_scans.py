@@ -41,7 +41,7 @@ class TestScans(unittest.TestCase):
             cls.bench_config = yaml.full_load(f)
         cls.bench_config['analysis']['skip'] = True  # deactivate failing feature
 
-        cls.hw_mock = TJMonopix2Mock()
+        cls.hw_mock = TJMonopix2Mock(num_rx_channels=1)
         cls.hw_mock.start()
 
     def test_scans(self) -> None:

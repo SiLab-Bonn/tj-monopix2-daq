@@ -792,7 +792,7 @@ registers:
     description: ''
     reset: 1
     mode: 1
-# Pixel rreadout conf
+# Pixel readout conf
   - address: 155
     offset: 0
     default: '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'

@@ -205,7 +205,6 @@ reg [27:0] wdata;
 
 localparam STATE_IDLE = 2'b00, STATE_TS_MSB = 2'b01, STATE_TS_LSB = 2'b10;
 reg [1:0] state = STATE_IDLE;
-reg write_cdc;
 reg [51:0] timestamp_buf;
 
 always @(*) begin
@@ -242,8 +241,9 @@ end
 wire RESET_FIFO;
 cdc_reset_sync rst_fifo_pulse_sync (.clk_in(WCLK), .pulse_in(RESET_WCLK), .clk_out(FIFO_CLK), .pulse_out(RESET_FIFO));
 
-wire cdc_fifo_full, cdc_fifo_empty;
+wire cdc_fifo_full, cdc_fifo_empty, write_cdc;
 wire [27:0] cdc_data_out;
+assign write_cdc = (write_dec_in) || (state == STATE_TS_LSB) || (state == STATE_TS_MSB);
 
 // Data is lost when writing to CDC FIFO or FIFO for decoded datawhen they are full
 always@(posedge WCLK) begin
@@ -265,7 +265,7 @@ cdc_syncfifo #(
     .wfull(cdc_fifo_full),
     .rempty(cdc_fifo_empty),
     .wdata(wdata),
-    .winc(((write_dec_in) || (state == STATE_TS_LSB) || (state == STATE_TS_MSB)) & !cdc_fifo_full),
+    .winc(write_cdc && !cdc_fifo_full),
     .wclk(WCLK),
     .wrst(RESET_WCLK),
     .rinc(!full),

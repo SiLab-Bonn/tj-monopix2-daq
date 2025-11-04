@@ -45,14 +45,12 @@
 
 `include "gray_dec.v"
 
-// `include "tjmono_direct_rx/tjmono_direct_rx.v"
-// `include "tjmono_direct_rx/tjmono_direct_rx_core.v"
-
 module tjmonopix2_core #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
     parameter VERSION_MINOR = 8'd0,
-    parameter VERSION_PATCH = 8'd0
+    parameter VERSION_PATCH = 8'd0,
+    parameter N_RX = 3'd1
 )(
     // local bus
     input wire BUS_CLK,
@@ -71,25 +69,27 @@ module tjmonopix2_core #(
     input wire CLKCMD,
     output wire MGT_REF_SEL,
 
-    // i2c
+    // I2C
     inout wire I2C_SCL,
     inout wire I2C_SDA,
 
-    //cmd
+    // Command
+    output wire CMD_OUT,
     output wire CMD_LOOP_START_PULSE,
 
-    // Displayport control signals
+    // DP control signals
     input wire [3:0] GPIO_SENSE,
 
-    // Fifo
+    // FIFO
     input wire ARB_READY_OUT,
     output wire ARB_WRITE_OUT,
     output wire [31:0] ARB_DATA_OUT,
     input wire FIFO_FULL,
     input wire FIFO_NEAR_FULL,
 
-    // tlu, lemo, led
-    output wire [4:0] LED,
+    output wire [3:0] RX_ENABLED,
+
+    // TLU, LEMO
     input wire [1:0] LEMO_RX,
     output wire [7:0] LEMO_MUX,
     output wire RJ45_BUSY,
@@ -100,15 +100,8 @@ module tjmonopix2_core #(
     output wire RESETB_EXT,
 
     // LVDS IO
-    output wire LVDS_CMD,
-    output wire LVDS_CMD_CLK,
-    output wire LVDS_SER_CLK,
-    input wire LVDS_DATA,
+    input wire [N_RX-1:0] LVDS_DATA,
     input wire LVDS_HITOR,
-    output wire LVDS_PULSE_EXT,
-
-    // NTC
-    output wire [2:0] NTC_MUX,
 
     `ifdef MIO3
         // CHSYNC output only connected on MIO3 compatible PCBs
@@ -119,7 +112,7 @@ module tjmonopix2_core #(
 
         // CMOS IO
         output wire CMOS_CMD,
-        output wire CMOS_CMD_CLK,    
+        output wire CMOS_CMD_CLK,
         output wire CMOS_SER_CLK,
         input wire CMOS_DATA,
         input wire CMOS_HITOR,
@@ -132,13 +125,16 @@ module tjmonopix2_core #(
         input wire TOKEN_OUT,
     `endif
 
-    inout wire [1:0] CHIP_ID
+    // NTC
+    output wire [2:0] NTC_MUX
 );
 
 // BOARD ID
 localparam SIM = 8'd0;
 localparam BDAQ53 = 8'd1;
 localparam MIO3 = 8'd2;
+
+localparam N_CHIPS = N_RX;
 
 `ifdef SIM
     localparam BOARD = SIM;
@@ -152,7 +148,7 @@ localparam MIO3 = 8'd2;
 reg SI570_IS_CONFIGURED = 1'b0;
 
 // VERSION/BOARD READBACK
-localparam VERSION = 1; // Module version
+localparam VERSION = 2; // Module version
 
 // -------  MODULE ADREESSES  ------- //
 localparam GPIO_BASEADDR = 32'h0010;
@@ -160,9 +156,6 @@ localparam GPIO_HIGHADDR = 32'h0100 - 1;
 
 localparam PULSE_INJ_BASEADDR = 32'h0100;
 localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
-
-localparam RX_BASEADDR = 32'h0200;
-localparam RX_HIGHADDR = 32'h0300 - 1; 
 
 localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
 localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
@@ -194,11 +187,15 @@ localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
 localparam PULSE_CMD_START_LOOP_BASEADDR = 32'h0C00;
 localparam PULSE_CMD_START_LOOP_HIGHADDR = 32'h0D00 - 1;
 
-localparam I2C_BASEADDR = 32'h3000;
-localparam I2C_HIGHADDR = 32'h4000 - 1;
+// RX
+localparam RX_BASEADDR = 32'h1000;
+localparam RX_HIGHADDR = 32'h1100 - 1;
 
-localparam CMD_BASEADDR = 32'h1000;
-localparam CMD_HIGHADDR = 32'h3000 - 1;
+localparam CMD_BASEADDR = 32'h2000;
+localparam CMD_HIGHADDR = 32'h4000 - 1;
+
+localparam I2C_BASEADDR = 32'h4000;
+localparam I2C_HIGHADDR = 32'h5000 - 1;
 
 localparam ABUSWIDTH = 32;
 
@@ -208,8 +205,11 @@ wire [ABUSWIDTH-1:0] DAQ_SYSTEM_ADD;
 wire [7:0] DAQ_SYSTEM_DATA_IN;
 reg [7:0] DAQ_SYSTEM_DATA_OUT;
 
-bus_to_ip #( .BASEADDR(DAQ_SYSTEM_BASEADDR), .HIGHADDR(DAQ_SYSTEM_HIGHADDR), .ABUSWIDTH(ABUSWIDTH) ) i_bus_to_ip_daq
-(
+bus_to_ip #(
+    .BASEADDR(DAQ_SYSTEM_BASEADDR),
+    .HIGHADDR(DAQ_SYSTEM_HIGHADDR),
+    .ABUSWIDTH(ABUSWIDTH)
+) i_bus_to_ip_daq (
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
     .BUS_ADD(BUS_ADD),
@@ -231,6 +231,7 @@ always @ (posedge BUS_CLK) begin
             2:       DAQ_SYSTEM_DATA_OUT <= VERSION_MAJOR;
             3:       DAQ_SYSTEM_DATA_OUT <= BOARD;
             4:       DAQ_SYSTEM_DATA_OUT <= SI570_IS_CONFIGURED;
+            5:       DAQ_SYSTEM_DATA_OUT <= N_CHIPS;
             default: DAQ_SYSTEM_DATA_OUT <= 0;
         endcase
     end
@@ -246,15 +247,13 @@ always @ (posedge BUS_CLK)
 
 // -------  USER MODULES  ------- //
 wire [23:0] IO;
-gpio 
-#( 
-    .BASEADDR(GPIO_BASEADDR), 
+gpio #(
+    .BASEADDR(GPIO_BASEADDR),
     .HIGHADDR(GPIO_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .IO_WIDTH(24),
     .IO_DIRECTION(24'hfff0ff)
-) gpio_i
-(
+) gpio_i (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -277,12 +276,12 @@ assign GPIO_MODE = IO[14:12];
     assign IO[9] = LVDS_CHSYNC_CLK_OUT;
     assign IO[11] = RO_RST_EXT;
     assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
-    assign SEL_DIRECT = IO[16]; 
+    assign SEL_DIRECT = IO[16];
 `endif
 
 // GPIO module to access general base-board features
 wire [15:0] IO_CONTROL;
-assign MGT_REF_SEL = ~IO_CONTROL[15];   // invert, because the default value '0' should correspond to the internal clock
+assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
 assign IO_CONTROL[3:0] = GPIO_SENSE;
@@ -371,13 +370,11 @@ always @(posedge CLK40) begin
         IO_FF <= {IO_FF[2:0],IO[0]};
 end
 
-pulse_gen
-#( 
-    .BASEADDR(PULSE_RST_BASEADDR), 
+pulse_gen #(
+    .BASEADDR(PULSE_RST_BASEADDR),
     .HIGHADDR(PULSE_RST_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH)
-) pulse_gen_rst
-(
+) pulse_gen_rst (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -398,7 +395,7 @@ assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
 wire I2C_CLK;
 
 clock_divider #(
-.DIVISOR(1600)
+    .DIVISOR(1600)
 ) i_clock_divisor_i2c (
     .CLK(BUS_CLK),
     .RESET(1'b0),
@@ -406,14 +403,12 @@ clock_divider #(
     .CLOCK(I2C_CLK)
 );
 
-i2c
-#(
+i2c #(
     .BASEADDR(I2C_BASEADDR),
     .HIGHADDR(I2C_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
     .MEM_BYTES(32)
-)  i_i2c
-(
+) i_i2c (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
     .BUS_ADD(BUS_ADD),
@@ -428,11 +423,10 @@ i2c
 
 // ----- Pulser for injection ----- //
 assign CMOS_PULSE_EXT = 1'b0;  // not connected for now
-assign LVDS_PULSE_EXT = 1'b0;  // not connected for now
 
 // ----- Command encoder ----- //
 wire CMD;
-wire CMD_OUT, CMD_OUTPUT_EN, CMD_WRITING;
+wire CMD_OUTPUT_EN, CMD_WRITING;
 wire CMD_LOOP_START;
 
 wire EXT_START_PIN, EXT_TRIGGER;
@@ -475,16 +469,6 @@ cmd #(
     assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
     assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
     assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
-`elsif BDAQ53
-    ODDR ODDR_inst_SER_CLK (
-        .Q(LVDS_SER_CLK), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-    );
-    ODDR ODDR_inst_CMD_CLK (
-        .Q(LVDS_CMD_CLK), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-    );
-    ODDR ODDR_inst_CMD (
-        .Q(LVDS_CMD), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
-    );
 `endif
 
 pulse_gen #(
@@ -505,8 +489,9 @@ pulse_gen #(
 );
 
 // RX
-wire RX_FIFO_READ, RX_FIFO_EMPTY;
-wire [31:0] RX_FIFO_DATA;
+wire [N_CHIPS-1:0] RX_FIFO_READ;
+wire [N_CHIPS-1:0] RX_FIFO_EMPTY;
+wire [N_CHIPS-1:0][31:0] RX_FIFO_DATA;
 
 // TLU
 wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
@@ -517,27 +502,25 @@ wire TLU_FIFO_PREEMPT_REQ;
 wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
 wire [31:0] TDC_FIFO_DATA;
 
-rrp_arbiter 
-#( 
-    .WIDTH(3)
+rrp_arbiter #(
+    .WIDTH(N_CHIPS+2)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
-
     .WRITE_REQ({
+        !TDC_FIFO_EMPTY,
         ~RX_FIFO_EMPTY,
-        ~TLU_FIFO_EMPTY,
-        ~TDC_FIFO_EMPTY
+        !TLU_FIFO_EMPTY
     }),
-    .HOLD_REQ({1'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ(TLU_FIFO_PREEMPT_REQ),
     .DATA_IN({
+        TDC_FIFO_DATA,
         RX_FIFO_DATA,
-        TLU_FIFO_DATA,
-        TDC_FIFO_DATA}),
+        TLU_FIFO_DATA}),
     .READ_GRANT({
-        RX_FIFO_READ,
-        TLU_FIFO_READ,
-        TDC_FIFO_READ
+        TDC_FIFO_READ,
+        RX_FIFO_READ,  // TODO: ~FULL
+        TLU_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -591,7 +574,11 @@ assign EXT_START_PULSE_VETO = TRIGGER_ACCEPTED_FLAG;
 wire VETO_TLU_PULSE;
 
 // set acknowledge when veto returns to low
-pulse_gen_rising i_pulse_gen_rising_tlu_veto(.clk_in(CLK40), .in(~VETO_TLU_PULSE), .out(TRIGGER_ACKNOWLEDGE_FLAG));
+pulse_gen_rising i_pulse_gen_rising_tlu_veto(
+    .clk_in(CLK40),
+    .in(~VETO_TLU_PULSE),
+    .out(TRIGGER_ACKNOWLEDGE_FLAG)
+);
 
 pulse_gen #(
     .BASEADDR(PULSER_VETO_BASEADDR),
@@ -613,8 +600,6 @@ pulse_gen #(
 // ----- TDC ----- //
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
 wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
-// wire LEMO_RX0_FROM_TDC;
-// wire HITOR_FROM_TDC;
 
 tdc_s3 #(
     .BASEADDR(TDC_BASEADDR),
@@ -624,7 +609,7 @@ tdc_s3 #(
     .DATA_IDENTIFIER(4'b0010),
     .FAST_TDC(1),
     .FAST_TRIGGER(1),
-    .BROADCAST(0)         // generate for first TDC module the 640MHz sampled trigger signal and share it with other modules using TRIGGER input
+    .BROADCAST(0)         // for first TDC module: generate 640 MHz sampled trigger signal to share with other modules using TRIGGER input
 ) i_tdc (
     .CLK320(CLK320),      // 320 MHz
     .CLK160(CLK160),      // 160 MHz
@@ -656,39 +641,44 @@ tdc_s3 #(
 );
 
 // fast readout
-tjmono2_rx #(
-    .BASEADDR(RX_BASEADDR),
-    .HIGHADDR(RX_HIGHADDR),
-    .DATA_IDENTIFIER(4'b0100),
-    .ABUSWIDTH(ABUSWIDTH),
-    .USE_FIFO_CLK(0)
-) tjmono2_rx (
-    .TS_CLK(CLK40),
-    .FCLK(CLK160),
-    .FCLK2X(CLK320),
-    .RX_CLKW(CLK16),
-    .RX_DATA(LVDS_DATA),
+genvar rx_mod;  // RX module ID
+generate
+    for (rx_mod=0; rx_mod < N_CHIPS; rx_mod=rx_mod + 1) begin : gen_rx
+        tjmono2_rx #(
+            .BASEADDR(RX_BASEADDR + 32'h0100 * rx_mod),
+            .HIGHADDR(RX_HIGHADDR + 32'h0100 * rx_mod),
+            .DATA_IDENTIFIER(4'b0100 + rx_mod),
+            .ABUSWIDTH(ABUSWIDTH),
+            .USE_FIFO_CLK(0)
+        ) i_tjmono2_rx (
+            .TS_CLK(CLK40),
+            .FCLK(CLK160),
+            .FCLK2X(CLK320),
+            .RX_CLKW(CLK16),
+            .RX_DATA(LVDS_DATA[rx_mod]),
 
-    .RX_READY(),
-    .RX_8B10B_DECODER_ERR(),
-    .RX_FIFO_OVERFLOW_ERR(),
+            .RX_READY(),
+            .RX_8B10B_DECODER_ERR(),
+            .RX_FIFO_OVERFLOW_ERR(),
 
-    .FIFO_CLK(),
-    .FIFO_READ(RX_FIFO_READ),
-    .FIFO_EMPTY(RX_FIFO_EMPTY),
-    .FIFO_DATA(RX_FIFO_DATA),
+            .FIFO_CLK(),
+            .FIFO_READ(RX_FIFO_READ[rx_mod]),
+            .FIFO_EMPTY(RX_FIFO_EMPTY[rx_mod]),
+            .FIFO_DATA(RX_FIFO_DATA[rx_mod]),
 
-    .RX_FIFO_FULL(),
-    .RX_ENABLED(),
+            .RX_FIFO_FULL(),
+            .RX_ENABLED(RX_ENABLED[rx_mod]), // LED on base board is active low
 
-    .TIMESTAMP(TIMESTAMP[51:0]),
+            .TIMESTAMP(TIMESTAMP[51:0]),
 
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR)
-);
+            .BUS_CLK(BUS_CLK),
+            .BUS_RST(BUS_RST),
+            .BUS_ADD(BUS_ADD),
+            .BUS_DATA(BUS_DATA),
+            .BUS_RD(BUS_RD),
+            .BUS_WR(BUS_WR)
+        );
+    end
+endgenerate
 
 endmodule
