@@ -694,6 +694,7 @@ class TJMonoPix2():
         if not self.daq.communication_established:
             self.init_communication()
         self.reset()
+        self.configure_rx()
 
         if self.daq.board_version == 'mio3':
             self.log.info(str(self.get_power_status()))
