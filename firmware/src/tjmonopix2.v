@@ -96,13 +96,17 @@ module tjmonopix2 #(
     `endif
 
     // 2-row PMOD header for general purpose IOs
-    inout wire [7:0]  PMOD,
+    // Reset button (on BDAQcore: USER button)
+    `ifndef BDAQCORE
+        inout wire [7:0] PMOD,
+        input wire       RESET_BUTTON,
+    `else
+        inout wire [3:0] PMOD,
+        input wire       USER_BUTTON,
+    `endif
 
     inout wire        I2C_SDA,
     inout wire        I2C_SCL,
-
-    // User buttons
-    input wire        RESET_BUTTON,
 
     // Ethernet
     output wire [3:0] rgmii_txd,
@@ -122,6 +126,11 @@ module tjmonopix2 #(
 wire RST;
 wire BUS_CLK_PLL, CLK125PLLTX, CLK125PLLTX90, CLK125PLLRX;
 wire PLL_FEEDBACK, LOCKED;
+
+`ifdef BDAQCORE
+    wire RESET_BUTTON;
+    assign RESET_BUTTON = USER_BUTTON;
+`endif
 
 // -------  PLL for communication with FPGA  ------- //
 wire CLK200_PLL, CLK200;
@@ -295,7 +304,7 @@ assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_
     wire [N_CHIPS-1:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
     wire [N_CHIPS-1:0] LVDS_DATA;
 
-    // ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
+    //! ------- RJ45 (CMD and CMD CLK inverted with respect to DP output) ------- //
     genvar i;
     generate
         for (i=0; i<N_CHIPS; i=i+1) begin : gen_lvds_io_rj45
@@ -467,15 +476,19 @@ wire [7:0] TCP_TX_DATA;
 
 // IP address subnet selection
 wire [3:0] IP_ADDR_SEL;
-assign PMOD[7:4] = 4'hf;
-assign IP_ADDR_SEL = {PMOD[0], PMOD[1], PMOD[2], PMOD[3]};
+`ifndef BDAQCORE
+    assign PMOD[7:4] = 4'hf;
+    assign IP_ADDR_SEL = {PMOD[0], PMOD[1], PMOD[2], PMOD[3]};
+`else
+    assign IP_ADDR_SEL = {~PMOD[0], ~PMOD[1], ~PMOD[2], ~PMOD[3]}; // BDAQcore is pull up
+`endif
 
 WRAP_SiTCP_GMII_XC7K_32K sitcp(
     .CLK(BUS_CLK)                ,    // in     : System Clock >129MHz
     .RST(RST)                    ,    // in     : System reset
     // Configuration parameters
     .FORCE_DEFAULTn(1'b0)        ,    // in     : Load default parameters
-    .EXT_IP_ADDR({8'd192, 8'd168, |{IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23}),   // IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
+    .EXT_IP_ADDR({8'd192, 8'd168, | {IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23}),   // IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
     .EXT_TCP_PORT(16'd24)        ,    // in     : TCP port #[15:0]
     .EXT_RBCP_PORT(16'd4660)     ,    // in     : RBCP port #[15:0]
     .PHY_ADDR(5'd3)              ,    // in     : PHY-device MIF address[4:0]

@@ -52,7 +52,8 @@ proc run_bit {part xdc_file size {lanes _1RX} {suffix ""}} {
     read_xdc $src_dir/$xdc_file
     read_xdc $src_dir/SiTCP.xdc
 
-    synth_design -top tjmonopix2 -include_dirs $include_dirs -verilog_define [string toupper $board_name]=1 -verilog_define "SYNTHESIS=1" -verilog_define "$lanes=1" -generic VERSION_MAJOR=8'd$version_major -generic VERSION_MINOR=8'd$version_minor -generic VERSION_PATCH=8'd$version_patch
+    # TODO: adopt defines in firmware after deprecating MIO3
+    synth_design -top tjmonopix2 -include_dirs $include_dirs -verilog_define BDAQ53=1 -verilog_define [string toupper $board_name]=1 -verilog_define "SYNTHESIS=1" -verilog_define "$lanes=1" -generic VERSION_MAJOR=8'd$version_major -generic VERSION_MINOR=8'd$version_minor -generic VERSION_PATCH=8'd$version_patch
     opt_design
     place_design
     phys_opt_design
@@ -75,6 +76,7 @@ if {$argc == 0} {
     # run_bit    xc7k160tfbg676-1    mio3_kx1.xdc         64          _1RX        ""
     run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc       64          _1RX        ""
     run_bit    xc7k160tffg676-2    bdaq53_kx2_4x.xdc    64          _4RX        ""
+    run_bit    xc7k160tffg676-2    bdaqcore_kx2.xdc     64          _1RX        ""
     # run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc     64          _1RX        ""
     # run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc     64          _1RX        325
 } else {

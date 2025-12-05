@@ -281,7 +281,11 @@ assign GPIO_MODE = IO[14:12];
 
 // GPIO module to access general base-board features
 wire [15:0] IO_CONTROL;
-assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
+`ifndef BDAQCORE
+    assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
+`else
+    assign MGT_REF_SEL = IO_CONTROL[15];
+`endif
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
 assign IO_CONTROL[3:0] = GPIO_SENSE;
