@@ -480,7 +480,7 @@ wire [3:0] IP_ADDR_SEL;
     assign PMOD[7:4] = 4'hf;
     assign IP_ADDR_SEL = {PMOD[0], PMOD[1], PMOD[2], PMOD[3]};
 `else
-    assign IP_ADDR_SEL = {~PMOD[0], ~PMOD[1], ~PMOD[2], ~PMOD[3]}; // BDAQcore is pull up
+    assign IP_ADDR_SEL = {~PMOD[3], ~PMOD[2], ~PMOD[1], ~PMOD[0]}; // Set jumper pulls to GND
 `endif
 
 WRAP_SiTCP_GMII_XC7K_32K sitcp(
@@ -488,7 +488,7 @@ WRAP_SiTCP_GMII_XC7K_32K sitcp(
     .RST(RST)                    ,    // in     : System reset
     // Configuration parameters
     .FORCE_DEFAULTn(1'b0)        ,    // in     : Load default parameters
-    .EXT_IP_ADDR({8'd192, 8'd168, | {IP_ADDR_SEL} ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23}),   // IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
+    .EXT_IP_ADDR({8'd192, 8'd168, | IP_ADDR_SEL ? 8'd10 + IP_ADDR_SEL : 8'd10, 8'd23}),   // IP address[31:0] default: 192.168.10.23. If jumpers are set: 192.168.[11..25].23
     .EXT_TCP_PORT(16'd24)        ,    // in     : TCP port #[15:0]
     .EXT_RBCP_PORT(16'd4660)     ,    // in     : RBCP port #[15:0]
     .PHY_ADDR(5'd3)              ,    // in     : PHY-device MIF address[4:0]
