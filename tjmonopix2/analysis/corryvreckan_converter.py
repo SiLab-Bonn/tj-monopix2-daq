@@ -109,9 +109,10 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                     if tot_calib_file:
                         hit_table_converted["charge"] = ELECTRON_CONVERSION * au._inv_tot_response_func(
                             hits_selected["charge"],
-                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 0],
-                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 1],
-                            calib_data[hits_selected[:]["col"] + 1, hits_selected[:]["row"]][:, 2],
+                            # Subtract one since event builder adds + 1 for legacy reasons
+                        calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 0],
+                            calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 1],
+                            calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 2],
                         )
                     hit_table_converted["timestamp"] = 0
                     hit_table_converted["trigger_number"] = hits_selected["event_number"].astype(np.uint64)
