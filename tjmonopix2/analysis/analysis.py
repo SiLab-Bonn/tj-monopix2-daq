@@ -12,7 +12,7 @@ import numpy as np
 import tables as tb
 from pixel_clusterizer.clusterizer import HitClusterizer
 from tjmonopix2.analysis import analysis_utils as au
-from tjmonopix2.analysis.interpreter import RawDataInterpreter
+from tjmonopix2.analysis.interpreter import RawDataInterpreter, PTDC_CALIB, PTDC_HEADER
 from tjmonopix2.analysis.events import build_events
 from tjmonopix2.system import logger
 from tqdm import tqdm
@@ -318,7 +318,21 @@ class Analysis(object):
                     hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
+                if self.analyze_tdc:
+                    # Calibrate TDL before interpreting
+                    first_data_words = in_file.root.raw_data[:500000]
+                    tdl_words = first_data_words[first_data_words & 0xFE000000 == PTDC_HEADER + PTDC_CALIB]
+                    tdl_values = tdl_words & 0x7F
+
+                    value, cnt = np.unique(tdl_values, return_counts=True)
+                    calib_vec = np.zeros(100, dtype=np.uint32)
+                    for i in range(100):
+                        calib_vec[i] = np.sum(cnt[:i])
+                    lut = calib_vec / np.sum(cnt)
+                else:
+                    lut = np.array([0.], dtype=np.float64)  # Match type of LUT for numba static typing
+
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], ptdc_tdl_lut=lut)
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
@@ -381,13 +395,13 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                hist_occ, hist_tot, hist_tdc, hist_trigger_delay = interpreter.get_histograms()
 
-        self._create_additional_hit_data(hist_occ, hist_tot)
+        self._create_additional_hit_data(hist_occ, hist_tot, hist_trigger_delay)
         if self.cluster_hits:
             self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
-    def _create_additional_hit_data(self, hist_occ, hist_tot):
+    def _create_additional_hit_data(self, hist_occ, hist_tot, hist_trigger_delay):
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
 
@@ -406,14 +420,14 @@ class Analysis(object):
                                                       complevel=5,
                                                       fletcher32=False))
 
-            # if self.analyze_tdc:  # Only store if TDC analysis is used.
-            #     out_file.create_carray(out_file.root,
-            #                            name='HistTdcStatus',
-            #                            title='Tdc status Histogram',
-            #                            obj=hist_tdc_status,
-            #                            filters=tb.Filters(complib='blosc',
-            #                                               complevel=5,
-            #                                               fletcher32=False))
+            if self.analyze_tdc:  # Only store if TDC analysis is used.
+                out_file.create_carray(out_file.root,
+                                       name='HistTriggerDelay',
+                                       title='Trigger Delay Histogram',
+                                       obj=hist_trigger_delay,
+                                       filters=tb.Filters(complib='blosc',
+                                                          complevel=5,
+                                                          fletcher32=False))
 
             if scan_id in ['threshold_scan', 'calibrate_tot']:
                 n_injections = self.scan_config['n_injections']

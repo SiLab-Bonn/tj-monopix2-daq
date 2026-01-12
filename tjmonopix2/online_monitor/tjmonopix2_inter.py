@@ -30,7 +30,8 @@ class TJMonopix2(Transceiver):
         self.mask_noisy_pixel = False
 
         # Init result hists
-        self.interpreter = RawDataInterpreter()
+        tdl_lut = np.array([0.], dtype=np.float64)
+        self.interpreter = RawDataInterpreter(ptdc_tdl_lut=tdl_lut)
         self.reset_hists()
 
         # Number of readouts to integrate
@@ -96,7 +97,7 @@ class TJMonopix2(Transceiver):
         self.total_trigger_words = n_triggers
         self.readout += 1
 
-        self.hist_occ, self.hist_tot, self.hist_tdc = self.interpreter.get_histograms()
+        self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_trigger_delay = self.interpreter.get_histograms()
         occupancy_hist = self.hist_occ.sum(axis=2)
 
         # Mask noisy pixels
@@ -109,6 +110,7 @@ class TJMonopix2(Transceiver):
             'occupancy': occupancy_hist,
             'tot_hist': self.hist_tot.sum(axis=(0, 1, 2)),
             'tdc_hist': self.hist_tdc,
+            'trigger_delay_hist': self.hist_trigger_delay,  # Convert to ns
         }
 
         if self.int_readouts != 0:  # = 0 for infinite integration

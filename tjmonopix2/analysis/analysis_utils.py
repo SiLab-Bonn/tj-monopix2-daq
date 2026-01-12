@@ -29,6 +29,13 @@ hit_dtype = np.dtype([
     ("scan_param_id", "<i2"),
 ])
 
+ptdc_dtype = np.dtype([
+    ("timestamp", "<i8"),
+    ("trigger_time", "<f8"),
+    ("rising_time", "<f8"),
+    ("falling_time", "<f8"),
+])
+
 event_dtype = np.dtype([
     ("event_number", "<u4"),
     ("trigger_number", "<u4"),

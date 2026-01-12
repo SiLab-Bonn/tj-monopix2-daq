@@ -6,6 +6,7 @@ class_spec = [
     ('eof', numba.boolean),
     ('token_id', numba.uint32),
     ('tj_data_flag', numba.uint8),
+    ('ptdc_data_flag', numba.uint8),
     ('error_cnt', numba.int32),
     ('col', numba.int16),
     ('row', numba.int16),
@@ -15,12 +16,30 @@ class_spec = [
     ('n_scan_params', numba.int32),
     ('trigger_data_format', numba.uint8),
 
+    ('ptdc_tdl_lut', numba.float64[:]),
+    ('ptdc_trigger_time', numba.int32),
+    ('ptdc_rising_time', numba.int32),
+    ('ptdc_falling_time', numba.int32),
+
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
+    ('hist_trigger_dist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
+
+HEADER_MASK = 0xF0000000
+PTDC_HEADER = 0x60000000
+TLU_HEADER = 0x80000000
+
+PTDC_TRIGGER = 0x0
+PTDC_RISING =  0x2000000
+PTDC_FALLING = 0x4000000
+PTDC_TIMESTAMP = 0x6000000
+PTDC_CALIB = 0x8000000
+PTDC_MISS = 0xA000000
+# TODO: TDC reset word
 
 
 @numba.njit
@@ -30,7 +49,7 @@ def is_tjmono(word):
 
 @numba.njit
 def is_tlu(word):
-    return word & 0x80000000 == 0x80000000
+    return word & 0x80000000 == TLU_HEADER
 
 
 @numba.njit
@@ -59,21 +78,49 @@ def get_tlu_word(word, trigger_data_format):
 
 
 @numba.njit
+def is_ptdc(word):
+    return word & HEADER_MASK == PTDC_HEADER
+
+
+@numba.njit
+def get_ptdc_word_type(word):
+    return word & 0xE00_0000
+
+
+@numba.njit
+def get_ptdc_timestamp(word):
+    return word & 0x1FF_FFFF
+
+
+@numba.njit
+def get_ptdc_time(word, lut):
+    tdl = word & 0x7F  # Value of tapped delay line
+    fine_counter = (word >> 7) & 0x3  # 480 MHz
+    coarse_counter = (word >> 9) & 0xFFFF  # 160 MHz
+
+    return int((1 / 0.000480) * (3 * coarse_counter + fine_counter - lut[tdl]))  # Time in ps to store as int
+
+
+@numba.njit
 def get_tdc_value(word):
     return word & 0xFFF
 
 
 @numba.experimental.jitclass(class_spec)
 class RawDataInterpreter(object):
-    def __init__(self, n_scan_params=1, trigger_data_format=1):
+    def __init__(self, n_scan_params=1, trigger_data_format=1, ptdc_tdl_lut=np.array([0], dtype=float)):
         self.sof = False
         self.eof = False
         self.error_cnt = 0
         self.token_id = 0
         self.tj_data_flag = 0
+        self.ptdc_data_flag = 0
 
         self.n_scan_params = n_scan_params
         self.trigger_data_format = trigger_data_format
+
+        # Peviously calculated look-up table for tapped delay line bin width
+        self.ptdc_tdl_lut = ptdc_tdl_lut
 
         self.n_triggers = 0
         self.n_tdc = 0
@@ -184,12 +231,75 @@ class RawDataInterpreter(object):
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
 
+            ###############################
+            # Part 4: interpret pTDC word #
+            ###############################
+            elif is_ptdc(raw_data_word):
+
+                # TODO: For now, assume TRIGGER -> RISING -> FALLING -> TIMESTAMP
+                if get_ptdc_word_type(raw_data_word) == PTDC_TRIGGER:  # Start pTDC word block
+                    if self.ptdc_data_flag:
+                        continue
+
+                    self.ptdc_data_flag = 1
+                    self.ptdc_trigger_time = get_ptdc_time(raw_data_word, self.ptdc_tdl_lut)
+                elif get_ptdc_word_type(raw_data_word) == PTDC_RISING:
+                    if self.ptdc_data_flag != 1:
+                        continue
+
+                    self.ptdc_data_flag = 2
+                    self.ptdc_rising_time = get_ptdc_time(raw_data_word, self.ptdc_tdl_lut)
+
+                elif get_ptdc_word_type(raw_data_word) == PTDC_FALLING:
+                    if self.ptdc_data_flag != 2:
+                        continue
+
+                    self.ptdc_data_flag = 3
+                    self.ptdc_falling_time = get_ptdc_time(raw_data_word, self.ptdc_tdl_lut)
+
+                elif get_ptdc_word_type(raw_data_word) == PTDC_TIMESTAMP:  # Concludes the pTDC data block
+                    if self.ptdc_data_flag != 3:
+                        continue
+
+                    timestamp = get_ptdc_timestamp(raw_data_word)
+
+                    # So this gets tricky. TDC values relative to timestamp are stored in integer units
+                    # of ps in token_id field. (le, te) indicate the type of the word. (0, 0) is trigger
+                    # word, (1, 0) rising word, (0, 1) falling word.
+                    hit_data[hit_index]["col"] = 0x3FD  # 1021
+                    hit_data[hit_index]["timestamp"] = timestamp
+                    hit_data[hit_index]["token_id"] = self.ptdc_trigger_time
+                    hit_data[hit_index]["le"] = 0
+                    hit_data[hit_index]["te"] = 0
+                    hit_index += 1
+
+                    hit_data[hit_index]["col"] = 0x3FD  # 1021
+                    hit_data[hit_index]["timestamp"] = timestamp
+                    hit_data[hit_index]["token_id"] = self.ptdc_rising_time
+                    hit_data[hit_index]["le"] = 1
+                    hit_data[hit_index]["te"] = 0
+                    hit_index += 1
+
+                    hit_data[hit_index]["col"] = 0x3FD  # 1021
+                    hit_data[hit_index]["timestamp"] = timestamp
+                    hit_data[hit_index]["token_id"] = self.ptdc_falling_time
+                    hit_data[hit_index]["le"] = 0
+                    hit_data[hit_index]["te"] = 1
+                    hit_index += 1
+
+                    # Fill histogram
+                    trigger_dist = self.ptdc_rising_time - self.ptdc_trigger_time
+                    if trigger_dist < 250000:
+                        self.hist_trigger_dist[int(trigger_dist // 50)] += 1  # Bins of 50 ps, max 250 ns
+
+                    self.ptdc_data_flag = 0 # Reset data flag, all blocks should be there, no matter if written or not
+
         hit_data = hit_data[:hit_index]
 
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hist_tdc
+        return self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_trigger_dist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -201,6 +311,7 @@ class RawDataInterpreter(object):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_trigger_dist = np.zeros(5000, dtype=numba.uint32)
         self.n_triggers = 0
         self.n_tdc = 0
 
