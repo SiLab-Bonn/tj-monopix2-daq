@@ -9,9 +9,11 @@ modules:
     chip_0: # Arbitrary name of chip, defines folder name with chip data
       #chip_sn: "W14R12"
       # chip_sn: "W8R06" # NIEL 5E14
-      # chip_sn: "W8R13" # not irradiated
-      chip_sn: "W2R17" # NIEL 2.5E14
+      #chip_sn: "W8R13" # not irradiated
+      #chip_sn: "W2R17" # NIEL 2.5E14
       # chip_sn: "W8R04" # NIEL 1E14
+      chip_sn: "W2R05" # NIEL 5E14 e-irradiated
+
 
       chip_id: 0
       receiver: "rx0"

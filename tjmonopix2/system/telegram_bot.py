@@ -28,7 +28,7 @@ def send_message_scan(run_config, pdf_path=None):
 def send_message_ana(data=None, pdf_path=None):
     msg = f'Ananlysis completed, but no further info available.'
     if data:
-        msg = f'Ananlysis completed: {data}'
+        msg = f'Analysis completed: {data}'
 
     send_message_generic(THREAD_ID_ANALYSIS, msg, pdf_path)
 
@@ -52,7 +52,10 @@ def main():
     # send_message_ana('very good fit!')
 
     if len(sys.argv) > 1:
-        send_message_log(sys.argv[1])
+        if sys.argv[1] == 'analysis':
+            send_message_ana(data=sys.argv[2], pdf_path=sys.argv[3])
+        else:
+            send_message_log(sys.argv[1])
     else:
         send_message_log()
 
