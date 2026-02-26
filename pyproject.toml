@@ -28,8 +28,11 @@ dependencies = [
 "scipy"
 ]
 
+[tool.setuptools]
+packages = [ "tjmonopix2" ]
+
 [tool.setuptools.dynamic]
-version = {attr = "tjmonopix.__version__"}
+version = {attr = "tjmonopix2.__version__"}
 
 [project.urls]
 "Repository" = "https://github.com/SiLab-Bonn/tj-monopix2-daq"
