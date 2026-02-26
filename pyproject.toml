@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tjmonopix2"
+dynamic = ["version"]
+license = { "text" = "AGPL-3.0" }
+description = 'DAQ for TJ-Monopix2 prototype'
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Christian Bespin", email="bespin@physik.uni-bonn.de"}
+]
+dependencies = [
+"basil-daq>=3.0.0", 
+"coloredlogs", 
+"gitpython", 
+"numba", 
+"numpy", 
+"matplotlib", 
+"online_monitor", 
+"pixel_clusterizer", 
+"pyyaml", 
+"pyzmq", 
+"tables", 
+"tqdm", 
+"scipy"
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "tjmonopix.__version__"}
+
+[project.urls]
+"Repository" = "https://github.com/SiLab-Bonn/tj-monopix2-daq"
