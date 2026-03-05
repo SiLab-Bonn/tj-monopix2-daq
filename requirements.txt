@@ -4,10 +4,21 @@ gitpython
 matplotlib
 numba
 numpy
+online_monitor>=0.6.0
+pandas
+pexpect
 pixel-clusterizer
+PyQt5
+pyeudaq
+pyqtgraph
+python-telegram-bot
 pyyaml
 pyzmq
 scipy
 tables
 tqdm
-online_monitor>=0.6.0
+uncertainties
+
+# Test / simulation dependencies
+# cocotb
+# cocotb-bus
