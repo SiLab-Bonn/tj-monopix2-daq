@@ -12,6 +12,7 @@ import numpy as np
 import tables as tb
 from pixel_clusterizer.clusterizer import HitClusterizer
 from tjmonopix2.analysis import analysis_utils as au
+from tjmonopix2.analysis import monitoring
 from tjmonopix2.analysis.interpreter import RawDataInterpreter
 from tjmonopix2.analysis.events import build_events
 from tjmonopix2.system import logger
@@ -293,6 +294,21 @@ class Analysis(object):
             with tb.open_file(self.analyzed_data_file, 'w', title=in_file.title) as out_file:
                 out_file.create_group(out_file.root, name='configuration_in', title='Configuration after scan step')
                 out_file.copy_children(in_file.root.configuration_out, out_file.root.configuration_in, recursive=True)
+                try:
+                    scan_start = float(np.min(meta_data['timestamp_start']))
+                    scan_stop = float(np.max(meta_data['timestamp_stop']))
+                except Exception:
+                    scan_start = None
+                    scan_stop = None
+
+                monitoring_cfg = monitoring.load_monitoring_config_from_root(out_file.root)
+                if not monitoring_cfg:
+                    monitoring_cfg = monitoring.load_monitoring_config_from_root(in_file.root)
+                if monitoring_cfg and monitoring_cfg.get('enable', False):
+                    try:
+                        monitoring.add_monitoring_to_h5(in_file, out_file, monitoring_cfg, scan_start, scan_stop)
+                    except Exception:
+                        self.log.warning('Failed to add monitoring data to interpreted file', exc_info=True)
 
                 if self.store_hits:
                     hit_table = self._create_table(out_file, name='Dut', title='hit_data', dtype=au.hit_dtype)

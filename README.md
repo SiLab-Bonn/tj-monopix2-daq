@@ -78,5 +78,44 @@ The default IP address (when using the firmware manager) is 192.168.10.**23**, b
 # Usage
 A `testbench.yaml` file containing information on the individual setup is required for operation. It is located in the `tjmonopix2` folder and contains an extensive list of configuration options that are documented there.
 
+## Monitoring CSV import (optional)
+The analysis step can optionally import external monitoring CSV files (environmental sensors and power supply logs) into the interpreted `.h5` file and add plots + a summary table to the PDF.
+
+**Where it is configured**
+Set the `monitoring` block in `tjmonopix2/testbench.yaml`:
+```yaml
+monitoring:
+  enable: True
+  include_in_pdf: True
+  wait_for_csv_s: 2
+  time_margin_s: 5
+  env:
+    csv_dir: "/path/to/temperature/logs"
+    pattern: "*_log.csv"
+    timestamp_column: "Time [s]"
+    columns: {NTC_C: "NTC [°C]"}
+  power:
+    csv_dir: "/path/to/power/logs"
+    pattern: "monitoring_*.csv"
+    timestamp_column: "timestamp"
+    columns: {HV_V: "HV_V", HV_I: "HV_I", PWELL_V: "PWELL_V", PWELL_I: "PWELL_I", PSUB_V: "PSUB_V", PSUB_I: "PSUB_I"}
+```
+
+**What gets added**
+- The interpreted file gains a `/monitoring` group with:
+  - `/monitoring/env` time series
+  - `/monitoring/power` time series
+  - `/monitoring/summary` table with mean/min/max in the scan window
+- The PDF includes a monitoring summary table, NTC vs time, and current vs time plots (if `include_in_pdf: True`).
+
+**Re-import monitoring into existing interpreted files**
+If you already have an interpreted `.h5`, you can inject monitoring data without re-running a scan:
+```bash
+python -m tjmonopix2.analysis.monitoring_import --raw /path/to/raw.h5 --interpreted /path/to/scan_interpreted.h5 --testbench /path/to/testbench.yaml
+```
+Add `--overwrite` to replace an existing `/monitoring` group.
+
+To disable monitoring without affecting scans, set `monitoring.enable: False` (or remove the block).
+
 # Contributing
 The `master` branch contains stable and well-tested code for reading out TJ-Monopix2. The `development` branch is not guaranteed to have stable and working code. If you want to contribute, create a feature branch off either of the mentioned branches and make a pull request against the respective branch when you have made progress on ongoing work or implemented a new feature.

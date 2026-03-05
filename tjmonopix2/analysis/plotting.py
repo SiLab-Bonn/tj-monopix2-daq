@@ -14,6 +14,7 @@ import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime
+import json
 
 from collections import OrderedDict
 from scipy.optimize import curve_fit
@@ -26,6 +27,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from tjmonopix2.system import logger
 from tjmonopix2.analysis import analysis_utils as au
+from tjmonopix2.analysis import monitoring
 
 from tjmonopix2.system import telegram_bot
 
@@ -159,6 +161,26 @@ class Plotting(object):
         except Exception:
             pass
 
+        # Monitoring data
+        self.monitoring_cfg = None
+        self.monitoring_group = None
+        self.monitoring_summary = None
+        self.monitoring_tables = {}
+        try:
+            self.monitoring_cfg = monitoring.load_monitoring_config_from_root(root)
+        except Exception:
+            self.monitoring_cfg = None
+        try:
+            self.monitoring_group = root.monitoring
+            if hasattr(self.monitoring_group, 'summary'):
+                self.monitoring_summary = self.monitoring_group.summary[:]
+            if hasattr(self.monitoring_group, 'power'):
+                self.monitoring_tables['power'] = self.monitoring_group.power
+            if hasattr(self.monitoring_group, 'env'):
+                self.monitoring_tables['env'] = self.monitoring_group.env
+        except Exception:
+            self.monitoring_group = None
+
     def __enter__(self):
         return self
 
@@ -179,6 +201,9 @@ class Plotting(object):
             self.create_dac_linearity_plot()
         else:
             self.create_parameter_page()
+            if self._monitoring_enabled_in_pdf():
+                self.create_monitoring_summary_table()
+                self.create_monitoring_main_page()
             self.create_occupancy_map()
             if self.run_config['scan_id'] in ['source_scan', 'ext_trigger_scan','noise_occupancy_scan']:
                 self.create_fancy_occupancy()
@@ -214,6 +239,203 @@ class Plotting(object):
             self._plot_parameter_page()
         except Exception:
             self.log.error('Could not create parameter page!')
+
+    def _monitoring_enabled_in_pdf(self):
+        if not self.monitoring_group:
+            return False
+        if not self.monitoring_cfg:
+            return True
+        return self.monitoring_cfg.get('include_in_pdf', True)
+
+    def _decode_bytes(self, value):
+        if isinstance(value, bytes):
+            return value.decode('utf-8')
+        return value
+
+    def _read_monitoring_table(self, table):
+        try:
+            label_map = json.loads(table.attrs.label_map)
+        except Exception:
+            label_map = {}
+        try:
+            unit_map = json.loads(table.attrs.unit_map)
+        except Exception:
+            unit_map = {}
+
+        data = table[:]
+        ts = data['timestamp']
+        series = {}
+        for field in data.dtype.names:
+            if field == 'timestamp':
+                continue
+            label = label_map.get(field, field)
+            series[label] = data[field]
+
+        return ts, series, label_map, unit_map
+
+    def create_monitoring_summary_table(self):
+        if self.monitoring_summary is None:
+            return
+        try:
+            fig = Figure()
+            _ = FigureCanvas(fig)
+            ax = fig.add_subplot(111)
+            ax.axis('off')
+
+            rows = []
+            for row in self.monitoring_summary:
+                attr = self._decode_bytes(row['attribute'])
+                unit = self._decode_bytes(row['unit'])
+                mean = row['mean']
+                min_v = row['min']
+                max_v = row['max']
+                # Keep only main monitoring values for the PDF
+                keep = False
+                if 'NTC' in attr:
+                    keep = True
+                if attr in ['HV_V', 'HV_I', 'PWELL_V', 'PWELL_I', 'PSUB_V', 'PSUB_I']:
+                    keep = True
+                if not keep:
+                    continue
+                rows.append([attr, f'{mean:.3g}', f'{min_v:.3g}', f'{max_v:.3g}', unit])
+
+            if not rows:
+                return
+
+            labels = ['Attribute', 'Mean', 'Min', 'Max', 'Unit']
+            widths = [0.45, 0.15, 0.15, 0.15, 0.10]
+            table = ax.table(cellText=rows, colWidths=widths, colLabels=labels, cellLoc='left', loc='center')
+            table.scale(1.0, 1.0)
+            table.auto_set_font_size(False)
+            for key, cell in table.get_celld().items():
+                cell.set_fontsize(6)
+                if key[0] == 0:
+                    cell.set_color('#ffb300')
+                    cell.set_fontsize(7)
+
+            ax.set_title('Monitoring summary (scan window)', fontsize=10)
+            self._save_plots(fig, suffix='monitoring_summary')
+        except Exception:
+            self.log.error('Could not create monitoring summary table!')
+
+    def create_monitoring_time_series(self):
+        if not self.monitoring_group:
+            return
+        try:
+            if 'env' in self.monitoring_tables:
+                self._plot_env_time_series()
+            if 'power' in self.monitoring_tables:
+                self._plot_power_time_series()
+        except Exception:
+            self.log.error('Could not create monitoring plots!')
+
+    def create_monitoring_main_page(self):
+        if not self.monitoring_group:
+            return
+        try:
+            fig = Figure()
+            _ = FigureCanvas(fig)
+            gs = fig.add_gridspec(2, 1, height_ratios=[1, 1])
+
+            # NTC temperature
+            ax1 = fig.add_subplot(gs[0, 0])
+            table = self.monitoring_tables.get('env')
+            if table:
+                ts, series, _, _ = self._read_monitoring_table(table)
+                if ts.size > 0 and series:
+                    t0 = ts[0]
+                    time_s = ts - t0
+                    for label, values in series.items():
+                        if 'NTC' in label:
+                            ax1.plot(time_s, values, label=label)
+                    ax1.set_title('NTC temperature vs time')
+                    ax1.set_xlabel('Time since start [s]')
+                    ax1.set_ylabel('Temperature [°C]')
+                    ax1.grid(True, alpha=0.3)
+                    ax1.legend(fontsize=6, loc='best')
+
+            # Currents
+            ax2 = fig.add_subplot(gs[1, 0])
+            table = self.monitoring_tables.get('power')
+            if table:
+                ts, series, _, _ = self._read_monitoring_table(table)
+                if ts.size > 0 and series:
+                    t0 = ts[0]
+                    time_s = ts - t0
+                    wanted = ['HV_I', 'PWELL_I', 'PSUB_I']
+                    for label, values in series.items():
+                        if label in wanted:
+                            ax2.plot(time_s, values, label=label)
+                    ax2.set_title('Currents vs time')
+                    ax2.set_xlabel('Time since start [s]')
+                    ax2.set_ylabel('Current [A]')
+                    ax2.grid(True, alpha=0.3)
+                    ax2.legend(fontsize=6, loc='best')
+
+            self._save_plots(fig, suffix='monitoring_main')
+        except Exception:
+            self.log.error('Could not create monitoring main page!')
+
+    def _plot_env_time_series(self):
+        table = self.monitoring_tables.get('env')
+        if not table:
+            return
+        ts, series, _, _ = self._read_monitoring_table(table)
+        if ts.size == 0 or not series:
+            return
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        t0 = ts[0]
+        time_s = ts - t0
+        for label, values in series.items():
+            ax.plot(time_s, values, label=label)
+        ax.set_title('Environmental monitor vs time')
+        ax.set_xlabel('Time since start [s]')
+        ax.set_ylabel('Temperature')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=6, loc='best')
+        self._save_plots(fig, suffix='monitoring_env')
+
+    def _plot_power_time_series(self):
+        table = self.monitoring_tables.get('power')
+        if not table:
+            return
+        ts, series, _, _ = self._read_monitoring_table(table)
+        if ts.size == 0 or not series:
+            return
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        t0 = ts[0]
+        time_s = ts - t0
+
+        wanted = ['HV_I', 'PWELL_I', 'PSUB_I']
+        plotted = False
+        for label in series.keys():
+            norm = label.replace(' ', '').replace('-', '').replace('_', '').upper()
+            if label in wanted or label.replace(' ', '') in wanted:
+                ax.plot(time_s, series[label], label=label)
+                plotted = True
+            elif norm in ['HVI', 'PWELLI', 'PSUBI']:
+                ax.plot(time_s, series[label], label=label)
+                plotted = True
+
+        if not plotted:
+            for label, values in series.items():
+                if label.endswith('_I') or 'current' in label.lower():
+                    ax.plot(time_s, values, label=label)
+                    plotted = True
+
+        if not plotted:
+            return
+
+        ax.set_title('Currents vs time')
+        ax.set_xlabel('Time since start [s]')
+        ax.set_ylabel('Current [A]')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=6, loc='best')
+        self._save_plots(fig, suffix='monitoring_currents')
 
     def create_occupancy_map(self):
         try:
