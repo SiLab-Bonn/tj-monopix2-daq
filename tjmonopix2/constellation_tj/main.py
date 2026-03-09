@@ -1,9 +1,9 @@
 from constellation.core.logging import setup_cli_logging
-from constellation.core.satellite import SatelliteArgumentParser
+from constellation.core.transmitter_satellite import TransmitterSatelliteArgumentParser
 from tj_satellite import TJ
 
 def main(args=None):
-    parser = SatelliteArgumentParser()
+    parser = TransmitterSatelliteArgumentParser()
     args = vars(parser.parse_args(args))
     setup_cli_logging(args.pop("level"))
     s = TJ(**args)
