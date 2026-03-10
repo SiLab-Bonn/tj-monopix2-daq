@@ -3,9 +3,13 @@ from constellation.core.transmitter_satellite import TransmitterSatelliteArgumen
 from tj_satellite import TJ
 
 def main(args=None):
-    parser = TransmitterSatelliteArgumentParser()
+    """Controlling of a Satellite for TJ-Monopix2"""
+
+    parser = TransmitterSatelliteArgumentParser(description=main.__doc__)
     args = vars(parser.parse_args(args))
+
     setup_cli_logging(args.pop("level"))
+    
     s = TJ(**args)
     s.run_satellite()
 
