@@ -15,7 +15,10 @@ class TJ(TransmitterSatellite):
         super().__init__(*args, **kwargs)
 
     def do_initializing(self, config: Configuration) -> None:
-
+        try:
+            self.ext_trg_scan.close()
+        except AttributeError:
+            pass
         self._load_config(config)
         self.ext_trg_scan = ExtTriggerScan(scan_config=self.scan_configuration, bench_config=self.bench_conf)
         self.ext_trg_scan.init()
@@ -40,7 +43,7 @@ class TJ(TransmitterSatellite):
             time.sleep(1)
         self.ext_trg_scan.stop_scan.set()
         self.thread_scan.join()
-        # self.ext_trg_scan.analyze()
+        self.ext_trg_scan.analyze()
         return "running done"
 
     def do_reconfigure(self, config: Configuration) -> str:
@@ -54,6 +57,11 @@ class TJ(TransmitterSatellite):
         config.set_default(key='output_directory', value=None) 
         config.set_default(key='chip_config_file', value=None) 
         config.set_default(key='testbench_path', value=os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'testbench.yaml')) 
+        config.set_default(key='scan_timeout', value=False)
+
+        config.set_default(key='send_data', value="tcp://127.0.0.1:5500")
+        config.set_default(key='trigger_mode', value="eudet")
+        config.set_default(key='create_pdf', value=True)
 
         self.scan_configuration = {
             'start_column': config.get_int(key='start_column'),
@@ -67,12 +75,19 @@ class TJ(TransmitterSatellite):
             'tot_calib_file': config.get(key='tot_calib_file'),
         }
 
-        with open(config.get(key='testbench_path', default_value=None), 'r') as f:
+        self.trigger_mode = config.get('trigger_mode')
+
+        with open(config.get(key='testbench_path'), 'r') as f:
             self.bench_conf = yaml.full_load(f)
-            self.bench_conf['general']['output_directory'] = config.get(key='output_directory', default_value=None)
-            self.bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = None
-
-
+            self.bench_conf['general']['output_directory'] = config.get(key='output_directory')
+            self.bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = config.get('chip_config_file')
+            self.bench_conf['modules']['module_0']['chip_0']['chip_sn'] = config.get('chip_sn')
+            self.bench_conf['modules']['module_0']['chip_0']['send_data'] = config.get('send_data')
+            self.bench_conf['analysis']['create_pdf'] = config.get('create_pdf')
+            if self.trigger_mode == 'aida':
+                self.bench_conf['TLU']['TRIGGER_MODE'] = 2
+                self.bench_conf['TLU']['TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES'] = 1
+            
     @schedule_metric("", 1)
     def trigger_number(self) -> Any:
         if self.fsm.current_state_value == SatelliteState.RUN:

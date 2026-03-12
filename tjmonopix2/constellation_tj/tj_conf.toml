@@ -1,14 +1,8 @@
-
-[TJ]
-
 [TJ._default]
-
+chip_sn = 'W00R00'
 start_column = 0
 stop_column = 224
 start_row = 0
 stop_row = 512
-scan_timeout = false     # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
-max_triggers = 1000000   # Number of maximum received triggers after stopping readout, if False no limit on received trigger
-tot_calib_file = "None"    # path to ToT calibration file for charge to e⁻ conversion, if None no conversion will be done
-chip_config_file = "None"
-output_folder = '/home/rasmus/Documents/constellation_tests'
+max_triggers = 100000   # Number of maximum received triggers after stopping readout, if False no limit on received trigger
+create_pdf = false
