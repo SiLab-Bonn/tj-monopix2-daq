@@ -10,6 +10,7 @@ import yaml
 import os
 from typing import Any
 
+
 class TJMonopix2(TransmitterSatellite):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,10 +53,10 @@ class TJMonopix2(TransmitterSatellite):
         self.ext_trg_scan.init()
 
     def _load_config(self, config: Configuration) -> None:
-        config.set_default(key='tot_calib_file', value=None) 
-        config.set_default(key='output_directory', value=None) 
-        config.set_default(key='chip_config_file', value=None) 
-        config.set_default(key='testbench_path', value=os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'testbench.yaml')) 
+        config.set_default(key='tot_calib_file', value=None)
+        config.set_default(key='output_directory', value=None)
+        config.set_default(key='chip_config_file', value=None)
+        config.set_default(key='testbench_path', value=os.path.join(os.path.join(os.path.dirname(__file__), '..'), 'testbench.yaml'))
         config.set_default(key='scan_timeout', value=False)
 
         config.set_default(key='send_data', value="tcp://127.0.0.1:5500")
@@ -86,7 +87,7 @@ class TJMonopix2(TransmitterSatellite):
             if self.trigger_mode == 'aida':
                 self.bench_conf['TLU']['TRIGGER_MODE'] = 2
                 self.bench_conf['TLU']['TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES'] = 1
-            
+
     @schedule_metric("", 1)
     def trigger_number(self) -> Any:
         if self.fsm.current_state_value == SatelliteState.RUN:

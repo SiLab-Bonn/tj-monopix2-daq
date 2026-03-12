@@ -36,7 +36,7 @@ Set the correct IP address in [tjmonopix2/system/bdaq53.yaml](https://github.com
 Start the satellite with:
 
 ```sh
-python tjmonopix2/constellation/__main__.py -g testbeam
+python tjmonopix2/constellation/__main__.py -g testbeam -n chip0
 ```
 
 ## Parameters
@@ -55,7 +55,7 @@ python tjmonopix2/constellation/__main__.py -g testbeam
 | `testbench_path` | (Optional) Use a specific testench yaml. If no directory is stated the default one is used. | String | None |
 | `chip_config_file` | (Optional) Specify a chip configuration file. If no directory is stated the configuration from the last file is used. If the last file can not be found a default one is used. | String | None |
 | `create_pdf` | (Optional) Generate a pdf with default plots from the scan. | Bool | True |
-| `send_data` | (Optional) Send data to a `zmq` socket, for use with the [`online_monitor`](https://github.com/SiLab-Bonn/online_monitor) | String | `tcp://127.0.0.1:5500` |
+| `send_data` | (Optional) Send data to a `zmq` socket, for use with the [`online_monitor`](https://github.com/SiLab-Bonn/online_monitor). | String | `tcp://127.0.0.1:5500` |
 
 The default testbench yaml can be found in [`tjmonopix2/testbench.yaml`](https://github.com/SiLab-Bonn/tj-monopix2-daq/blob/development/tjmonopix2/testbench.yaml).
 
@@ -82,3 +82,7 @@ The following metrics are distributed by this satellite and can be subscribed to
 | Metric | Description | Value Type | Interval |
 |--------|-------------|------------|----------|
 | `TRIGGER_NUMBER` | Number of recieved triggers | Int | 1s |
+
+## Data
+
+Data is saved in HDF5 format in the `output_directory`.
