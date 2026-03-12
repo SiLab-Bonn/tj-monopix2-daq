@@ -10,7 +10,7 @@ import yaml
 import os
 from typing import Any
 
-class TJ(TransmitterSatellite):
+class TJMonopix2(TransmitterSatellite):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -25,7 +25,6 @@ class TJ(TransmitterSatellite):
         return "init done"
 
     def do_launching(self):
-
         self.ext_trg_scan._init_environment()
         self.ext_trg_scan._init_hardware(force=False)
         self.ext_trg_scan.initialized = True
@@ -69,8 +68,8 @@ class TJ(TransmitterSatellite):
             'start_row': config.get_int(key='start_row'),
             'stop_row': config.get_int(key='stop_row'),
 
-            'scan_timeout': config.get_int(key='scan_timeout'),    # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
-            'max_triggers': config.get_int(key='max_triggers'),  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
+            'scan_timeout': config.get_int(key='scan_timeout'),
+            'max_triggers': config.get_int(key='max_triggers'),
 
             'tot_calib_file': config.get(key='tot_calib_file'),
         }

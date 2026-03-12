@@ -5,4 +5,3 @@ stop_column = 224
 start_row = 0
 stop_row = 512
 max_triggers = 100000   # Number of maximum received triggers after stopping readout, if False no limit on received trigger
-create_pdf = false
