@@ -48,8 +48,8 @@ python tjmonopix2/constellation/__main__.py -g testbeam -n chip0
 | `stop_column` | (Required) Set the enabled stop column. | Integer | None |
 | `start_row` | (Required) Set the enabled start row. | Integer | None |
 | `stop_row` | (Required) Set the enabled stop row. | Integer | None |
-| `max_triggers` | (Required) Specify the maximum number of triggers for the external trigger scan| Integer | None |
-| `scan_timeout` | (Optional) Set a timeout for the external scan. This is mutually exclusive to `max_triggers` | Float | None |
+| `max_triggers` | (Required) Specify the maximum number of triggers for the external trigger scan. | Integer | None |
+| `scan_timeout` | (Optional) Set a timeout for the external scan. This is mutually exclusive to `max_triggers`. | Float | None |
 | `trigger_mode` | (Optional) Set triggering mode of the readout system. Available modes are `Aida` and `Eudet`. | String | `Eudet` |
 | `output_directory` | (Optional) Set a specific output directory. If no directory is stated the default one is used. | String | None |
 | `testbench_path` | (Optional) Use a specific testench yaml. If no directory is stated the default one is used. | String | None |

@@ -23,14 +23,13 @@ class TJMonopix2(TransmitterSatellite):
         self._load_config(config)
         self.ext_trg_scan = ExtTriggerScan(scan_config=self.scan_configuration, bench_config=self.bench_conf)
         self.ext_trg_scan.init()
-        return "init done"
+        return "initializing done"
 
     def do_launching(self):
         self.ext_trg_scan._init_environment()
         self.ext_trg_scan._init_hardware(force=False)
         self.ext_trg_scan.initialized = True
         self.ext_trg_scan.configure()
-
         return "launching done"
 
     def do_run(self, payload=None) -> None:
@@ -51,6 +50,7 @@ class TJMonopix2(TransmitterSatellite):
         self._load_config(config)
         self.ext_trg_scan = ExtTriggerScan(scan_config=self.scan_configuration, bench_config=self.bench_conf)
         self.ext_trg_scan.init()
+        return "reconfiguring done"
 
     def _load_config(self, config: Configuration) -> None:
         config.set_default(key='tot_calib_file', value=None)
@@ -77,7 +77,7 @@ class TJMonopix2(TransmitterSatellite):
 
         self.trigger_mode = config.get('trigger_mode')
 
-        with open(config.get(key='testbench_path'), 'r') as f:
+        with open(config.get_path(key='testbench_path', check_exists=True), 'r') as f:
             self.bench_conf = yaml.full_load(f)
             self.bench_conf['general']['output_directory'] = config.get(key='output_directory')
             self.bench_conf['modules']['module_0']['chip_0']['chip_config_file'] = config.get('chip_config_file')
