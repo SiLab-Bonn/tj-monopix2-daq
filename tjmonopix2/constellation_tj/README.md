@@ -21,7 +21,7 @@ Clone the repository:
 git clone https://github.com/SiLab-Bonn/tj-monopix2-daq
 ```
 
-Install the [TJ-Monopix DAQ](https://github.com/SiLab-Bonn/tj-monopix2-daq) package:
+Install the [TJ-Monopix2 DAQ](https://github.com/SiLab-Bonn/tj-monopix2-daq) package:
 
 ```sh
 cd tj-monopix2-daq
@@ -57,7 +57,7 @@ python tjmonopix2/constellation/__main__.py -g testbeam -n chip0
 | `create_pdf` | (Optional) Generate a pdf with default plots from the scan. | Bool | True |
 | `send_data` | (Optional) Send data to a `zmq` socket, for use with the [`online_monitor`](https://github.com/SiLab-Bonn/online_monitor). | String | `tcp://127.0.0.1:5500` |
 
-The default testbench yaml can be found in [`tjmonopix2/testbench.yaml`](https://github.com/SiLab-Bonn/tj-monopix2-daq/blob/development/tjmonopix2/testbench.yaml).
+The default testbench configuration can be found in [`tjmonopix2/testbench.yaml`](https://github.com/SiLab-Bonn/tj-monopix2-daq/blob/development/tjmonopix2/testbench.yaml).
 
 ### Configuration Example
 
@@ -72,7 +72,6 @@ stop_column = 224
 start_row = 0
 stop_row = 512
 max_triggers = 100000
-create_pdf = false
 ```
 
 ## Metrics
