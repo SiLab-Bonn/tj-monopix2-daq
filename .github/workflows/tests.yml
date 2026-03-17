@@ -30,7 +30,7 @@ jobs:
         python-version: ${{matrix.python-version}}
         cache: 'pip'
     - name: Install Dependencies
-      run:  pip install "cocotb<2" "cocotb-bus<0.3" coloredlogs numba numpy matplotlib pyyaml tables pytest tqdm scipy
+      run:  pip install "cocotb>=2.0" "cocotb-bus" coloredlogs numba numpy matplotlib pyyaml tables pytest tqdm scipy
     - name: Install basil from repo
       run: git clone -b master --depth 1 https://github.com/SiLab-Bonn/basil.git; cd basil; pip install .; cd ..;
     - name: Install Verilator
