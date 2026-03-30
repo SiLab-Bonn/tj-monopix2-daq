@@ -789,14 +789,21 @@ class ScanBase(object):
     def _write_config_h5(self, h5_file, node):
         ''' Write complete configuration to the provided node of a h5 file '''
 
+        def _to_h5_string(value):
+            if isinstance(value, bytes):
+                return value
+            if isinstance(value, str):
+                return value.encode('utf-8')
+            return str(value).encode('utf-8')
+
         def write_dict_to_table(dictionary, node):
             for attr, val in dictionary.items():
                 row = node.row
-                row['attribute'] = attr
+                row['attribute'] = _to_h5_string(attr)
                 try:
                     row['value'] = val
-                except TypeError:  # value cannot be implicitly converted to string
-                    row['value'] = str(val)
+                except (TypeError, UnicodeEncodeError):  # include non-ascii string values
+                    row['value'] = _to_h5_string(val)
                 row.append()
             node.flush()
 

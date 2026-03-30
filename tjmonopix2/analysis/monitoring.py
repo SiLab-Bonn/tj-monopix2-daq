@@ -10,6 +10,7 @@ import json
 import os
 import re
 import datetime
+from collections import OrderedDict
 from time import mktime
 from time import sleep
 
@@ -105,6 +106,14 @@ def _parse_mapping_value(value):
         parsed = ast.literal_eval(s)
         if isinstance(parsed, dict):
             return parsed
+    except Exception:
+        pass
+    # Serialized dicts from H5 config tables can look like:
+    # "OrderedDict({...})" or nested OrderedDict objects.
+    try:
+        parsed = eval(s, {'__builtins__': {}}, {'OrderedDict': OrderedDict})  # noqa: S307
+        if isinstance(parsed, dict):
+            return dict(parsed)
     except Exception:
         pass
     return {}
@@ -289,12 +298,13 @@ def _append_summary_rows(summary_table, source, field_map, unit_map, series_arr)
         min_v = np.nanmin(values)
         max_v = np.nanmax(values)
         row = summary_table.row
-        row['attribute'] = label
+        # Store UTF-8 bytes to support labels with non-ASCII symbols (e.g. "°C")
+        row['attribute'] = str(label).encode('utf-8')
         row['mean'] = mean
         row['min'] = min_v
         row['max'] = max_v
-        row['unit'] = unit_map.get(field, '')
-        row['source'] = source
+        row['unit'] = str(unit_map.get(field, '')).encode('utf-8')
+        row['source'] = str(source).encode('utf-8')
         row.append()
     summary_table.flush()
 
@@ -381,8 +391,8 @@ def add_monitoring_to_h5(in_file, out_file, monitoring_cfg, scan_start, scan_sto
                 'HV_I': 'HV_I',
                 'PWELL_V': 'PWELL_V',
                 'PWELL_I': 'PWELL_I',
-                'PSUB_V': 'PSUB_V',
-                'PSUB_I': 'PSUB_I',
+                'PSUB_PWELL_V': 'PSUB_PWELL_V',
+                'PSUB_PWELL_I': 'PSUB_PWELL_I',
             }
         )
         paths = _iter_csv_paths(power_cfg)

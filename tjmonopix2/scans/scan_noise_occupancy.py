@@ -17,12 +17,12 @@ from tjmonopix2.system.scan_base import ScanBase
 import yaml
 
 scan_configuration = {
-    'start_column': 224,
+    'start_column': 360,
     'stop_column': 448,
     'start_row': 0,
     'stop_row': 512,
 
-    'scan_timeout': 3,
+    'scan_timeout': 300,
     'min_occupancy': 10,
 }
 
@@ -63,7 +63,7 @@ class NoiseOccScan(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             #print(f"test i {enumerate(reg_values)}")
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
@@ -80,7 +80,7 @@ class NoiseOccScan(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 

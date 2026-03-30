@@ -15,14 +15,15 @@ import yaml
 
 
 scan_configuration = {
-    'start_column': 290,
-    'stop_column': 292,
+    'start_column': 370,
+    'stop_column': 372,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
     'VCAL_HIGH': 140,
     'VCAL_LOW_start': 140-0,
+    # 'VCAL_LOW_stop': 140-20,
     'VCAL_LOW_stop': 140-141,
     'VCAL_LOW_step': -1
 
@@ -66,7 +67,7 @@ class ThresholdScan(ScanBase):
         #     # self.chip.masks['tdac'][col, row] = 0 # --> Max solution to disable the pixel BUT not store in use_pixel NOR in masks.enable
 
         # # TDAC=4 for threshold tuning 0b100
-        # self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 4# TDAC=4 (default)
+        self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 4# TDAC=4 (default)
 
         #chip w8r13 bad cols
         # #Disable W8R13 bad/broken columns (25, 160, 161, 224, 274, 383-414 included, 447) and pixels
@@ -115,7 +116,7 @@ class ThresholdScan(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             #print(f"test i {enumerate(reg_values)}")
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
@@ -142,7 +143,7 @@ class ThresholdScan(ScanBase):
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
             # print(f"Disabling BCID in col {col}")
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             # EN_BCID_CONF (to disable BCID distribution on cols under test, use 0 instead of v, doing this the TOT is 0 since Le and trailing edge are not assigned BCID is missing)
             # To enable it all the matrix (higher I_LV and Temp), use  self.chip._write_register(171+i, 0xffff)
@@ -153,7 +154,7 @@ class ThresholdScan(ScanBase):
             # self.chip._write_register(171+i, 0)
             # Read back
             # print(f"Writing to BCID: {v:016b}")
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
@@ -346,7 +347,7 @@ class ThresholdScan(ScanBase):
             self.store_scan_par_values(scan_param_id=scan_param_id, vcal_high=VCAL_HIGH, vcal_low=vcal_low)
             with self.readout(scan_param_id=scan_param_id):
                 #shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id)
-                shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id,PulseStartCnfg=45)
+                shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id,PulseStartCnfg=19)
                 # if we want to measure ANAMON0 and ANAMON1 at the same time, the following line inject in all rows at the same time
                 # self.chip.inject(PulseStartCnfg=19, PulseStopCnfg=19+900, repetitions=n_injections, wait_cycles=1, latency=1400)
         pbar.close()
