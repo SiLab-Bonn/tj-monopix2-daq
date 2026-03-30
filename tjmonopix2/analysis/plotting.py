@@ -156,30 +156,34 @@ class Plotting(object):
         except tb.NoSuchNodeError:
             self.plot_electron_axis = False
 
-        try:
-            in_file.close()
-        except Exception:
-            pass
-
         # Monitoring data
         self.monitoring_cfg = None
         self.monitoring_group = None
         self.monitoring_summary = None
         self.monitoring_tables = {}
+        self.monitoring_scan_start = None
+        self.monitoring_scan_stop = None
         try:
             self.monitoring_cfg = monitoring.load_monitoring_config_from_root(root)
         except Exception:
             self.monitoring_cfg = None
         try:
             self.monitoring_group = root.monitoring
+            self.monitoring_scan_start = getattr(self.monitoring_group._v_attrs, 'scan_start', None)
+            self.monitoring_scan_stop = getattr(self.monitoring_group._v_attrs, 'scan_stop', None)
             if hasattr(self.monitoring_group, 'summary'):
                 self.monitoring_summary = self.monitoring_group.summary[:]
             if hasattr(self.monitoring_group, 'power'):
-                self.monitoring_tables['power'] = self.monitoring_group.power
+                self.monitoring_tables['power'] = self._snapshot_monitoring_table(self.monitoring_group.power)
             if hasattr(self.monitoring_group, 'env'):
-                self.monitoring_tables['env'] = self.monitoring_group.env
+                self.monitoring_tables['env'] = self._snapshot_monitoring_table(self.monitoring_group.env)
         except Exception:
             self.monitoring_group = None
+
+        try:
+            in_file.close()
+        except Exception:
+            pass
 
     def __enter__(self):
         return self
@@ -253,16 +257,21 @@ class Plotting(object):
         return value
 
     def _read_monitoring_table(self, table):
-        try:
-            label_map = json.loads(table.attrs.label_map)
-        except Exception:
-            label_map = {}
-        try:
-            unit_map = json.loads(table.attrs.unit_map)
-        except Exception:
-            unit_map = {}
+        if isinstance(table, dict) and 'data' in table:
+            data = table['data']
+            label_map = table.get('label_map', {})
+            unit_map = table.get('unit_map', {})
+        else:
+            try:
+                label_map = json.loads(table.attrs.label_map)
+            except Exception:
+                label_map = {}
+            try:
+                unit_map = json.loads(table.attrs.unit_map)
+            except Exception:
+                unit_map = {}
+            data = table[:]
 
-        data = table[:]
         ts = data['timestamp']
         series = {}
         for field in data.dtype.names:
@@ -272,6 +281,21 @@ class Plotting(object):
             series[label] = data[field]
 
         return ts, series, label_map, unit_map
+
+    def _snapshot_monitoring_table(self, table):
+        try:
+            label_map = json.loads(table.attrs.label_map)
+        except Exception:
+            label_map = {}
+        try:
+            unit_map = json.loads(table.attrs.unit_map)
+        except Exception:
+            unit_map = {}
+        return {
+            'data': table[:],
+            'label_map': label_map,
+            'unit_map': unit_map
+        }
 
     def create_monitoring_summary_table(self):
         if self.monitoring_summary is None:
@@ -287,23 +311,21 @@ class Plotting(object):
                 attr = self._decode_bytes(row['attribute'])
                 unit = self._decode_bytes(row['unit'])
                 mean = row['mean']
-                min_v = row['min']
-                max_v = row['max']
                 # Keep only main monitoring values for the PDF
                 keep = False
                 if 'NTC' in attr:
                     keep = True
-                if attr in ['HV_V', 'HV_I', 'PWELL_V', 'PWELL_I', 'PSUB_V', 'PSUB_I']:
+                if attr in ['HV_V', 'HV_I', 'PWELL_V', 'PWELL_I', 'PSUB_PWELL_V', 'PSUB_PWELL_I']:
                     keep = True
                 if not keep:
                     continue
-                rows.append([attr, f'{mean:.3g}', f'{min_v:.3g}', f'{max_v:.3g}', unit])
+                rows.append([attr, f'{mean:.3g}', unit])
 
             if not rows:
                 return
 
-            labels = ['Attribute', 'Mean', 'Min', 'Max', 'Unit']
-            widths = [0.45, 0.15, 0.15, 0.15, 0.10]
+            labels = ['Attribute', 'Mean', 'Unit']
+            widths = [0.65, 0.20, 0.15]
             table = ax.table(cellText=rows, colWidths=widths, colLabels=labels, cellLoc='left', loc='center')
             table.scale(1.0, 1.0)
             table.auto_set_font_size(False)
@@ -314,6 +336,10 @@ class Plotting(object):
                     cell.set_fontsize(7)
 
             ax.set_title('Monitoring summary (scan window)', fontsize=10)
+            start_str = self._format_monitoring_timestamp(self.monitoring_scan_start)
+            stop_str = self._format_monitoring_timestamp(self.monitoring_scan_stop)
+            if start_str and stop_str:
+                ax.text(0.0, 0.92, f'Start: {start_str}    Stop: {stop_str}', transform=ax.transAxes, fontsize=7)
             self._save_plots(fig, suffix='monitoring_summary')
         except Exception:
             self.log.error('Could not create monitoring summary table!')
@@ -333,48 +359,79 @@ class Plotting(object):
         if not self.monitoring_group:
             return
         try:
-            fig = Figure()
-            _ = FigureCanvas(fig)
-            gs = fig.add_gridspec(2, 1, height_ratios=[1, 1])
-
-            # NTC temperature
-            ax1 = fig.add_subplot(gs[0, 0])
-            table = self.monitoring_tables.get('env')
-            if table:
-                ts, series, _, _ = self._read_monitoring_table(table)
-                if ts.size > 0 and series:
-                    t0 = ts[0]
-                    time_s = ts - t0
-                    for label, values in series.items():
-                        if 'NTC' in label:
-                            ax1.plot(time_s, values, label=label)
-                    ax1.set_title('NTC temperature vs time')
-                    ax1.set_xlabel('Time since start [s]')
-                    ax1.set_ylabel('Temperature [°C]')
-                    ax1.grid(True, alpha=0.3)
-                    ax1.legend(fontsize=6, loc='best')
-
-            # Currents
-            ax2 = fig.add_subplot(gs[1, 0])
-            table = self.monitoring_tables.get('power')
-            if table:
-                ts, series, _, _ = self._read_monitoring_table(table)
-                if ts.size > 0 and series:
-                    t0 = ts[0]
-                    time_s = ts - t0
-                    wanted = ['HV_I', 'PWELL_I', 'PSUB_I']
-                    for label, values in series.items():
-                        if label in wanted:
-                            ax2.plot(time_s, values, label=label)
-                    ax2.set_title('Currents vs time')
-                    ax2.set_xlabel('Time since start [s]')
-                    ax2.set_ylabel('Current [A]')
-                    ax2.grid(True, alpha=0.3)
-                    ax2.legend(fontsize=6, loc='best')
-
-            self._save_plots(fig, suffix='monitoring_main')
+            self._plot_ntc_time_series()
+            self._plot_currents_time_series(
+                wanted_labels=['HV_I'],
+                title='HV current vs time',
+                suffix='monitoring_current_hv'
+            )
+            self._plot_currents_time_series(
+                wanted_labels=['PWELL_I', 'PSUB_PWELL_I'],
+                title='PWELL and PSUB-PWELL currents vs time',
+                suffix='monitoring_current_pwell_psub'
+            )
         except Exception:
             self.log.error('Could not create monitoring main page!')
+
+    def _format_monitoring_timestamp(self, timestamp):
+        if timestamp is None:
+            return None
+        try:
+            return datetime.datetime.fromtimestamp(float(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            return None
+
+    def _plot_ntc_time_series(self):
+        table = self.monitoring_tables.get('env')
+        if not table:
+            return
+        ts, series, _, _ = self._read_monitoring_table(table)
+        if ts.size == 0 or not series:
+            return
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        t0 = ts[0]
+        time_s = ts - t0
+        plotted = False
+        for label, values in series.items():
+            if 'NTC' in label:
+                ax.plot(time_s, values, label=label)
+                plotted = True
+        if not plotted:
+            return
+        ax.set_title('NTC temperature vs time')
+        ax.set_xlabel('Time since start [s]')
+        ax.set_ylabel('Temperature [°C]')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=6, loc='best')
+        self._save_plots(fig, suffix='monitoring_ntc')
+
+    def _plot_currents_time_series(self, wanted_labels, title, suffix):
+        table = self.monitoring_tables.get('power')
+        if not table:
+            return
+        ts, series, _, _ = self._read_monitoring_table(table)
+        if ts.size == 0 or not series:
+            return
+        fig = Figure()
+        _ = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        t0 = ts[0]
+        time_s = ts - t0
+        plotted = False
+        for label, values in series.items():
+            if label in wanted_labels:
+                ax.plot(time_s, values, label=label)
+                plotted = True
+        if not plotted:
+            return
+        ax.set_title(title)
+        ax.set_xlabel('Time since start [s]')
+        ax.set_ylabel('Current [A]')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=6, loc='best')
+        self._save_plots(fig, suffix=suffix)
 
     def _plot_env_time_series(self):
         table = self.monitoring_tables.get('env')
@@ -410,7 +467,7 @@ class Plotting(object):
         t0 = ts[0]
         time_s = ts - t0
 
-        wanted = ['HV_I', 'PWELL_I', 'PSUB_I']
+        wanted = ['HV_I', 'PWELL_I', 'PSUB_PWELL_I']
         plotted = False
         for label in series.keys():
             norm = label.replace(' ', '').replace('-', '').replace('_', '').upper()

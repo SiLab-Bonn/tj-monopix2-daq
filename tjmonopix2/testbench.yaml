@@ -10,7 +10,7 @@ modules:
       #chip_sn: "W14R12"
       # chip_sn: "W8R06" # NIEL 5E14
       #chip_sn: "W8R13" # not irradiated
-      #chip_sn: "W2R17" # NIEL 2.5E14
+      # chip_sn: "W2R17" # NIEL 2.5E14
       # chip_sn: "W8R04" # NIEL 1E14
       chip_sn: "W2R05" # NIEL 5E14 e-irradiated
 
@@ -54,20 +54,20 @@ calibration: # Setup-specific calibration constants
 
 # Monitoring data import (CSV files produced by external monitoring tools)
 monitoring:
-  enable: False # Enable import of monitoring CSV data into interpreted h5
+  enable: True # Enable import of monitoring CSV data into interpreted h5
   include_in_pdf: True # Add monitoring plots and summary table to PDF
   wait_for_csv_s: 0 # Optional delay before reading CSV files (allows monitors to flush to disk)
   time_margin_s: 5 # Expand scan window by this margin when selecting monitoring rows
   env:
-    csv_dir: # e.g. /path/to/temperature/logs
+    csv_dir: "/home/labb2/peltier-controller/src/logs" # e.g. /path/to/temperature/logs
     pattern: "*_log.csv"
     timestamp_column: "Time [s]"
     columns: {NTC_C: "NTC [°C]"}
   power:
-    csv_dir: # e.g. /path/to/monitoring/logs
+    csv_dir: "/home/labb2/TJMP2_power_controller/logs" # e.g. /path/to/monitoring/logs
     pattern: "monitoring_*.csv"
     timestamp_column: "timestamp"
-    columns: {HV_V: "HV_V", HV_I: "HV_I", PWELL_V: "PWELL_V", PWELL_I: "PWELL_I", PSUB_V: "PSUB_V", PSUB_I: "PSUB_I"}
+    columns: {HV_V: "HV_V", HV_I: "HV_I", PWELL_V: "PWELL_V", PWELL_I: "PWELL_I", PSUB_PWELL_V: "PSUB_PWELL_V", PSUB_PWELL_I: "PSUB_PWELL_I"}
 
 # Standard analysis settings
 # Scans might overwrite these settings if needed.
