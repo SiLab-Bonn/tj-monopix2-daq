@@ -1,0 +1,163 @@
+{
+    "W8R6": {
+        "HVC": {
+            "IBIAS": 100,
+            "ITHR": 30,
+            "ICASN": 30,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 50,
+            "VCASP": 40,
+            "VCASC": 140,
+            "VCLIP": 225
+        },
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 20,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 143,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        }
+    },
+
+    "W8R4": {
+        "HVC": {
+            "IBIAS": 100,
+            "ITHR": 30,
+            "ICASN": 30,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 50,
+            "VCASP": 40,
+            "VCASC": 140,
+            "VCLIP": 225
+        },
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 20,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 143,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        }
+    },
+
+    "W2R5": {
+        "HVC": {
+            "IBIAS": 100,
+            "ITHR": 30,
+            "ICASN": 30,
+            "IDB": 88,
+            "ITUNE": 200,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 50,
+            "VCASP": 40,
+            "VCASC": 140,
+            "VCLIP": 255
+        },
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 50,
+            "ICASN": 100,
+            "IDB": 100,
+            "ITUNE": 200,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 120,
+            "VCASP": 93,
+            "VCASC": 228,
+            "VCLIP": 255
+        }
+    },
+
+    "W2R17": {
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 20,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 143,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        }
+    },
+
+
+    "W8R13": {
+        "HVC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 2,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 50,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        },
+
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 2,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 88,
+            "IRAM": 50,
+            "VRESET": 110,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        }
+    },
+
+    "W14R12": {
+        "HVC": {
+            "IBIAS": 100,
+            "ITHR": 64,
+            "ICASN": 80,
+            "IDB": 100,
+            "ITUNE": 250,
+            "IDEL": 255,
+            "VRESET": 50,
+            "VCASP": 93,
+            "VCASC": 205,
+            "VCLIP": 255
+        },
+        "DCC": {
+            "IBIAS": 100,
+            "ITHR": 60,
+            "ICASN": 2,
+            "IDB": 100,
+            "ITUNE": 190,
+            "IDEL": 255,
+            "VRESET": 110,
+            "VCASP": 93,
+            "VCASC": 228,
+            "VCLIP": 255
+        }
+    }
+
+}
