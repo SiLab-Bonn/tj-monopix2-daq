@@ -50,7 +50,7 @@ scan_configuration = {
 class ThresholdScan(ScanBase):
     scan_id = 'threshold_scan'
 
-    def load_bias_config(self, json_path, chip="W8R6", fe="DCC"):
+    def load_bias_config(self, json_path="../chip_registers.json", chip="W2R5", fe="DCC"):
         """
         Loads and applies the values of the registers from JSON, selecting chip and front-end.
         """
@@ -69,8 +69,10 @@ class ThresholdScan(ScanBase):
             else:
                 self.log.warning(f"Register {reg} not found in chip")
 
+    def get_config_param(self, key, default=None):
+        return self.configuration.get("configure", {}).get(key,default)
 
-    def _configure(self, start_column=0, stop_column=512, start_row=0, stop_row=512, bias_json=None, chip="W8R6", fe="DCC", **_):
+    def _configure(self, start_column=0, stop_column=512, start_row=0, stop_row=512, **_):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['hitor'][start_column:stop_column, start_row:stop_row] = True
@@ -185,6 +187,9 @@ class ThresholdScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
         self.chip.registers["CMOS_TX_EN_CONF"].write(1)
 
+        bias_json = self.get_config_param("bias-json", "../chip_registers.json")
+        chip = self.get_config_param("chip","W8R6")
+        fe = self.get_config_param("fe","DCC")
         if bias_json:
             self.load_bias_config(json_path=bias_json, chip=chip, fe=fe)
 
@@ -387,7 +392,7 @@ class ThresholdScan(ScanBase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--bias-json", type=str, help="Path to JSON file with bias configs", default="../chip_registers.json")
-    parser.add_argument("--chip", type=str, help="Chip name (e.g., W8R6)", default="W8R6")
+    parser.add_argument("--chip", type=str, help="Chip name (e.g., W8R6)", default="W2R5")
     parser.add_argument("--fe", type=str, help="FE name (e.g., HVC or DCC)", default="DCC")
     args = parser.parse_args()
 
