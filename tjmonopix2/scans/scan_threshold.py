@@ -386,7 +386,7 @@ class ThresholdScan(ScanBase):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bias-json", type=str, help="Path to JSON file with bias configs", default=None)
+    parser.add_argument("--bias-json", type=str, help="Path to JSON file with bias configs", default="../chip_registers.json")
     parser.add_argument("--chip", type=str, help="Chip name (e.g., W8R6)", default="W8R6")
     parser.add_argument("--fe", type=str, help="FE name (e.g., HVC or DCC)", default="DCC")
     args = parser.parse_args()
