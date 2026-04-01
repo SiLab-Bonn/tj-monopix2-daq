@@ -746,6 +746,9 @@ class ScanBase(object):
                     # Set chip config file name
                     with self._logging_through_handlers():
                         chip_settings = v
+                        override_cfg = scan_configuration.get("chip_config_file")
+                        if override_cfg:
+                            chip_settings["chip_config_file"] = override_cfg
                         if not chip_settings['chip_config_file']:  # take chip cfg from latest scan
                             chip_settings['chip_config_file'] = utils.get_latest_config_node_from_files(directory=output_dir)
                             if not chip_settings['chip_config_file']:  # fallback to yaml

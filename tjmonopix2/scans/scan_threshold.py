@@ -50,7 +50,7 @@ scan_configuration = {
 class ThresholdScan(ScanBase):
     scan_id = 'threshold_scan'
 
-    def load_bias_config(self, json_path="../chip_registers.json", chip="W2R5", fe="DCC"):
+    def load_regs_config(self, json_path="../chip_registers.json", chip="W2R5", fe="DCC"):
         """
         Loads and applies the values of the registers from JSON, selecting chip and front-end.
         """
@@ -187,11 +187,12 @@ class ThresholdScan(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
         self.chip.registers["CMOS_TX_EN_CONF"].write(1)
 
-        bias_json = self.get_config_param("bias-json", "../chip_registers.json")
+        def_regs = self.get_config_param("def_regs", None)
+        regs_json = self.get_config_param("regs_json", "../chip_registers.json")
         chip = self.get_config_param("chip","W8R6")
         fe = self.get_config_param("fe","DCC")
-        if bias_json:
-            self.load_bias_config(json_path=bias_json, chip=chip, fe=fe)
+        if def_regs:
+            self.load_regs_config(json_path=regs_json, chip=chip, fe=fe)
 
 
         self.chip.registers["FREEZE_START_CONF"].write(250)
@@ -261,16 +262,22 @@ class ThresholdScan(ScanBase):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bias-json", type=str, help="Path to JSON file with bias configs", default="../chip_registers.json")
+    parser.add_argument("--def_regs", type=str, help="Toggle if you want default registers", default=None)
+    parser.add_argument("--regs_json", type=str, help="Path to JSON file with regs configs", default="../chip_registers.json")
     parser.add_argument("--chip", type=str, help="Chip name (e.g., W8R6)", default="W2R5")
     parser.add_argument("--fe", type=str, help="FE name (e.g., HVC or DCC)", default="DCC")
+    parser.add_argument("--chip_config_file", type=str, default=None)
     args = parser.parse_args()
 
+    if args.chip_config_file:
+        scan_configuration["chip_config_file"] = args.chip_config_file
+
     with ThresholdScan(scan_config=scan_configuration) as scan:
-        scan.configuration.setdefault("configure", {})
-        scan.configuration["configure"].update({
-            "bias_json": args.bias_json,
-            "chip": args.chip,
-            "fe": args.fe
-        })
+        if args.def_regs:
+            scan.configuration.setdefault("configure", {})
+            scan.configuration["configure"].update({
+                "regs_json": args.regs_json,
+                "chip": args.chip,
+                "fe": args.fe
+            })
         scan.start()
