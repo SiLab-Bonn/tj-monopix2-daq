@@ -20,8 +20,8 @@ from tjmonopix2.analysis import online as oa
 import yaml
 
 scan_configuration = {
-    'start_column': 449,
-    'stop_column': 480,
+    'start_column': 360,
+    'stop_column': 448,
     'start_row': 0,
     'stop_row': 512,
 
@@ -29,7 +29,7 @@ scan_configuration = {
 
     # Target threshold
     'VCAL_LOW': 30,
-    'VCAL_HIGH': 30+13
+    'VCAL_HIGH': 30+24
 }
 
 
@@ -60,15 +60,15 @@ class TDACTuning(ScanBase):
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
 
-        # Read masked pixels from masked_pixels.yaml
-        with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
-            masked_pixels = yaml.full_load(f)
+        # # Read masked pixels from masked_pixels.yaml
+        # with open("output_data/module_0/chip_0/masked_pixels.yaml") as f:
+        #     masked_pixels = yaml.full_load(f)
 
-        for i in range(0, len(masked_pixels['masked_pixels'])):
-            row = masked_pixels['masked_pixels'][i]['row']
-            col = masked_pixels['masked_pixels'][i]['col']
-            self.chip.masks.disable_mask[col, row] = False
-            # self.chip.masks['tdac'][col, row] = 0 # --> Max solution to disable the pixel BUT not store in use_pixel NOR in masks.enable
+        # for i in range(0, len(masked_pixels['masked_pixels'])):
+        #     row = masked_pixels['masked_pixels'][i]['row']
+        #     col = masked_pixels['masked_pixels'][i]['col']
+        #     self.chip.masks.disable_mask[col, row] = False
+        #     # self.chip.masks['tdac'][col, row] = 0 # --> Max solution to disable the pixel BUT not store in use_pixel NOR in masks.enable
 
         col_bad = [] #
         # W8R6 bad columns (246 to 251 included: double-cols will be disabled)
@@ -86,7 +86,7 @@ class TDACTuning(ScanBase):
         for col in col_disabled:
             dcol = col // 2
             reg_values[dcol//16] &= ~(1 << (dcol % 16))
-        print(" ".join(f"{x:016b}" for x in reg_values))
+        # print(" ".join(f"{x:016b}" for x in reg_values))
         for i, v in enumerate(reg_values):
             # EN_RO_CONFsource /home/labb2/tj-monopix2-daq-development/venv/bin/activate
             self.chip._write_register(155+i, v)
@@ -102,25 +102,25 @@ class TDACTuning(ScanBase):
             # EN_FREEZE_CONF
             self.chip._write_register(203+i, v)
             # Read back
-            print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
+            # print(f"{i:3d} {v:016b} {self.chip._get_register_value(155+i):016b} {self.chip._get_register_value(171+i):016b} {self.chip._get_register_value(187+i):016b} {self.chip._get_register_value(203+i):016b}")
 
 
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
 
-        # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C
-        self.chip.registers["IBIAS"].write(100)
-        self.chip.registers["ITHR"].write(30) #def 30
-        self.chip.registers["ICASN"].write(30) #def 30
-        self.chip.registers["IDB"].write(100)
-        self.chip.registers["ITUNE"].write(250)
-        self.chip.registers["IDEL"].write(88)
-        self.chip.registers["IRAM"].write(50)
-        self.chip.registers["VRESET"].write(50)
-        self.chip.registers["VCASP"].write(40)
-        self.chip.registers["VCASC"].write(140)
-        self.chip.registers["VCLIP"].write(255)
+        # # W8R06 irradiated HVC used TB2024 run 1566 TH=15.9 @30C
+        # self.chip.registers["IBIAS"].write(100)
+        # self.chip.registers["ITHR"].write(30) #def 30
+        # self.chip.registers["ICASN"].write(30) #def 30
+        # self.chip.registers["IDB"].write(100)
+        # self.chip.registers["ITUNE"].write(250)
+        # self.chip.registers["IDEL"].write(88)
+        # self.chip.registers["IRAM"].write(50)
+        # self.chip.registers["VRESET"].write(50)
+        # self.chip.registers["VCASP"].write(40)
+        # self.chip.registers["VCASC"].write(140)
+        # self.chip.registers["VCLIP"].write(255)
 
         # # # W2R17 irradiated 2.5e14 DCC
         # self.chip.registers["IBIAS"].write(100)
@@ -176,6 +176,8 @@ class TDACTuning(ScanBase):
         self.chip.registers["VH"].write(VCAL_HIGH)
 
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
+
+        self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
         self.data.hist_occ = oa.OccupancyHistogramming()
 
