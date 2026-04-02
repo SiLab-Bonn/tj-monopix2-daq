@@ -18,16 +18,16 @@ from tjmonopix2.analysis import online as oa
 
 
 scan_configuration = {
-    'start_column': 32,
-    'stop_column': 64,
+    'start_column': 370,
+    'stop_column': 374,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
 
     # Target threshold
-    'VCAL_LOW': 1,
-    'VCAL_HIGH': 35,
+    'VCAL_LOW': 140-30,
+    'VCAL_HIGH': 140,
 
     # This setting does not have to be changed, it only allows (slightly) faster retuning
     # E.g.: gdac_value_bits = [3, 2, 1, 0] uses the 4th, 3rd, 2nd, and 1st GDAC value bit.
@@ -61,7 +61,7 @@ class GDACTuning(ScanBase):
         self.data.start_column, self.data.stop_column, self.data.start_row, self.data.stop_row = start_column, stop_column, start_row, stop_row
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
         self.chip.masks['injection'][start_column:stop_column, start_row:stop_row] = True
-        self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
+        # self.chip.masks['tdac'][start_column:stop_column, start_row:stop_row] = 0b100
 
         self.chip.masks.apply_disable_mask()
         self.chip.masks.update(force=True)
@@ -72,6 +72,8 @@ class GDACTuning(ScanBase):
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
         self.data.hist_occ = oa.OccupancyHistogramming()
+        
+        self.daq.rx_channels['rx0']['DATA_DELAY'] = 14
 
     def _scan(self, n_injections=100, gdac_value_bits=range(6, -1, -1), **_):
         '''

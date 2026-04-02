@@ -799,13 +799,24 @@ class ScanBase(object):
                 return value.encode('utf-8')
             return str(value).encode('utf-8')
 
+        # def write_dict_to_table(dictionary, node):
+        #     for attr, val in dictionary.items():
+        #         row = node.row
+        #         row['attribute'] = _to_h5_string(attr)
+        #         try:
+        #             row['value'] = val
+        #         except (TypeError, UnicodeEncodeError):  # include non-ascii string values
+        #             row['value'] = _to_h5_string(val)
+        #         row.append()
+        #     node.flush()
+
         def write_dict_to_table(dictionary, node):
             for attr, val in dictionary.items():
                 row = node.row
                 row['attribute'] = _to_h5_string(attr)
                 try:
                     row['value'] = val
-                except (TypeError, UnicodeEncodeError):  # include non-ascii string values
+                except (TypeError, UnicodeEncodeError, ValueError):
                     row['value'] = _to_h5_string(val)
                 row.append()
             node.flush()

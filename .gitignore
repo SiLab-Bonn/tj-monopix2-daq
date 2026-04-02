@@ -111,6 +111,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+tjmp2-development/
 
 # Spyder project settings
 .spyderproject
