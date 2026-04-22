@@ -73,9 +73,8 @@ class TJMonopix2(TransmitterSatellite):
             'max_triggers': config.get_int(key='max_triggers'),
 
             'tot_calib_file': config.get(key='tot_calib_file'),
+            'trigger_mode': config.get('trigger_mode'),
         }
-
-        self.trigger_mode = config.get('trigger_mode')
 
         with open(config.get_path(key='testbench_path', check_exists=True), 'r') as f:
             self.bench_conf = yaml.full_load(f)
@@ -84,9 +83,6 @@ class TJMonopix2(TransmitterSatellite):
             self.bench_conf['modules']['module_0']['chip_0']['chip_sn'] = config.get('chip_sn')
             self.bench_conf['modules']['module_0']['chip_0']['send_data'] = config.get('send_data')
             self.bench_conf['analysis']['create_pdf'] = config.get('create_pdf')
-            if self.trigger_mode == 'aida':
-                self.bench_conf['TLU']['TRIGGER_MODE'] = 2
-                self.bench_conf['TLU']['TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES'] = 1
 
     @schedule_metric("", 1)
     def trigger_number(self) -> Any:
