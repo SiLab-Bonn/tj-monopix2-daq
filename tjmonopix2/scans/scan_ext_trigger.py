@@ -19,6 +19,7 @@ scan_configuration = {
     'stop_row': 512,
 
     'scan_timeout': False,    # Timeout for scan after which the scan will be stopped, in seconds; if False no limit on scan time
+    'trigger_mode': 'eudet',
     'max_triggers': 1000000,  # Number of maximum received triggers after stopping readout, if False no limit on received trigger
 
     'tot_calib_file': None    # path to ToT calibration file for charge to e⁻ conversion, if None no conversion will be done
@@ -30,7 +31,7 @@ class ExtTriggerScan(ScanBase):
 
     stop_scan = threading.Event()
 
-    def _configure(self, scan_timeout=False, max_triggers=1000, start_column=0, stop_column=512, start_row=0, stop_row=512, **_):
+    def _configure(self, scan_timeout=False, max_triggers=1000, trigger_mode="eudet", start_column=0, stop_column=512, start_row=0, stop_row=512, **_):
         self.log.info('External trigger scan needs TLU running!')
 
         if scan_timeout and max_triggers:
@@ -42,7 +43,7 @@ class ExtTriggerScan(ScanBase):
 
         self.daq.configure_tlu_veto_pulse(veto_length=500)
         if max_triggers:
-            self.daq.configure_tlu_module(max_triggers=max_triggers)
+            self.daq.configure_tlu_module(max_triggers=max_triggers, trigger_mode=trigger_mode)
 
     def _scan(self, scan_timeout=False, max_triggers=1000, **_):
         def timed_out():
