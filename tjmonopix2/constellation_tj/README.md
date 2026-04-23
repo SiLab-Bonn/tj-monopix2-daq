@@ -1,5 +1,5 @@
 ---
-title: "TJ-Monopix2"
+title: "TJ-Monopix2 Satellite"
 description: "Satellite for controlling a TJ-Monopix2 using the BDAQ53 readout system"
 category: "Readout Systems"
 language: "Python"
@@ -9,9 +9,11 @@ parent_class: "TransmitterSatellite"
 ## Description
 
 This satellite controls the TJ-Monopix2 using a [BDAQ53 readout board](https://doi.org/10.1016/j.nima.2020.164721). 
-The satellite starts and stops expternal trigger scans, with various configuration parameters. 
+The satellite starts and stops external trigger scans, with various configuration parameters. 
+In an external trigger scans triggers are forwarded from the trigger logic unit to the BDAQ53 readout board.
+TJ-Monopix2 DAQ supports two different trigger setups commonly referred to as `eudet` and `aida` modes.
 
-Even though the satellite is designed for use with TJ-Monopix2 it can be easily changed for use with other BDAQ53 applications.
+Even though the satellite is designed for use with TJ-Monopix2 it can be easily adapted for the use with other BDAQ53 systems.
 
 ## Building
 
