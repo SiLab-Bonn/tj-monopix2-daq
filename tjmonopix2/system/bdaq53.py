@@ -290,7 +290,7 @@ class BDAQ53(Dut):
 
     def get_ptdc_callib_words(self):
         words = self["FIFO"].get_data()
-        return words[self["ptdc"].is_calib_word(words)]
+        return words[self["pTDC"].is_calib_word(words)]
         
     def enable_tlu_module(self):
         self['tlu']['TRIGGER_ENABLE'] = True
