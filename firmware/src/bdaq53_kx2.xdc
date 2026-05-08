@@ -7,9 +7,7 @@
 
 # Clock domains
 # CLK_SYS: 100 MHz, from xtal oscillator
-# -> PLL2: CLK8_PLL
-#          CLK16_PLL: RX
-#          CLK32_PLL: RX
+# -> PLL2: CLK16_PLL: RX
 #          CLK40_PLL: PULSER, TDC, TLU
 #          CLK160_PLL: TLU, TDC
 #          CLK320_PLL: TLU, TDC
@@ -30,7 +28,7 @@ create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_comm/CLK
 create_generated_clock -name rgmii_txc -source [get_pins {rgmii/ODDR_inst/C}] -divide_by 1 [get_ports {rgmii_txc}]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
+set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group CLK_RGMII_RX
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000

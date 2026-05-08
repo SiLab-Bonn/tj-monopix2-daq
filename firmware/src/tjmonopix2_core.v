@@ -62,7 +62,6 @@ module tjmonopix2_core #(
 
     // clocks
     input wire CLK16,
-    input wire CLK32,
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
