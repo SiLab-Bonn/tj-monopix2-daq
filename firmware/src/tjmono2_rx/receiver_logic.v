@@ -273,9 +273,7 @@ cdc_syncfifo #(
     .rrst(RESET_FIFO)
 );
 
-wire [12:0] fifo_size_int;
-
-gerneric_fifo #(
+generic_fifo #(
     .DATA_SIZE(28),
     .DEPTH(1024*8)
 ) fifo_i (
@@ -287,11 +285,8 @@ gerneric_fifo #(
     .full(full),
     .empty(empty),
     .data_out(data), 
-    .size(fifo_size_int)
+    .size(fifo_size)
 );
 
-always @(posedge FIFO_CLK) begin
-    fifo_size <= {3'b0, fifo_size_int};
-end
 
 endmodule
