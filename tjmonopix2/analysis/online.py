@@ -201,7 +201,7 @@ class OccupancyHistogramming(OnlineHistogrammingBase):
     def __init__(self, rx_id=0):
         super().__init__(shape=(512, 512), rx_id=rx_id)
         self.analysis_function_kwargs = {'hit_data': np.zeros(1, dtype=au.hit_dtype), 'is_sof': -1, 'is_eof': -1, 'tj_data_flag': 0, 'rx_id': rx_id}
-    
+
         def analysis_function(self, raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag, rx_id):
             return histogram(raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag, rx_id)
         setattr(OccupancyHistogramming, 'analysis_function', analysis_function)
