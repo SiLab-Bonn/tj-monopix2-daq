@@ -53,14 +53,12 @@ assign BUS_BYTE_ACCESS = BUS_ADD < 32'h8000_0000 ? 1'b1 : 1'b0;
 
 // CLOCK
 wire CLK16;
-wire CLK32;
 wire CLK40 /* verilator public_flat_rd */;
 wire CLK160;
 reg CLK320 /* verilator public_flat_rw */;
 wire CLKCMD;
 
 clock_divider #(.DIVISOR(20) ) clock_divider3 ( .CLK(CLK320), .RESET(1'b0), .CE(), .CLOCK(CLK16) );
-clock_divider #(.DIVISOR(10) ) clock_divider5 ( .CLK(CLK320), .RESET(1'b0), .CE(), .CLOCK(CLK32) );
 clock_divider #(.DIVISOR(8) ) clock_divider2 ( .CLK(CLK320), .RESET(1'b0), .CE(), .CLOCK(CLK40) );
 clock_divider #(.DIVISOR(2) ) clock_divider1 ( .CLK(CLK320), .RESET(1'b0), .CE(), .CLOCK(CLK160) );
 
@@ -113,7 +111,6 @@ tjmonopix2_core #(
     .BUS_RST(BUS_RST),
     //clocks
     .CLK16(CLK16),
-    .CLK32(CLK32),
     .CLK40(CLK40),
     .CLK160(CLK160),
     .CLK320(CLK320),

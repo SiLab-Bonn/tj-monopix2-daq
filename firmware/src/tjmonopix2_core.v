@@ -7,10 +7,6 @@
 `include "i2c/i2c.v"
 `include "i2c/i2c_core.v"
 
-`include "spi/spi_core.v"
-`include "spi/spi.v"
-`include "spi/blk_mem_gen_8_to_1_2k.v"
-
 `include "gpio/gpio.v"
 `include "gpio/gpio_core.v"
 
@@ -22,9 +18,6 @@
 
 `include "tdc_s3/tdc_s3.v"
 `include "tdc_s3/tdc_s3_core.v"
-
-`include "timestamp/timestamp.v"
-`include "timestamp/timestamp_core.v"
 
 `include "pulse_gen/pulse_gen.v"
 `include "pulse_gen/pulse_gen_core.v"
@@ -43,8 +36,6 @@
 `include "tjmono2_rx/rec_sync.v"
 `include "tjmono2_rx/decode_8b10b.v"
 
-`include "gray_dec.v"
-
 module tjmonopix2_core #(
     // FIRMWARE VERSION
     parameter VERSION_MAJOR = 8'd0,
@@ -62,7 +53,6 @@ module tjmonopix2_core #(
 
     // clocks
     input wire CLK16,
-    input wire CLK32,
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
@@ -342,11 +332,17 @@ gpio #(
 
         // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
         xadc_ug480 i_xadc_ug480(
-            .VAUXP(),
-            .VAUXN(),
-            .RESET(BUS_RST),
-            .ALM(),
             .DCLK(BUS_CLK),
+            .RESET(BUS_RST),
+            .VAUXN(),
+            .VAUXP(),
+            .ALM(),
+            .CHANNEL(),
+            .EOC(),
+            .EOS(),
+            .OT(),
+            .VN(),
+            .VP(),
             .MEASURED_TEMP(MEASURED_FPGA_TEMP),
             .MEASURED_VPVN(MEASURED_VPVN),
             .MEASURED_VCCINT(),
@@ -431,8 +427,6 @@ wire CMD_LOOP_START;
 
 wire EXT_START_PIN, EXT_TRIGGER;
 wire CMD_EXT_START_ENABLED;
-wire AZ_VETO_FLAG, AZ_VETO_TLU_PULSE;
-assign AZ_VETO_TLU_PULSE = 1'b0;
 cmd #(
     .BASEADDR(CMD_BASEADDR),
     .HIGHADDR(CMD_HIGHADDR),
@@ -450,9 +444,12 @@ cmd #(
     .EXT_START_ENABLED(CMD_EXT_START_ENABLED),
     .EXT_TRIGGER(EXT_TRIGGER), // length of EXT_TRIGGER determines how many frames will be read out
 
+    // These signals are not used in TJ-Monopix2, only for RD53
     .AZ_PULSE(1'b0),
-    .AZ_VETO_TLU_PULSE(AZ_VETO_TLU_PULSE),
-    .AZ_VETO_FLAG(AZ_VETO_FLAG),
+    .AZ_VETO_TLU_PULSE(1'b0),
+    .AZ_VETO_FLAG(),
+    .BYPASS_MODE_RESET(),
+    .BYPASS_CDR(),
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
@@ -512,7 +509,7 @@ rrp_arbiter #(
         ~RX_FIFO_EMPTY,
         !TLU_FIFO_EMPTY
     }),
-    .HOLD_REQ(TLU_FIFO_PREEMPT_REQ),
+    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ}),
     .DATA_IN({
         TDC_FIFO_DATA,
         RX_FIFO_DATA,

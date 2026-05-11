@@ -48,7 +48,7 @@ proc run_bit {part xdc_file size {lanes _1RX} {suffix ""}} {
 
     read_verilog -sv $src_dir/tjmonopix2.v
     read_verilog -sv $src_dir/tjmonopix2_core.v
-    read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.ngc
+    read_edif $vivado_dir/../SiTCP/SiTCP_XC7K_32K_BBT_V110.edf
     read_xdc $src_dir/$xdc_file
     read_xdc $src_dir/SiTCP.xdc
 
