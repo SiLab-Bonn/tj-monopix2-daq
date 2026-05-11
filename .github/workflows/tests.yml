@@ -21,7 +21,7 @@ jobs:
         include:
           - sim: verilator
             sim-version: v5.044
-            python-version: '3.10'
+            python-version: '3.13'
     steps:
     - uses: actions/checkout@v6
     - name: Set up python
