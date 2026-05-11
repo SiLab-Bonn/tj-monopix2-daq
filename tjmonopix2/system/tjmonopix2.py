@@ -586,7 +586,6 @@ class TJMonoPix2():
     """ Map hardware IDs for board identification """
     hw_map = {
         0: 'SIMULATION',
-        1: 'MIO3',
     }
 
     cmd_data_map = {
@@ -675,29 +674,11 @@ class TJMonoPix2():
         return self.chip_sn
 
     def init(self):
-        # power on
-        if self.daq.board_version == 'mio3':
-            self.daq['CONF']['RESET_EXT'] = 1
-            self.daq['CONF']['GPIO_MODE'] = 0x0
-            self.daq['CONF']['SEL_DIRECT'] = 1
-            self.daq['CONF'].write()
-            self.power_on()
-            # Start chip in LVDS command mode
-            self.daq['CONF']['INPUT_SEL'] = 0
-            self.daq['CONF']['EN_LVDS_IN'] = 1
-            self.daq['CONF'].write()
-            # Release RESET
-            self.daq['CONF']['RESET_EXT'] = 0
-            self.daq['CONF'].write()
-
         # TODO: Move this to DAQ instance, but needs a lot of the commands (and change all in this class then)..
         if not self.daq.communication_established:
             self.init_communication()
         self.reset()
         self.configure_rx()
-
-        if self.daq.board_version == 'mio3':
-            self.log.info(str(self.get_power_status()))
 
     def init_communication(self, repetitions=1000, write_reset=False):
         self.log.info('Initializing communication...')
