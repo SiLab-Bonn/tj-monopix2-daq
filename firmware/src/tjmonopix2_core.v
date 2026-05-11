@@ -7,10 +7,6 @@
 `include "i2c/i2c.v"
 `include "i2c/i2c_core.v"
 
-`include "spi/spi_core.v"
-`include "spi/spi.v"
-`include "spi/blk_mem_gen_8_to_1_2k.v"
-
 `include "gpio/gpio.v"
 `include "gpio/gpio_core.v"
 
@@ -22,9 +18,6 @@
 
 `include "tdc_s3/tdc_s3.v"
 `include "tdc_s3/tdc_s3_core.v"
-
-`include "timestamp/timestamp.v"
-`include "timestamp/timestamp_core.v"
 
 `include "pulse_gen/pulse_gen.v"
 `include "pulse_gen/pulse_gen_core.v"
@@ -42,8 +35,6 @@
 `include "tjmono2_rx/receiver_logic.v"
 `include "tjmono2_rx/rec_sync.v"
 `include "tjmono2_rx/decode_8b10b.v"
-
-`include "gray_dec.v"
 
 module tjmonopix2_core #(
     // FIRMWARE VERSION
