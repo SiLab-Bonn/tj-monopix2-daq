@@ -87,33 +87,9 @@ module tjmonopix2_core #(
     input wire RJ45_TRIGGER,
     input wire RJ45_RESET,
 
-    output wire RESETB_EXT,
-
     // LVDS IO
     input wire [N_RX-1:0] LVDS_DATA,
     input wire LVDS_HITOR,
-
-    `ifdef MIO3
-        // CHSYNC output only connected on MIO3 compatible PCBs
-        input wire LVDS_CHSYNC_LOCKED_OUT,
-        input wire LVDS_CHSYNC_CLK_OUT,
-        // CHIP CONF
-        output wire INPUT_SEL,
-
-        // CMOS IO
-        output wire CMOS_CMD,
-        output wire CMOS_CMD_CLK,
-        output wire CMOS_SER_CLK,
-        input wire CMOS_DATA,
-        input wire CMOS_HITOR,
-        output wire CMOS_PULSE_EXT,
-
-        // CMOS RO
-        output wire FREEZE_EXT,
-        output wire READ_EXT,
-        inout wire RO_RST_EXT,
-        input wire TOKEN_OUT,
-    `endif
 
     // NTC
     output wire [2:0] NTC_MUX
@@ -122,7 +98,6 @@ module tjmonopix2_core #(
 // BOARD ID
 localparam SIM = 8'd0;
 localparam BDAQ53 = 8'd1;
-localparam MIO3 = 8'd2;
 
 localparam N_CHIPS = N_RX;
 
@@ -130,8 +105,6 @@ localparam N_CHIPS = N_RX;
     localparam BOARD = SIM;
 `elsif BDAQ53
     localparam BOARD = BDAQ53;
-`elsif MIO3
-    localparam BOARD = MIO3;
 `endif
 
 // BOARD CONFIGURATION
@@ -141,12 +114,6 @@ reg SI570_IS_CONFIGURED = 1'b0;
 localparam VERSION = 2; // Module version
 
 // -------  MODULE ADREESSES  ------- //
-localparam GPIO_BASEADDR = 32'h0010;
-localparam GPIO_HIGHADDR = 32'h0100 - 1;
-
-localparam PULSE_INJ_BASEADDR = 32'h0100;
-localparam PULSE_INJ_HIGHADDR = 32'h0200 - 1;
-
 localparam DAQ_SYSTEM_BASEADDR = 32'h0300;
 localparam DAQ_SYSTEM_HIGHADDR = 32'h0400 - 1;
 
@@ -166,7 +133,7 @@ localparam PULSER_VETO_BASEADDR = 32'h0800;
 localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
 
 // Temperature measurements with XADC in FPGA
-`ifdef BDAQ53
+`ifndef SIM
     localparam GPIO_XADC_VPVN_BASEADDR = 32'h0900;
     localparam GPIO_XADC_VPVN_HIGHADDR = 32'h0A00-1;
 
@@ -236,38 +203,6 @@ always @ (posedge BUS_CLK)
     end
 
 // -------  USER MODULES  ------- //
-wire [23:0] IO;
-gpio #(
-    .BASEADDR(GPIO_BASEADDR),
-    .HIGHADDR(GPIO_HIGHADDR),
-    .ABUSWIDTH(ABUSWIDTH),
-    .IO_WIDTH(24),
-    .IO_DIRECTION(24'hfff0ff)
-) gpio_i (
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
-    .IO(IO)
-);
-wire EN_LVDS_IN, EN_CMOS_IN, EN_CMOS_OUT, SEL_DIRECT;
-wire [2:0] GPIO_MODE;
-
-assign GPIO_MODE = IO[14:12];
-
-`ifdef MIO3
-    assign INPUT_SEL = IO[1];
-    assign EN_CMOS_IN = IO[2];
-    assign EN_CMOS_OUT = IO[6];
-    assign EN_LVDS_IN = IO[7];
-    assign IO[8] = LVDS_CHSYNC_LOCKED_OUT;
-    assign IO[9] = LVDS_CHSYNC_CLK_OUT;
-    assign IO[11] = RO_RST_EXT;
-    assign RO_RST_EXT = GPIO_MODE[2] ? 1'bz : IO[5];
-    assign SEL_DIRECT = IO[16];
-`endif
 
 // GPIO module to access general base-board features
 wire [15:0] IO_CONTROL;
@@ -292,99 +227,66 @@ gpio #(
     .IO(IO_CONTROL)
 );
 
-`ifdef BDAQ53
-    `ifndef SIM
-        wire [15:0] MEASURED_FPGA_TEMP;
+`ifndef SIM
+    wire [15:0] MEASURED_FPGA_TEMP;
 
-        gpio #(
-            .BASEADDR(GPIO_XADC_FPGA_TEMP_BASEADDR),
-            .HIGHADDR(GPIO_XADC_FPGA_TEMP_HIGHADDR),
-            .ABUSWIDTH(32),
-            .IO_WIDTH(16),
-            .IO_DIRECTION(16'h0000)
-        ) i_gpio_xadc_fpga_temp (
-            .BUS_CLK(BUS_CLK),
-            .BUS_RST(BUS_RST),
-            .BUS_ADD(BUS_ADD),
-            .BUS_DATA(BUS_DATA),
-            .BUS_RD(BUS_RD),
-            .BUS_WR(BUS_WR),
-            .IO(MEASURED_FPGA_TEMP)
-        );
+    gpio #(
+        .BASEADDR(GPIO_XADC_FPGA_TEMP_BASEADDR),
+        .HIGHADDR(GPIO_XADC_FPGA_TEMP_HIGHADDR),
+        .ABUSWIDTH(32),
+        .IO_WIDTH(16),
+        .IO_DIRECTION(16'h0000)
+    ) i_gpio_xadc_fpga_temp (
+        .BUS_CLK(BUS_CLK),
+        .BUS_RST(BUS_RST),
+        .BUS_ADD(BUS_ADD),
+        .BUS_DATA(BUS_DATA),
+        .BUS_RD(BUS_RD),
+        .BUS_WR(BUS_WR),
+        .IO(MEASURED_FPGA_TEMP)
+    );
 
-        wire [15:0] MEASURED_VPVN;
+    wire [15:0] MEASURED_VPVN;
 
-        gpio #(
-            .BASEADDR(GPIO_XADC_VPVN_BASEADDR),
-            .HIGHADDR(GPIO_XADC_VPVN_HIGHADDR),
-            .ABUSWIDTH(32),
-            .IO_WIDTH(16),
-            .IO_DIRECTION(16'h0000)
-        ) i_gpio_xadc_vpvn (
-            .BUS_CLK(BUS_CLK),
-            .BUS_RST(BUS_RST),
-            .BUS_ADD(BUS_ADD),
-            .BUS_DATA(BUS_DATA),
-            .BUS_RD(BUS_RD),
-            .BUS_WR(BUS_WR),
-            .IO(MEASURED_VPVN)
-        );
+    gpio #(
+        .BASEADDR(GPIO_XADC_VPVN_BASEADDR),
+        .HIGHADDR(GPIO_XADC_VPVN_HIGHADDR),
+        .ABUSWIDTH(32),
+        .IO_WIDTH(16),
+        .IO_DIRECTION(16'h0000)
+    ) i_gpio_xadc_vpvn (
+        .BUS_CLK(BUS_CLK),
+        .BUS_RST(BUS_RST),
+        .BUS_ADD(BUS_ADD),
+        .BUS_DATA(BUS_DATA),
+        .BUS_RD(BUS_RD),
+        .BUS_WR(BUS_WR),
+        .IO(MEASURED_VPVN)
+    );
 
-        // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
-        xadc_ug480 i_xadc_ug480(
-            .DCLK(BUS_CLK),
-            .RESET(BUS_RST),
-            .VAUXN(),
-            .VAUXP(),
-            .ALM(),
-            .CHANNEL(),
-            .EOC(),
-            .EOS(),
-            .OT(),
-            .VN(),
-            .VP(),
-            .MEASURED_TEMP(MEASURED_FPGA_TEMP),
-            .MEASURED_VPVN(MEASURED_VPVN),
-            .MEASURED_VCCINT(),
-            .MEASURED_VCCAUX(),
-            .MEASURED_VCCBRAM(),
-            .MEASURED_AUX0(),
-            .MEASURED_AUX1(),
-            .MEASURED_AUX2(),
-            .MEASURED_AUX3()
-        );
-    `endif
-`endif
-
-// ----- Reset pulser ----- //
-wire RST_PULSE;
-reg [2:0] IO_FF;
-always @(posedge CLK40) begin
-    if (BUS_RST == 1'b1)
-        IO_FF <= 3'b0;
-    else
-        IO_FF <= {IO_FF[2:0],IO[0]};
-end
-
-pulse_gen #(
-    .BASEADDR(PULSE_RST_BASEADDR),
-    .HIGHADDR(PULSE_RST_HIGHADDR),
-    .ABUSWIDTH(ABUSWIDTH)
-) pulse_gen_rst (
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
-    .PULSE_CLK(CLK40),
-    .EXT_START(~IO[0]),
-    .PULSE(RST_PULSE)
-);
-assign RESETB_EXT = ~(IO_FF[1] | RST_PULSE);
-
-`ifdef BDAQ53
-    wire CMOS_PULSE_EXT;
+    // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
+    xadc_ug480 i_xadc_ug480(
+        .DCLK(BUS_CLK),
+        .RESET(BUS_RST),
+        .VAUXN(),
+        .VAUXP(),
+        .ALM(),
+        .CHANNEL(),
+        .EOC(),
+        .EOS(),
+        .OT(),
+        .VN(),
+        .VP(),
+        .MEASURED_TEMP(MEASURED_FPGA_TEMP),
+        .MEASURED_VPVN(MEASURED_VPVN),
+        .MEASURED_VCCINT(),
+        .MEASURED_VCCAUX(),
+        .MEASURED_VCCBRAM(),
+        .MEASURED_AUX0(),
+        .MEASURED_AUX1(),
+        .MEASURED_AUX2(),
+        .MEASURED_AUX3()
+    );
 `endif
 
 // ------- I2C module ------- //
@@ -416,9 +318,6 @@ i2c #(
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL)
 );
-
-// ----- Pulser for injection ----- //
-assign CMOS_PULSE_EXT = 1'b0;  // not connected for now
 
 // ----- Command encoder ----- //
 wire CMD;
@@ -458,15 +357,6 @@ cmd #(
     .CMD_SERIAL_OUT(CMD),
     .CMD_OUT(CMD_OUT)
 );
-
-`ifdef MIO3
-    assign LVDS_SER_CLK = EN_LVDS_IN ? ~CLK160 : 1'b0;
-    assign CMOS_SER_CLK = EN_CMOS_IN ? CLK160 : 1'b0;
-    assign LVDS_CMD_CLK = EN_LVDS_IN ? ~CLKCMD : 1'b0;
-    assign CMOS_CMD_CLK = EN_CMOS_IN ? CLKCMD : 1'b0;
-    assign LVDS_CMD = EN_LVDS_IN ? ~CMD : 1'b0;
-    assign CMOS_CMD = EN_CMOS_IN ? CMD : 1'b0;
-`endif
 
 pulse_gen #(
     .BASEADDR(PULSE_CMD_START_LOOP_BASEADDR),

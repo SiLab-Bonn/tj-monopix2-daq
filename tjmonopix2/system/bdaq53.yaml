@@ -24,12 +24,6 @@ hw_drivers:
     interface : intf
     base_addr : 0x4000
 
-  - name      : gpio
-    type      : gpio
-    interface : intf
-    base_addr : 0x0010
-    size      : 24
-
   - name      : system
     type      : tjmonopix2.system.board
     interface : intf
@@ -110,45 +104,3 @@ registers:
       - name    : SENSE
         size    : 4
         offset  : 3
-
-  - name        : CONF
-    type        : StdRegister
-    hw_driver   : gpio
-    size        : 24
-    fields :
-      - name    : SEL_DIRECT
-        size    : 1
-        offset  : 16
-      - name    : GPIO_MODE
-        size    : 3
-        offset  : 14
-      - name    : GPIO_TXOUT
-        size    : 2
-        offset  : 11
-      - name    : LVDS_CHSYNC_CLK_OUT
-        size    : 1
-        offset  : 9
-      - name    : LVDS_CHSYNC_LOCKED_OUT
-        size    : 1
-        offset  : 8
-      - name    : EN_LVDS_IN
-        size    : 1
-        offset  : 7
-      - name    : EN_CMOS_OUT
-        size    : 1
-        offset  : 6
-      - name    : RO_RST_EXT
-        size    : 1
-        offset  : 5        
-      - name    : CHIP_ID
-        size    : 2
-        offset  : 4
-      - name    : EN_CMOS_IN
-        size    : 1
-        offset  : 2
-      - name    : INPUT_SEL
-        size    : 1
-        offset  : 1
-      - name    : RESET_EXT
-        size    : 1
-        offset  : 0
