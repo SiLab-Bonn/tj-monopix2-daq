@@ -421,8 +421,6 @@ wire CMD_LOOP_START;
 
 wire EXT_START_PIN, EXT_TRIGGER;
 wire CMD_EXT_START_ENABLED;
-wire AZ_VETO_FLAG, AZ_VETO_TLU_PULSE;
-assign AZ_VETO_TLU_PULSE = 1'b0;
 cmd #(
     .BASEADDR(CMD_BASEADDR),
     .HIGHADDR(CMD_HIGHADDR),
@@ -440,9 +438,12 @@ cmd #(
     .EXT_START_ENABLED(CMD_EXT_START_ENABLED),
     .EXT_TRIGGER(EXT_TRIGGER), // length of EXT_TRIGGER determines how many frames will be read out
 
+    // These signals are not used in TJ-Monopix2, only for RD53
     .AZ_PULSE(1'b0),
-    .AZ_VETO_TLU_PULSE(AZ_VETO_TLU_PULSE),
-    .AZ_VETO_FLAG(AZ_VETO_FLAG),
+    .AZ_VETO_TLU_PULSE(1'b0),
+    .AZ_VETO_FLAG(),
+    .BYPASS_MODE_RESET(),
+    .BYPASS_CDR(),
 
     .CMD_WRITING(CMD_WRITING),
     .CMD_LOOP_START(CMD_LOOP_START),
