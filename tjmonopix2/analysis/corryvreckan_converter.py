@@ -110,7 +110,7 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                         hit_table_converted["charge"] = electron_conversion_factor * au._inv_tot_response_func(
                             hits_selected["charge"],
                             # Subtract one since event builder adds + 1 for legacy reasons
-                        calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 0],
+                            calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 0],
                             calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 1],
                             calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 2],
                         )
