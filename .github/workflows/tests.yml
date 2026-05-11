@@ -12,7 +12,7 @@ on:
 jobs:
   tests:
     name: Python ${{matrix.python-version}} | ${{matrix.sim}} 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       SIM: ${{matrix.sim}}
     strategy:
@@ -20,17 +20,17 @@ jobs:
       matrix:
         include:
           - sim: verilator
-            sim-version: v5.020
-            python-version: '3.10'
+            sim-version: v5.044
+            python-version: '3.13'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{matrix.python-version}}
         cache: 'pip'
     - name: Install Dependencies
-      run:  pip install "cocotb<2" "cocotb-bus<0.3" coloredlogs numba numpy matplotlib pyyaml tables pytest tqdm scipy
+      run:  pip install "cocotb>=2.0" "cocotb-bus" coloredlogs numba numpy matplotlib pyyaml tables pytest tqdm scipy
     - name: Install basil from repo
       run: git clone -b master --depth 1 https://github.com/SiLab-Bonn/basil.git; cd basil; pip install .; cd ..;
     - name: Install Verilator
