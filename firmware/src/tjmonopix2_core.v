@@ -332,11 +332,17 @@ gpio #(
 
         // ------ XADC module for NTC (and FPGA-internal) temperature measurements ------ //
         xadc_ug480 i_xadc_ug480(
-            .VAUXP(),
-            .VAUXN(),
-            .RESET(BUS_RST),
-            .ALM(),
             .DCLK(BUS_CLK),
+            .RESET(BUS_RST),
+            .VAUXN(),
+            .VAUXP(),
+            .ALM(),
+            .CHANNEL(),
+            .EOC(),
+            .EOS(),
+            .OT(),
+            .VN(),
+            .VP(),
             .MEASURED_TEMP(MEASURED_FPGA_TEMP),
             .MEASURED_VPVN(MEASURED_VPVN),
             .MEASURED_VCCINT(),
@@ -503,7 +509,7 @@ rrp_arbiter #(
         ~RX_FIFO_EMPTY,
         !TLU_FIFO_EMPTY
     }),
-    .HOLD_REQ(TLU_FIFO_PREEMPT_REQ),
+    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ}),
     .DATA_IN({
         TDC_FIFO_DATA,
         RX_FIFO_DATA,
