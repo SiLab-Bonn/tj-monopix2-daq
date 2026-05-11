@@ -14,10 +14,8 @@ import tables as tb
 from tjmonopix2.analysis import analysis
 from tjmonopix2.analysis import analysis_utils as au
 
-ELECTRON_CONVERSION = 8.8
 
-
-def format_dut(input_filename: str | Path, output_filename: str | Path = None, trigger_mode: str = "AIDA", chunk_size: int = 1000000) -> None:
+def format_dut(input_filename: str | Path, output_filename: str | Path = None, trigger_mode: str = "AIDA", electron_conversion_factor: float = 8.8, chunk_size: int = 1000000) -> None:
     """Format hit table to be compatible with corryvreckan EventLoaderHDF5 as of commit c2e57986
 
     Parameters
@@ -30,6 +28,8 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
         Trigger mode during data taking. EUDET mode (with trigger handshake) and AIDA, mode (without
         handshake only) are supported. In general, use `DATA_FORMAT=1` in `testbench.yaml` for data
         taking. By default "AIDA"
+    electron_conversion_factor : float, optional
+        Factor to convert injection DAC to electrons (unit: e / ΔVcal)
     chunk_size : int, optional
         Set the chunk size as integer defaults to 1000000.
     tot_calib_file : str | Path, optional
@@ -76,7 +76,7 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                     hit_table_converted["row"] = hits_selected["row"]
                     hit_table_converted["raw"] = (hits_selected["te"] - hits_selected["le"]) & 0x7F  # calculate TOT
                     if tot_calib_file:
-                        hit_table_converted["charge"] = ELECTRON_CONVERSION * au._inv_tot_response_func(
+                        hit_table_converted["charge"] = electron_conversion_factor * au._inv_tot_response_func(
                             (hits_selected["te"] - hits_selected["le"]) & 0x7F,
                             calib_data[hits_selected[:]["col"], hits_selected[:]["row"]][:, 0],
                             calib_data[hits_selected[:]["col"], hits_selected[:]["row"]][:, 1],
@@ -107,7 +107,7 @@ def format_dut(input_filename: str | Path, output_filename: str | Path = None, t
                     hit_table_converted["row"] = hits_selected["row"]
                     hit_table_converted["raw"] = hits_selected["charge"]
                     if tot_calib_file:
-                        hit_table_converted["charge"] = ELECTRON_CONVERSION * au._inv_tot_response_func(
+                        hit_table_converted["charge"] = electron_conversion_factor * au._inv_tot_response_func(
                             hits_selected["charge"],
                             # Subtract one since event builder adds + 1 for legacy reasons
                         calib_data[hits_selected[:]["column"] - 1, hits_selected[:]["row"] - 1][:, 0],
