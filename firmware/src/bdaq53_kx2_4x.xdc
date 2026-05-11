@@ -185,17 +185,50 @@ set_property PACKAGE_PIN D20 [get_ports HITOR_N]
 set_property IOSTANDARD LVDS_25 [get_ports HITOR_*]
 
 ##### DATA #####
-# DP_ML ("DP5") connected to SelectIOs
-# set_property PACKAGE_PIN A18 [get_ports {DP_GPIO_P[0]}]
-# set_property PACKAGE_PIN A19 [get_ports {DP_GPIO_N[0]}]
-set_property PACKAGE_PIN C19 [get_ports {J_SER_CLK_P[0]}]
-set_property PACKAGE_PIN B19 [get_ports {J_SER_CLK_N[0]}]
-set_property PACKAGE_PIN E18 [get_ports {J_CMD_CLK_P[0]}]
-set_property PACKAGE_PIN D18 [get_ports {J_CMD_CLK_N[0]}]
-set_property PACKAGE_PIN B17 [get_ports {J_CMD_P[0]}]
-set_property PACKAGE_PIN A17 [get_ports {J_CMD_N[0]}]
-set_property PACKAGE_PIN C16 [get_ports {J_DATA_P[0]}]
-set_property PACKAGE_PIN B16 [get_ports {J_DATA_N[0]}]
+# RJ45 (J1A) connected to SelectIOs
+set_property PACKAGE_PIN L19 [get_ports {J_SER_CLK_P[0]}]
+set_property PACKAGE_PIN L20 [get_ports {J_SER_CLK_N[0]}]
+set_property PACKAGE_PIN G19 [get_ports {J_CMD_CLK_P[0]}]
+set_property PACKAGE_PIN F20 [get_ports {J_CMD_CLK_N[0]}]
+set_property PACKAGE_PIN H17 [get_ports {J_CMD_P[0]}]
+set_property PACKAGE_PIN H18 [get_ports {J_CMD_N[0]}]
+set_property PACKAGE_PIN F19 [get_ports {J_DATA_P[0]}]
+set_property PACKAGE_PIN E20 [get_ports {J_DATA_N[0]}]
+
+# RJ45 (J1B) connected to SelectIOs
+set_property PACKAGE_PIN J18 [get_ports {J_SER_CLK_P[1]}] 
+set_property PACKAGE_PIN J19 [get_ports {J_SER_CLK_N[1]}] 
+set_property PACKAGE_PIN K16 [get_ports {J_CMD_CLK_P[1]}] 
+set_property PACKAGE_PIN K17 [get_ports {J_CMD_CLK_N[1]}] 
+set_property PACKAGE_PIN M17 [get_ports {J_CMD_P[1]}] 
+set_property PACKAGE_PIN L18 [get_ports {J_CMD_N[1]}] 
+set_property PACKAGE_PIN K20 [get_ports {J_DATA_P[1]}] 
+set_property PACKAGE_PIN J20 [get_ports {J_DATA_N[1]}]
+
+# RJ45 (J1C) connected to SelectIOs
+set_property PACKAGE_PIN G11 [get_ports {J_SER_CLK_P[2]}]
+set_property PACKAGE_PIN F10 [get_ports {J_SER_CLK_N[2]}]
+set_property PACKAGE_PIN C14 [get_ports {J_CMD_CLK_P[2]}]
+set_property PACKAGE_PIN C13 [get_ports {J_CMD_CLK_N[2]}]
+set_property PACKAGE_PIN D14 [get_ports {J_CMD_P[2]}]
+set_property PACKAGE_PIN D13 [get_ports {J_CMD_N[2]}]
+set_property PACKAGE_PIN J13 [get_ports {J_DATA_P[2]}]
+set_property PACKAGE_PIN H13 [get_ports {J_DATA_N[2]}]
+
+# RJ45 (J1D) connected to SelectIOs
+set_property PACKAGE_PIN F14 [get_ports {J_SER_CLK_P[3]}]
+set_property PACKAGE_PIN F13 [get_ports {J_SER_CLK_N[3]}]
+set_property PACKAGE_PIN E13 [get_ports {J_CMD_CLK_P[3]}]
+set_property PACKAGE_PIN E12 [get_ports {J_CMD_CLK_N[3]}]
+set_property PACKAGE_PIN G12 [get_ports {J_CMD_P[3]}]
+set_property PACKAGE_PIN F12 [get_ports {J_CMD_N[3]}]
+set_property PACKAGE_PIN J11 [get_ports {J_DATA_P[3]}]
+set_property PACKAGE_PIN J10 [get_ports {J_DATA_N[3]}]
+
+set_property IOSTANDARD LVDS_25 [get_ports {J_SER*}]
+set_property IOSTANDARD LVDS_25 [get_ports {J_CMD_CLK*}]
+set_property IOSTANDARD LVDS_25 [get_ports {J_CMD*}]
+set_property IOSTANDARD LVDS_25 [get_ports {J_DATA*}]
 
 # Displayport RESET signals 0:DP1, 1:DP3, 2:DP4, 3:DP5, 4:mDP
 # set_property PACKAGE_PIN G10 [get_ports RESETB_EXT]

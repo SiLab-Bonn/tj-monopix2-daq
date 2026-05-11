@@ -16,29 +16,7 @@ pip install -e .
 from the root folder.
 
 ## Firmware compilation
-Clone [basil](https://github.com/SiLab-Bonn/basil) to any location and install it by running `pip install -e .` from its root folder.
-<details>
-  <summary>If you want to download SiTCP and patch it for yourself, click here</summary>
-
-  Grab a copy of [SiTCP](https://github.com/BeeBeansTechnologies/SiTCP_Netlist_for_Kintex7) and move the `*.V` and `*.ngc` files to a newly created `firmware/SiTCP` folder in the cloned `tj-monopix2-daq` repository. Add a line `` `default_nettype wire`` in all of the `*.V` files right below the copyright notice in the beginning and before the first module declaration. This ensures compatibility with the rest of the verilog code.
-</details>
-
-### Using firmware manager
-This is the recommended method to compile firmware. Simply run
-```bash
-python manage_firmware.py --compile <platform>
-```
-where `<platform>` is either `BDAQ53`, `BDAQ53_KX1` or `MIO3`. Make sure to have a Vivado binary in the current PATH.
-
-### Using Vivado CLI
-Run
-```
-vivado -mode batch -source run.tcl
-```
-from the `firmware/vivado` folder. The resulting bit files will be written to `firmware/bit`. This will build the firmware for multiple supported hardware platforms. If you want to build it for only one, pass the arguments that you can find in `run.tcl` as command line arguments, e.g.
-```
-vivado -mode batch -source run.tcl -tclargs xc7k160tffg676-2 bdaq53_kx2.xdc 64
-```
+See [here](firmware/README.md) for details about the firmware and how to compile it.
 
 ## Firmware flashing
 The easiest way to flash the firmware to the FPGA is again the firmware manager.

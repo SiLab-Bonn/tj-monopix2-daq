@@ -71,7 +71,7 @@ class GDACTuning(ScanBase):
 
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
-        self.data.hist_occ = oa.OccupancyHistogramming()
+        self.data.hist_occ = oa.OccupancyHistogramming(rx_id=self.chip.chip_id)
 
     def _scan(self, n_injections=100, gdac_value_bits=range(6, -1, -1), **_):
         '''
@@ -165,14 +165,14 @@ class GDACTuning(ScanBase):
 
         return occupancy
 
-    def analyze_data_online(self, data_tuple):
+    def analyze_data_online(self, data_tuple, receiver):
         raw_data = data_tuple[0]
         self.data.hist_occ.add(raw_data)
-        super(GDACTuning, self).handle_data(data_tuple)
+        super(GDACTuning, self).handle_data(data_tuple, receiver)
 
-    def analyze_data_online_no_save(self, data_tuple):
+    def analyze_data_online_no_save(self, data_tuple, receiver):
         raw_data = data_tuple[0]
-        self.data.hist_occ.add(raw_data)
+        self.data.hist_occ.add(raw_data, receiver)
 
     def _analyze(self):
         pass

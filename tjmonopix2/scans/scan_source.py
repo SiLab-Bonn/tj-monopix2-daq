@@ -26,6 +26,7 @@ scan_configuration = {
 
 class SourceScan(ScanBase):
     scan_id = 'source_scan'
+    is_parallel_scan = True
 
     stop_scan = threading.Event()
 

@@ -313,12 +313,13 @@ class Analysis(object):
                     if self.tot_calib_file:
                         cs_tot_size = 2048
                     else:
-                        cs_tot_size = 256
+                        cs_tot_size = 512
                     hist_cs_size = np.zeros(shape=(30, ), dtype=np.uint32)
                     hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'])
+                rx_id = int(self.chip_settings["receiver"][2])
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], rx_id=rx_id)
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0
@@ -342,8 +343,8 @@ class Analysis(object):
                             event_table.append(event_dat)
                             event_table.flush()
                         else:
-                            self.log.error("No TLU data found in raw data. Check data or disable event building")
-                            raise Exception
+                            self.log.warning("No TLU data found in raw data chunk.")
+                            continue
                     if self.cluster_hits:
                         if self.build_events:
                             data_to_clusterizer = event_dat

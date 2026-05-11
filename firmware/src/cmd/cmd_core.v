@@ -38,13 +38,12 @@ module cmd_core
     output wire                 BYPASS_CDR
 );
 
-localparam VERSION = 2;
+localparam VERSION = 3;
 localparam REGSIZE = 16;
 localparam BRAM_ABUSWIDTH = 12;
 localparam CMD_MEM_SIZE = 2**BRAM_ABUSWIDTH;
-localparam TAG_PATTERN = 8'b01101010;
 localparam SYNC_PATTERN_UNSYMETRIC = 16'b1000000101111110;
-reg [15:0] SYNC_PATTERN;// = 16'b0101010101010101; //RD53A is default sync pattern
+localparam SYNC_PATTERN = 16'b1010101010101010;
 
 reg [7:0] sync_halfpattern = 8'h00;
 reg [7:0] sync_cycle_cnt = 8'h00;
@@ -59,7 +58,7 @@ wire serializer_next_doublebyte;
 wire serializer_next_halfbyte;
 wire AUTO_SYNC;
 
-reg [2:0] EN_delay = 2'b00;
+reg [2:0] EN_delay = 3'b000;
 assign CMD_EN = EN_delay[2];
 
 // flags
@@ -78,7 +77,7 @@ reg AZ_START;
 wire RST_SYNC;
 wire RST_SOFT_SYNC;
 cdc_reset_sync rst_reset_sync (.clk_in(BUS_CLK), .pulse_in(RST), .clk_out(CMD_CLK), .pulse_out(RST_SOFT_SYNC));
-assign RST_SYNC = RST_SOFT_SYNC;
+assign RST_SYNC = RST_SOFT_SYNC || BUS_RST;
 wire START_SYNC;
 cdc_pulse_sync start_pulse_sync (.clk_in(BUS_CLK), .pulse_in(START), .clk_out(CMD_CLK), .pulse_out(START_SYNC));
 wire EXT_START_SYNC;
@@ -89,31 +88,29 @@ cdc_pulse_sync ext_start_pulse_sync (.clk_in(BUS_CLK), .pulse_in(EXT_START_PIN),
 reg trigger_request, trigger_pending = 1'b0;
 reg [3:0] trigger_index, trigger_index_sr;
 reg [7:0] trigger_pattern, trigger_pattern_temp, trigger_pattern_sr;
-reg [7:0] tag_pattern_temp = TAG_PATTERN;
+reg [4:0] tag_index;
+reg [7:0] tag_pattern;
+reg [7:0] tag_pattern_temp;
+
 always @(posedge CMD_CLK) begin
     if (serializer_next_halfbyte)
         trigger_index_sr <= {EXT_TRIGGER, trigger_index_sr[3:1]};
+    if (serializer_next_byte && !serializer_next_doublebyte) begin
+        if (trigger_pending)
+            tag_index <= tag_index + 1;
+        else
+            tag_index <= 5'b00000;
+    end
+
 end
 always @(posedge CMD_CLK) begin
     if (serializer_next_doublebyte)
         trigger_index <= trigger_index_sr;
 end
 
-always @(*) begin
-    case (CHIP_TYPE)
-      2'h0: SYNC_PATTERN <= 16'b0101010101010101;
-      2'h1: SYNC_PATTERN <= 16'b1010101010101010;
-      default: SYNC_PATTERN <= 16'h0000; 
-    endcase
+always @(tag_pattern) begin
+    tag_pattern_temp = tag_pattern;
 end
-
-// always @(*) begin
-//     SYNC_PATTERN <= 16'b1000000101111110; 
-// end
-
-// always @(*) begin
-//     SYNC_PATTERN <= 16'h0000; 
-// end
 
 always @(trigger_index) begin
     case(trigger_index)
@@ -136,6 +133,44 @@ always @(trigger_index) begin
     endcase
 end
 
+always @(tag_index) begin
+    case(tag_index)
+        5'd0: begin tag_pattern=8'b01101010; end
+        5'd1: begin tag_pattern=8'b01101100; end
+        5'd2: begin tag_pattern=8'b01110001; end
+        5'd3: begin tag_pattern=8'b01110010; end
+        5'd4: begin tag_pattern=8'b01110100; end
+        5'd5: begin tag_pattern=8'b10001011; end
+        5'd6: begin tag_pattern=8'b10001101; end
+        5'd7: begin tag_pattern=8'b10001110; end
+        5'd8: begin tag_pattern=8'b10010011; end
+        5'd9: begin tag_pattern=8'b10010101; end
+        5'd10: begin tag_pattern=8'b10010110; end
+        5'd11: begin tag_pattern=8'b10011001; end
+        5'd12: begin tag_pattern=8'b10011010; end
+        5'd13: begin tag_pattern=8'b10011100; end
+        5'd14: begin tag_pattern=8'b10100011; end
+        5'd15: begin tag_pattern=8'b10100101; end
+        5'd16: begin tag_pattern=8'b10100110; end
+        5'd17: begin tag_pattern=8'b10101001; end
+        5'd18: begin tag_pattern=8'b01011001; end
+        5'd19: begin tag_pattern=8'b10101100; end
+        5'd20: begin tag_pattern=8'b10110001; end
+        5'd21: begin tag_pattern=8'b10110010; end
+        5'd22: begin tag_pattern=8'b10110100; end
+        5'd23: begin tag_pattern=8'b11000011; end
+        5'd24: begin tag_pattern=8'b11000101; end
+        5'd25: begin tag_pattern=8'b11000110; end
+        5'd26: begin tag_pattern=8'b11001001; end
+        5'd27: begin tag_pattern=8'b11001010; end
+        5'd28: begin tag_pattern=8'b11001100; end
+        5'd29: begin tag_pattern=8'b11010001; end
+        5'd30: begin tag_pattern=8'b11010010; end
+        5'd31: begin tag_pattern=8'b11010100; end
+        default: begin tag_pattern = 8'b01101010; end
+    endcase
+end
+
 //Registers
 reg [7:0] status_regs [15:0];
 initial status_regs[2] = 0;
@@ -143,7 +178,7 @@ always @(posedge BUS_CLK) begin
     if(RST) begin
         status_regs[0] <= 0;
         status_regs[1] <= 0;
-        status_regs[2] <= 8'b00010000;    // general flags and cmds {CHIP_TYPE[1:0], 1'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE}. Default: Output enabled and Auto Sync
+        status_regs[2] <= 8'b00010000;    // general flags and cmds {3'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE}. Default: Output enabled
         status_regs[3] <= 0;    // CMD size [7:0]
         status_regs[4] <= 0;    // CMD size [15:8]
         status_regs[5] <= 8'd1; // CONF_REPEAT_COUNT [7:0], repeat once by default
@@ -152,7 +187,7 @@ always @(posedge BUS_CLK) begin
         status_regs[8] <= 0;    // CMD_MEM_SIZE[15:8]
         status_regs[9] <= 0;    // AZ: veto wait cycles [7:0]
         status_regs[10] <= 0;   // AZ: veto wait cycles [15:8]
-        status_regs[11] <= 8'b00011111 | {5'b0, AUTO_SYNC, BYPASS_CDR, BYPASS_MODE_RESET};
+        status_regs[11] <= {5'b0, AUTO_SYNC, BYPASS_CDR, BYPASS_MODE_RESET};
         status_regs[12] <= 0;
         status_regs[13] <= 0;
         status_regs[14] <= 0;
@@ -161,7 +196,7 @@ always @(posedge BUS_CLK) begin
     else if(BUS_WR && BUS_ADD < 16)
         status_regs[BUS_ADD[3:0]] <= BUS_DATA_IN;
 end
-assign CHIP_TYPE = status_regs[2][7:6];
+assign CHIP_TYPE = 2'b01; // status_regs[2][7:6];
 wire [15:0] CONF_CMD_SIZE;
 assign CONF_CMD_SIZE = {status_regs[4], status_regs[3]};
 wire [15:0] CONF_REPEAT_COUNT;
@@ -201,7 +236,7 @@ always @ (posedge BUS_CLK) begin
         if(BUS_ADD == 0)
             BUS_DATA_OUT_REG <= VERSION;
         else if(BUS_ADD == 2)
-            BUS_DATA_OUT_REG <= {CHIP_TYPE, 1'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE};
+            BUS_DATA_OUT_REG <= {3'b0, CMD_OUTPUT_EN, EXT_TRIGGER_EN, EXT_START_EN, SYNCING, CONF_DONE};
         else if(BUS_ADD == 3)
             BUS_DATA_OUT_REG <= CONF_CMD_SIZE[7:0];
         else if(BUS_ADD == 4)
@@ -341,6 +376,8 @@ always @ (*) begin
                 else
                     next_state = STATE_SYNC;
         end
+
+        default: next_state = next_state;
     endcase
 end
 

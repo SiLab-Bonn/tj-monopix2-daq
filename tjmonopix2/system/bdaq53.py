@@ -41,7 +41,14 @@ class BDAQ53(Dut):
         self.calibration = self.configuration.get('calibration', {})
         self.enable_NTC = self.configuration['hardware'].get('enable_NTC', False)
 
-        self.receivers = ['rx0']
+        # Receivers in use
+        self.receivers = []
+        chip_cfgs = self.get_chips_cfgs()
+        for chip_cfg in chip_cfgs:
+            if chip_cfg['receiver'] not in self.receivers:
+                self.receivers.append(chip_cfg['receiver'])
+            else:
+                raise RuntimeError('Receiver {0} is used multiple times in the testbench configuration!'.format(chip_cfg['receiver']))
 
         if not conf:
             conf = os.path.join(self.proj_dir, 'system' + os.sep + 'bdaq53.yaml')
@@ -50,10 +57,11 @@ class BDAQ53(Dut):
         # Flag indicating of tlu module is enabled.
         self.tlu_module_enabled = False
 
-        super(BDAQ53, self).__init__(conf)
+        # Initialize underlying basil DUT
+        super().__init__(conf)
 
     def init(self, **kwargs):
-        super(BDAQ53, self).init()
+        super().init()
 
         self.fw_version, self.board_version = self['system'].get_daq_version()
         self.log.success('Found board %s running firmware version %s' % (self.board_version, self.fw_version))
@@ -61,21 +69,21 @@ class BDAQ53(Dut):
         if self.fw_version != VERSION.split('.')[0] + '.' + VERSION.split('.')[1]:  # Compare only the first two blocks
             raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
-        # Initialize readout (only one chip supported at the moment)
+        # Initialize readout
+        if len(self.receivers) > self['system']['N_CHIPS']:
+            raise RuntimeError("More receivers in the testbench configuration than supported in this firmware!")
         self.rx_channels = {}
-        self.rx_channels['rx0'] = tjmono2_rx(self['intf'], {'name': 'rx', 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
-                                                            'base_addr': 0x0200})
-        self.rx_channels['rx0'].init()
-
-        # self.rx_lanes = {}
-        # for recv in self.receivers:
-        #     t_rx_lanes = self.rx_channels[recv].get_rx_config()
-        #     self.rx_lanes[recv] = t_rx_lanes
+        for rec in self.receivers:
+            self.rx_channels[rec] = tjmono2_rx(self['intf'], {'name': rec, 'type': 'tjmonopix2.tjmono2_rx', 'interface': 'intf',
+                                                              'base_addr': 0x1000 + int(rec[2]) * 0x0100})
+            self.rx_channels[rec].init()
 
         # Configure cmd encoder
         self.set_cmd_clk(frequency=160.0)
         self['cmd'].reset()
         time.sleep(0.1)
+
+        self.communication_established = False
 
         # # Wait for the chip (model) PLL to lock before establishing a link
         # if self.board_version == 'SIMULATION':
@@ -229,17 +237,13 @@ class BDAQ53(Dut):
         else:
             self.log.error('FPGA temperature readout is not not supported on this hardware platform.')
 
-    def set_chip_type(self):
-        ''' Defines chip type ITkPixV1-like '''
-        self['cmd'].set_chip_type(1)
+    def enable_auto_sync(self):
+        '''Enables automatic sending of sync commands'''
+        self['cmd'].set_auto_sync(1)
 
-    # def enable_auto_sync(self):
-    #     '''Enables automatic sending of sync commands'''
-    #     self['cmd'].set_auto_sync(1)
-
-    # def disable_auto_sync(self):
-    #     '''Disables automatic sending of sync commands'''
-    #     self['cmd'].set_auto_sync(0)
+    def disable_auto_sync(self):
+        '''Disables automatic sending of sync commands'''
+        self['cmd'].set_auto_sync(0)
 
     def configure_tdc_module(self):
         self.log.info('Configuring TDC module')
@@ -269,7 +273,7 @@ class BDAQ53(Dut):
     def set_trigger_data_delay(self, trigger_data_delay):
         self['tlu']['TRIGGER_DATA_DELAY'] = trigger_data_delay
 
-    def configure_tlu_module(self, aidamode=False, max_triggers=False):
+    def configure_tlu_module(self, trigger_mode="eudet", max_triggers=False):
         self.log.info('Configuring TLU module...')
         self['tlu']['RESET'] = 1    # Reset first TLU module
         for key, value in self.configuration['TLU'].items():    # Set specified registers
@@ -282,15 +286,17 @@ class BDAQ53(Dut):
             self['tlu']['MAX_TRIGGERS'] = 0  # unlimited number of triggers
 
         # AIDA mode
-        if aidamode:
+        if trigger_mode.lower() == "aida":
             self['tlu']["TRIGGER_MODE"] = 2
             self['tlu']["TRIGGER_LOW_TIMEOUT"] = 4
             self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 1
             self['tlu']['EN_TLU_RESET_TIMESTAMP'] = 1
-        else:
+        elif trigger_mode.lower() == "eudet":
             self['tlu']["TRIGGER_MODE"] = 3
             self['tlu']["TRIGGER_LOW_TIMEOUT"] = 0
             self['tlu']["TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES"] = 5
+        else:
+            raise ValueError("Invalid trigger mode selected. Supported options: 'eudet' | 'aida'")
 
     def get_tlu_erros(self):
         return (self['tlu']['TRIGGER_LOW_TIMEOUT_ERROR_COUNTER'], self['tlu']['TLU_TRIGGER_ACCEPT_ERROR_COUNTER'])

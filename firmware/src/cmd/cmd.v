@@ -65,7 +65,7 @@ cmd_core
 #(
     .ABUSWIDTH(ABUSWIDTH)
 ) i_cmd_core
-(   
+(
     .CHIP_TYPE(CHIP_TYPE),
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),

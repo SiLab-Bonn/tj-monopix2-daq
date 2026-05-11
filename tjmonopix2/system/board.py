@@ -18,9 +18,10 @@ class DAQBoard(RegisterHardwareLayer):
                   'VERSION_MAJOR': {'descr': {'addr': 2, 'size': 8, 'properties': ['ro']}},
                   'BOARD_VERSION': {'descr': {'addr': 3, 'size': 8, 'properties': ['ro']}},
                   'SI570_IS_CONFIGURED': {'descr': {'addr': 4, 'size': 1, 'properties': ['rw']}},
+                  'N_CHIPS': {'descr': {'addr': 5, 'size': 3, 'properties': ['ro']}}
                   }
 
-    _require_version = "==1"
+    _require_version = "==2"
 
     ''' Map hardware IDs for board identification '''
     hw_map = {

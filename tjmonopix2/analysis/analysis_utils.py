@@ -19,6 +19,11 @@ from tqdm import tqdm
 
 logger = logging.getLogger('Analysis')
 
+# Word defines
+TRIGGER_HEADER = 0x80000000
+TDC_HEADER = 0x20000000
+
+# Hit data types
 hit_dtype = np.dtype([
     ("col", "<i2"),
     ("row", "<i2"),
@@ -471,11 +476,13 @@ def _fit_tot_response(data, scan_params):
     y = data[~np.isnan(data)]
     yerr = np.ones(len(y)) / 2  # Assume +/- 0.5 because of integer values of ToT
 
+    x += 1e-6  # Account for 0-values without masking them
+
     # Only fit data that is fittable
     if np.all(np.isnan(y)) or x.shape[0] < 3 or len(x[y > 0]) == 0:
         return (0., 0., 0., 0.)
 
-    p0 = [40, 0.005, 0.1]
+    p0 = [40, 0.005, 25]  # last item is threshold
 
     try:
         with warnings.catch_warnings():
