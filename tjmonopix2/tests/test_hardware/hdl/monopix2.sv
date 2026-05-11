@@ -6,13 +6,14 @@
 module monopix2 (
         input logic LVDS_CMD_CLK
         , input logic LVDS_SER_CLK
-        , output logic LVDS_CHSYNC_CLK_OUT
         , input logic RESETB_EXT
         , input logic LVDS_CMD
         , input logic LVDS_PULSE_EXT
         , output logic LVDS_DATA_OUT
         , output logic LVDS_HITOR_OUT
         , output logic LVDS_CHSYNC_LOCKED_OUT
+        , output logic LVDS_CHSYNC_CLK_OUT
+        , input logic [1:0]  CHIP_ID
         , input logic [262143:0]  ANALOG_HIT
     );
     
@@ -29,15 +30,15 @@ module monopix2 (
     import "DPI-C" function chandle monopix2_protectlib_create(string scope__V);
     
     // Updates all non-clock inputs and retrieves the results
-    import "DPI-C" function longint monopix2_protectlib_combo_update (
+    import "DPI-C" function longint monopix2_protectlib_combo_update(
         chandle handle__V
-        , output logic LVDS_CHSYNC_CLK_OUT
         , input logic LVDS_CMD
         , input logic LVDS_PULSE_EXT
         , output logic LVDS_DATA_OUT
         , output logic LVDS_HITOR_OUT
         , output logic LVDS_CHSYNC_LOCKED_OUT
-        , input logic [262143:0]  ANALOG_HIT
+        , output logic LVDS_CHSYNC_CLK_OUT
+        , input logic [1:0]  CHIP_ID
     );
     
     // Updates all clocks and retrieves the results
@@ -45,11 +46,12 @@ module monopix2 (
         chandle handle__V
         , input logic LVDS_CMD_CLK
         , input logic LVDS_SER_CLK
-        , output logic LVDS_CHSYNC_CLK_OUT
         , input logic RESETB_EXT
         , output logic LVDS_DATA_OUT
         , output logic LVDS_HITOR_OUT
         , output logic LVDS_CHSYNC_LOCKED_OUT
+        , output logic LVDS_CHSYNC_CLK_OUT
+        , input logic [262143:0]  ANALOG_HIT
     );
     
     // Need to convince some simulators that the input to the module
@@ -58,7 +60,7 @@ module monopix2 (
         chandle handle__V
         , input logic LVDS_CMD
         , input logic LVDS_PULSE_EXT
-        , input logic [262143:0]  ANALOG_HIT
+        , input logic [1:0]  CHIP_ID
     );
     
     // Evaluates the library module's final process
@@ -69,81 +71,91 @@ module monopix2 (
     time last_combo_seqnum__V;
     time last_seq_seqnum__V;
 
-    logic LVDS_CHSYNC_CLK_OUT_combo__V;
     logic LVDS_DATA_OUT_combo__V;
     logic LVDS_HITOR_OUT_combo__V;
     logic LVDS_CHSYNC_LOCKED_OUT_combo__V;
-    logic LVDS_CHSYNC_CLK_OUT_seq__V;
+    logic LVDS_CHSYNC_CLK_OUT_combo__V;
     logic LVDS_DATA_OUT_seq__V;
     logic LVDS_HITOR_OUT_seq__V;
     logic LVDS_CHSYNC_LOCKED_OUT_seq__V;
-    logic LVDS_CHSYNC_CLK_OUT_tmp__V;
+    logic LVDS_CHSYNC_CLK_OUT_seq__V;
     logic LVDS_DATA_OUT_tmp__V;
     logic LVDS_HITOR_OUT_tmp__V;
     logic LVDS_CHSYNC_LOCKED_OUT_tmp__V;
+    logic LVDS_CHSYNC_CLK_OUT_tmp__V;
     // Hash value to make sure this file and the corresponding
     // library agree
-    localparam int protectlib_hash__V = 32'd2954403249;
+    localparam int protectlib_hash__V = 32'd1937954308;
 
     initial begin
         monopix2_protectlib_check_hash(protectlib_hash__V);
         handle__V = monopix2_protectlib_create($sformatf("%m"));
     end
     
-    // Combinatorialy evaluate changes to inputs
-    always @* begin
+    // Combinatorially evaluate changes to inputs
+    always_comb begin
         last_combo_seqnum__V = monopix2_protectlib_combo_update(
-            handle__V
-            , LVDS_CHSYNC_CLK_OUT_combo__V
-            , LVDS_CMD
-            , LVDS_PULSE_EXT
-            , LVDS_DATA_OUT_combo__V
-            , LVDS_HITOR_OUT_combo__V
-            , LVDS_CHSYNC_LOCKED_OUT_combo__V
-            , ANALOG_HIT
+            handle__V,
+            LVDS_CMD,
+            LVDS_PULSE_EXT,
+            LVDS_DATA_OUT_combo__V,
+            LVDS_HITOR_OUT_combo__V,
+            LVDS_CHSYNC_LOCKED_OUT_combo__V,
+            LVDS_CHSYNC_CLK_OUT_combo__V,
+            CHIP_ID
         );
     end
     
     // Evaluate clock edges
-    always @(posedge LVDS_CMD_CLK or negedge LVDS_CMD_CLK, posedge LVDS_SER_CLK or negedge LVDS_SER_CLK, posedge RESETB_EXT or negedge RESETB_EXT) begin
+    always @(LVDS_CMD_CLK or LVDS_SER_CLK or RESETB_EXT or ANALOG_HIT) begin
         monopix2_protectlib_combo_ignore(
-            handle__V
-            , LVDS_CMD
-            , LVDS_PULSE_EXT
-            , ANALOG_HIT
+            handle__V,
+            LVDS_CMD,
+            LVDS_PULSE_EXT,
+            CHIP_ID
         );
         last_seq_seqnum__V <= monopix2_protectlib_seq_update(
-            handle__V
-            , LVDS_CMD_CLK
-            , LVDS_SER_CLK
-            , LVDS_CHSYNC_CLK_OUT_tmp__V
-            , RESETB_EXT
-            , LVDS_DATA_OUT_tmp__V
-            , LVDS_HITOR_OUT_tmp__V
-            , LVDS_CHSYNC_LOCKED_OUT_tmp__V
+            handle__V,
+            LVDS_CMD_CLK,
+            LVDS_SER_CLK,
+            RESETB_EXT,
+            LVDS_DATA_OUT_tmp__V,
+            LVDS_HITOR_OUT_tmp__V,
+            LVDS_CHSYNC_LOCKED_OUT_tmp__V,
+            LVDS_CHSYNC_CLK_OUT_tmp__V,
+            ANALOG_HIT
         );
-        LVDS_CHSYNC_CLK_OUT_seq__V <= LVDS_CHSYNC_CLK_OUT_tmp__V;
         LVDS_DATA_OUT_seq__V <= LVDS_DATA_OUT_tmp__V;
         LVDS_HITOR_OUT_seq__V <= LVDS_HITOR_OUT_tmp__V;
         LVDS_CHSYNC_LOCKED_OUT_seq__V <= LVDS_CHSYNC_LOCKED_OUT_tmp__V;
+        LVDS_CHSYNC_CLK_OUT_seq__V <= LVDS_CHSYNC_CLK_OUT_tmp__V;
     end
     
     // Select between combinatorial and sequential results
-    always @* begin
+    always_comb begin
         if (last_seq_seqnum__V > last_combo_seqnum__V) begin
-            LVDS_CHSYNC_CLK_OUT = LVDS_CHSYNC_CLK_OUT_seq__V;
             LVDS_DATA_OUT = LVDS_DATA_OUT_seq__V;
             LVDS_HITOR_OUT = LVDS_HITOR_OUT_seq__V;
             LVDS_CHSYNC_LOCKED_OUT = LVDS_CHSYNC_LOCKED_OUT_seq__V;
-        end
-        else begin
-            LVDS_CHSYNC_CLK_OUT = LVDS_CHSYNC_CLK_OUT_combo__V;
+            LVDS_CHSYNC_CLK_OUT = LVDS_CHSYNC_CLK_OUT_seq__V;
+        end else begin
             LVDS_DATA_OUT = LVDS_DATA_OUT_combo__V;
             LVDS_HITOR_OUT = LVDS_HITOR_OUT_combo__V;
             LVDS_CHSYNC_LOCKED_OUT = LVDS_CHSYNC_LOCKED_OUT_combo__V;
+            LVDS_CHSYNC_CLK_OUT = LVDS_CHSYNC_CLK_OUT_combo__V;
         end
     end
     
     final monopix2_protectlib_final(handle__V);
     
 endmodule
+
+`ifdef VERILATOR
+`verilator_config
+profile_data -hier-dpi "monopix2_protectlib_combo_update" -cost 64'd3321658
+profile_data -hier-dpi "monopix2_protectlib_seq_update" -cost 64'd3321658
+profile_data -hier-dpi "monopix2_protectlib_combo_ignore" -cost 64'd1
+hier_workers -hier-dpi "monopix2_protectlib_combo_update" -workers 16'd0
+hier_workers -hier-dpi "monopix2_protectlib_seq_update" -workers 16'd0
+`verilog
+`endif
