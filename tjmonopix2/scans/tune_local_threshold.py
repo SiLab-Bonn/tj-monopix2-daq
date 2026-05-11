@@ -66,7 +66,7 @@ class TDACTuning(ScanBase):
 
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
-        self.data.hist_occ = oa.OccupancyHistogramming()
+        self.data.hist_occ = oa.OccupancyHistogramming(rx_id=self.chip.chip_id)
 
     def _scan(self, start_column=0, stop_column=512, start_row=0, stop_row=512, n_injections=100, **_):
         '''

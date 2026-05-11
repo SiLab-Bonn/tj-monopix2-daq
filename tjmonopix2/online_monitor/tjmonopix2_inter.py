@@ -23,7 +23,7 @@ class TJMonopix2(Transceiver):
 
         self.chunk_size = self.config.get('chunk_size', 1000000)
         self.analyze_tdc = self.config.get('analyze_tdc', False)
-        self.rx_id = int(self.config.get('rx', 'rx0')[2])
+        self.rx_id = self.config.get('rx_id', 'rx0')
         # Mask pixels that have a higher occupancy than 3 * the median of all firering pixels
         self.noisy_threshold = self.config.get('noisy_threshold', 3)
 

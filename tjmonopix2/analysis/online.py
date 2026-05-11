@@ -38,11 +38,11 @@ def gray2bin(gray):
 
 
 @numba.njit(cache=True, fastmath=True)
-def histogram(raw_data, occ_hist, hit_data, is_sof, is_eof, tj_data_flag):
+def histogram(raw_data, occ_hist, hit_data, is_sof, is_eof, tj_data_flag, rx_id=0):
     ''' Raw data to 2D occupancy histogram '''
 
     for word in raw_data:
-        if not is_tjmono(word):
+        if not is_tjmono(word, rx_id=rx_id):
             continue
 
         # Split 32bit FPGA word into single data words
@@ -90,12 +90,13 @@ class OnlineHistogrammingBase():
     '''
     _queue_timeout = 0.01  # max blocking time to delete object [s]
 
-    def __init__(self, shape):
+    def __init__(self, shape, rx_id):
         self._raw_data_queue = multiprocessing.Queue()
         self.stop = multiprocessing.Event()
         self.lock = multiprocessing.Lock()
         self.last_add = None  # time of last add to queue
         self.shape = shape
+        self.rx_id = rx_id
         self.analysis_function_kwargs = {}
         self.p = None  # process
 
@@ -197,12 +198,12 @@ class OccupancyHistogramming(OnlineHistogrammingBase):
         No event building.
     '''
 
-    def __init__(self):
-        super().__init__(shape=(512, 512))
-        self.analysis_function_kwargs = {'hit_data': np.zeros(1, dtype=au.hit_dtype), 'is_sof': -1, 'is_eof': -1, 'tj_data_flag': 0}
+    def __init__(self, rx_id=0):
+        super().__init__(shape=(512, 512), rx_id=rx_id)
+        self.analysis_function_kwargs = {'hit_data': np.zeros(1, dtype=au.hit_dtype), 'is_sof': -1, 'is_eof': -1, 'tj_data_flag': 0, 'rx_id': rx_id}
 
-        def analysis_function(self, raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag):
-            return histogram(raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag)
+        def analysis_function(self, raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag, rx_id):
+            return histogram(raw_data, hist, hit_data, is_sof, is_eof, tj_data_flag, rx_id)
         setattr(OccupancyHistogramming, 'analysis_function', analysis_function)
 
         self.init()
