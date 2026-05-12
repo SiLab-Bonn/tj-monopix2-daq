@@ -5,7 +5,12 @@ from pathlib import Path
 
 
 def write_masked_pixels(filepath_in: str, filepath_out: str = None) -> None:
+    """Write masked pixels to corryvreckan-compatible mask file.
 
+    Args:
+        filepath_in (str): Filepath to h5 file with use_pixel mask.
+        filepath_out (str, optional): Filepath for output txt file. Defaults to None.
+    """
     print('Using file: %s' % filepath_in)
 
     with tb.open_file(filepath_in, "r") as in_file:
@@ -45,12 +50,9 @@ def find_latest_file(path: str, index: str):
 
 
 if __name__ == '__main__':
-
     for run in ["run_1", "run_2",]:
 
         path_in = "/path/to/output/data" + run
         filepath_in = find_latest_file(path=path_in, index="ext_trigger_scan_tj.h5")
-
-        # filepath_in = 'run_26/20251113_121333_ext_trigger_scan.h5'
 
         write_masked_pixels(filepath_in,  path_in + '/data/masked_w12r10.txt')
