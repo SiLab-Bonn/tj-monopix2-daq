@@ -141,8 +141,6 @@ tjmonopix2_core #(
     .RJ45_RESET(RJ45_RESET),
     .RJ45_TRIGGER(RJ45_TRIGGER),
 
-    .RESETB_EXT(RESETB_EXT), 
-
     // LVDS IO
     .CMD_OUT(CMD),
     .LVDS_DATA(LVDS_DATA),
