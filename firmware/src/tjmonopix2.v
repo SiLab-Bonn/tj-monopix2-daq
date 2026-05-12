@@ -54,46 +54,19 @@ module tjmonopix2 #(
     input wire        RJ45_RESET,
     input wire        RJ45_TRIGGER,
 
-    `ifdef BDAQ53
-        output wire [N_CHIPS-1:0] J_SER_CLK_P, J_SER_CLK_N,
-        output wire [N_CHIPS-1:0] J_CMD_CLK_P, J_CMD_CLK_N,
-        output wire [N_CHIPS-1:0] J_CMD_P, J_CMD_N,
+    output wire [N_CHIPS-1:0] J_SER_CLK_P, J_SER_CLK_N,
+    output wire [N_CHIPS-1:0] J_CMD_CLK_P, J_CMD_CLK_N,
+    output wire [N_CHIPS-1:0] J_CMD_P, J_CMD_N,
 
-        input wire  [N_CHIPS-1:0] J_DATA_P, J_DATA_N, // DATA
-        input wire        HITOR_P, HITOR_N,         // HITOR
+    input wire  [N_CHIPS-1:0] J_DATA_P, J_DATA_N, // DATA
+    input wire        HITOR_P, HITOR_N,         // HITOR
 
-        // NTC
-        output wire [2:0] NTC_MUX,
+    // NTC
+    output wire [2:0] NTC_MUX,
 
-        // SiTCP EEPROM
-        output wire       EEPROM_CS, EEPROM_SK, EEPROM_DI,
-        input wire        EEPROM_DO,
-    `elsif MIO3
-        output wire       RESETB_EXT,
-        // LVDS signals single ended to TX/RX on GPAC
-        output wire       LVDS_CMD,               // LVDS DOUT3(DOUT16)
-        output wire       LVDS_CMD_CLK,           // LVDS DOUT2(DOUT1)
-        output wire       LVDS_SER_CLK,           // LVDS DOUT1(DOUT18)
-        input wire        LVDS_DATA,              // LVDS DIN3(DIN11)
-        input wire        LVDS_HITOR,             // LVDS DIN2(DIN9)
-        output wire       LVDS_PULSE_EXT,         // LVDS DOUT0(DOUT19)
-        input wire        LVDS_CHSYNC_LOCKED_OUT, // LVDS DIN1(DIN10)
-        input wire        LVDS_CHSYNC_CLK_OUT,    // LVDS DIN0(DIN8)
-
-        output wire       INPUT_SEL,              // DOUT14
-        output wire       CMOS_CMD,               // DOUT4
-        output wire       CMOS_CMD_CLK,           // DOUT2
-        output wire       CMOS_SER_CLK,           // DOUT0
-        input wire        CMOS_DATA,              // DIN2
-        input wire        CMOS_HITOR,             // DIN4
-        output wire       CMOS_PULSE_EXT,         // DOUT12
-
-        // RO
-        input wire        FREEZE_EXT,             // DOUT10
-        output wire       READ_EXT,               // DOUT8
-        output wire       RO_RST_EXT,             // DOUT9
-        input wire        TOKEN_OUT,              // DIN0
-    `endif
+    // SiTCP EEPROM
+    output wire       EEPROM_CS, EEPROM_SK, EEPROM_DI,
+    input wire        EEPROM_DO,
 
     // 2-row PMOD header for general purpose IOs
     inout wire [7:0]  PMOD,
@@ -286,103 +259,101 @@ wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
 assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
 assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
 
-`ifdef BDAQ53
-    // -------  Diff buffer for BDAQ  ------- //
-    wire CMD_OUT;
-    wire [N_CHIPS-1:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
-    wire [N_CHIPS-1:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
-    wire [N_CHIPS-1:0] LVDS_DATA;
+// -------  Diff buffer for BDAQ  ------- //
+wire CMD_OUT;
+wire [N_CHIPS-1:0] LVDS_CMD, LVDS_CMD_CLK, LVDS_SER_CLK;
+wire [N_CHIPS-1:0] CMD_P, CMD_N, CMD_CLK_P, CMD_CLK_N, SER_CLK_P, SER_CLK_N;
+wire [N_CHIPS-1:0] LVDS_DATA;
 
-    // ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
-    genvar i;
-    generate
-        for (i=0; i<N_CHIPS; i=i+1) begin : gen_lvds_io_rj45
-            // Command
-            ODDR ODDR_inst_CMD (
-                .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
-            );
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"),
-                .SLEW("FAST")
-            ) i_OBUFDS_cmd (
-                .O(CMD_P[i]),
-                .OB(CMD_N[i]),
-                .I(LVDS_CMD[i])
-            );
-            assign J_CMD_N[i] = CMD_N[i];
-            assign J_CMD_P[i] = CMD_P[i];
+// ------- RJ45 (CMD and CMD CLK inverted with respect to DP output!) ------- //
+genvar i;
+generate
+    for (i=0; i<N_CHIPS; i=i+1) begin : gen_lvds_io_rj45
+        // Command
+        ODDR ODDR_inst_CMD (
+            .Q(LVDS_CMD[i]), .C(CLKCMD), .CE(1'b1), .D1(~CMD_OUT), .D2(~CMD_OUT), .R(1'b0), .S(1'b0)
+        );
+        OBUFDS #(
+            .IOSTANDARD("LVDS_25"),
+            .SLEW("FAST")
+        ) i_OBUFDS_cmd (
+            .O(CMD_P[i]),
+            .OB(CMD_N[i]),
+            .I(LVDS_CMD[i])
+        );
+        assign J_CMD_N[i] = CMD_N[i];
+        assign J_CMD_P[i] = CMD_P[i];
 
-            // Command clock
-            ODDR ODDR_inst_CMD_CLK (
-                .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"),
-                .SLEW("FAST")
-            ) i_OBUFDS_cmd_clk (
-                .O(CMD_CLK_P[i]),
-                .OB(CMD_CLK_N[i]),
-                .I(LVDS_CMD_CLK[i])
-            );
-            assign J_CMD_CLK_N[i] = CMD_CLK_N[i];
-            assign J_CMD_CLK_P[i] = CMD_CLK_P[i];
+        // Command clock
+        ODDR ODDR_inst_CMD_CLK (
+            .Q(LVDS_CMD_CLK[i]), .C(CLKCMD), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+        );
+        OBUFDS #(
+            .IOSTANDARD("LVDS_25"),
+            .SLEW("FAST")
+        ) i_OBUFDS_cmd_clk (
+            .O(CMD_CLK_P[i]),
+            .OB(CMD_CLK_N[i]),
+            .I(LVDS_CMD_CLK[i])
+        );
+        assign J_CMD_CLK_N[i] = CMD_CLK_N[i];
+        assign J_CMD_CLK_P[i] = CMD_CLK_P[i];
 
-            // Serializer clock
-            ODDR ODDR_inst_SER_CLK (
-                .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
-            );
-            OBUFDS #(
-                .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
-                .SLEW("FAST")           // Specify the output slew rate
-            ) i_OBUFDS_ser_clk (
-                .O(SER_CLK_P[i]),          // Diff_p output (connect directly to top-level port)
-                .OB(SER_CLK_N[i]),         // Diff_n output (connect directly to top-level port)
-                .I(LVDS_SER_CLK[i])        // Buffer input
-            );
-            assign J_SER_CLK_N[i] = SER_CLK_N[i];
-            assign J_SER_CLK_P[i] = SER_CLK_P[i];
+        // Serializer clock
+        ODDR ODDR_inst_SER_CLK (
+            .Q(LVDS_SER_CLK[i]), .C(CLK160), .CE(1'b1), .D1(1'b0), .D2(1'b1), .R(1'b0), .S(1'b0)
+        );
+        OBUFDS #(
+            .IOSTANDARD("LVDS_25"), // Specify the output I/O standard
+            .SLEW("FAST")           // Specify the output slew rate
+        ) i_OBUFDS_ser_clk (
+            .O(SER_CLK_P[i]),          // Diff_p output (connect directly to top-level port)
+            .OB(SER_CLK_N[i]),         // Diff_n output (connect directly to top-level port)
+            .I(LVDS_SER_CLK[i])        // Buffer input
+        );
+        assign J_SER_CLK_N[i] = SER_CLK_N[i];
+        assign J_SER_CLK_P[i] = SER_CLK_P[i];
 
-            // Data (invert for DP connector)
-            `ifdef _1RX
-                wire LVDS_DATA_int;
-                IBUFDS #(
-                    .DIFF_TERM("TRUE"),
-                    .IBUF_LOW_PWR("FALSE"),
-                    .IOSTANDARD("LVDS_25")
-                ) i_IBUFDS_data (
-                    .O(LVDS_DATA_int),
-                    .I(J_DATA_P[i]),
-                    .IB(J_DATA_N[i])
-                );
-                assign LVDS_DATA[i] = ~LVDS_DATA_int;
-            `else
-            `ifdef _4RX
-                IBUFDS #(
-                    .DIFF_TERM("TRUE"),
-                    .IBUF_LOW_PWR("FALSE"),
-                    .IOSTANDARD("LVDS_25")
-                ) i_IBUFDS_data (
-                    .O(LVDS_DATA[i]),
-                    .I(J_DATA_P[i]),
-                    .IB(J_DATA_N[i])
-                );
-            `endif
-            `endif
-        end
-    endgenerate
+        // Data (invert for DP connector)
+        `ifdef _1RX
+            wire LVDS_DATA_int;
+            IBUFDS #(
+                .DIFF_TERM("TRUE"),
+                .IBUF_LOW_PWR("FALSE"),
+                .IOSTANDARD("LVDS_25")
+            ) i_IBUFDS_data (
+                .O(LVDS_DATA_int),
+                .I(J_DATA_P[i]),
+                .IB(J_DATA_N[i])
+            );
+            assign LVDS_DATA[i] = ~LVDS_DATA_int;
+        `else
+        `ifdef _4RX
+            IBUFDS #(
+                .DIFF_TERM("TRUE"),
+                .IBUF_LOW_PWR("FALSE"),
+                .IOSTANDARD("LVDS_25")
+            ) i_IBUFDS_data (
+                .O(LVDS_DATA[i]),
+                .I(J_DATA_P[i]),
+                .IB(J_DATA_N[i])
+            );
+        `endif
+        `endif
+    end
+endgenerate
 
-    // *** HitOr *** //
-    wire LVDS_HITOR;
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("FALSE"),
-        .IOSTANDARD("LVDS_25")
-    ) i_IBUFDS_hitor (
-        .O(LVDS_HITOR),
-        .I(HITOR_P),
-        .IB(HITOR_N)
-    );
-`endif
+// *** HitOr *** //
+wire LVDS_HITOR;
+IBUFDS #(
+    .DIFF_TERM("TRUE"),
+    .IBUF_LOW_PWR("FALSE"),
+    .IOSTANDARD("LVDS_25")
+) i_IBUFDS_hitor (
+    .O(LVDS_HITOR),
+    .I(HITOR_P),
+    .IB(HITOR_N)
+);
 
 assign RST = !RESET_BUTTON | !LOCKED;
 wire   gmii_tx_clk;
@@ -456,12 +427,10 @@ wire SiTCP_RST;
 wire [7:0] TCP_TX_DATA;
 
 // connect the physical EEPROM pins only for the BDAQ53
-`ifdef BDAQ53
-    assign EEPROM_CS = EEPROM_CS_int;
-    assign EEPROM_SK = EEPROM_SK_int;
-    assign EEPROM_DI = EEPROM_DI_int;
-    assign EEPROM_DO_int = EEPROM_DO;
-`endif
+assign EEPROM_CS = EEPROM_CS_int;
+assign EEPROM_SK = EEPROM_SK_int;
+assign EEPROM_DI = EEPROM_DI_int;
+assign EEPROM_DO_int = EEPROM_DO;
 
 // IP address subnet selection
 wire [3:0] IP_ADDR_SEL;
@@ -642,26 +611,6 @@ tjmonopix2_core #(
 
     .LVDS_DATA(LVDS_DATA),
     .LVDS_HITOR(LVDS_HITOR),
-
-    `ifdef MIO3
-        .RESETB_EXT(RESETB_EXT),
-
-        .LVDS_CHSYNC_LOCKED_OUT(LVDS_CHSYNC_LOCKED_OUT),
-        .LVDS_CHSYNC_CLK_OUT(LVDS_CHSYNC_CLK_OUT),
-        .INPUT_SEL(INPUT_SEL),
-
-        .CMOS_CMD(CMOS_CMD),
-        .CMOS_CMD_CLK(CMOS_CMD_CLK),
-        .CMOS_SER_CLK(CMOS_SER_CLK),
-        .CMOS_DATA(CMOS_DATA),
-        .CMOS_HITOR(CMOS_HITOR),
-        .CMOS_PULSE_EXT(CMOS_PULSE_EXT),
-
-        .FREEZE_EXT(FREEZE_EXT),
-        .READ_EXT(READ_EXT),
-        .RO_RST_EXT(RO_RST_EXT),
-        .TOKEN_OUT(TOKEN_OUT),
-    `endif
 
     .NTC_MUX(NTC_MUX)
 );
