@@ -217,6 +217,9 @@ class Plotting(object):
             if self.run_config['scan_id'] in ['threshold_scan', 'fast_threshold_scan', 'autorange_threshold_scan', 'global_threshold_tuning', 'injection_delay_scan', 'in_time_threshold_scan', 'injection_delay_scan', 'crosstalk_scan']:
                 title = 'Integrated occupancy'
                 z_max = 'maximum'
+            elif self.run_config['scan_id'] in ['noise_occupancy_scan']:
+                title = 'Occupancy (%s pixels disabled)' %(len(self.n_enabled_pixels) - np.sum(self.n_enabled_pixels))
+                z_max = None
             else:
                 title = 'Occupancy'
                 z_max = None
