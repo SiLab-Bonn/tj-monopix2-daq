@@ -3,27 +3,29 @@ import tables as tb
 
 from pathlib import Path
 
+
 def write_masked_pixels(filepath_in: str, filepath_out: str = None) -> None:
 
-    print('Using file: %s' %filepath_in)
+    print('Using file: %s' % filepath_in)
 
     with tb.open_file(filepath_in, "r") as in_file:
         pixel_mask = in_file.root.configuration_in.chip.use_pixel[:]
-    
-    print('--- Disabled Pixels ---')   
-    disabled_pixels = np.array(np.where(pixel_mask==False))
+
+    print('--- Disabled Pixels ---')
+    disabled_pixels = np.array(np.where(~pixel_mask))
     print(disabled_pixels)
-    print('--- Total Amount of disabled pixels ---')  
+    print('--- Total Amount of disabled pixels ---')
     print(np.shape(disabled_pixels[1])[0])
 
-    if filepath_out == None:
+    if filepath_out:
         filepath_out = 'masked_pixels.txt'
 
     with open(filepath_out, 'w') as file:
         for i in range(np.shape(disabled_pixels)[1]):
-            file.write('p   ' + str(disabled_pixels[:,i][0]) + '    ' + str(disabled_pixels[:,i][1]) + '\n')
+            file.write('p   ' + str(disabled_pixels[:, i][0]) + '    ' + str(disabled_pixels[:, i][1]) + '\n')
 
-    print('Wrote file to: %s' %filepath_out)
+    print('Wrote file to: %s' % filepath_out)
+
 
 def find_latest_file(path: str, index: str):
     """Find latest file that includes a given subset of strings called index in directory.
@@ -40,6 +42,7 @@ def find_latest_file(path: str, index: str):
         [x for x in p.iterdir() if x.is_file() and index in str(x)],
         key=lambda item: item.stat().st_ctime,
     )
+
 
 if __name__ == '__main__':
 

@@ -218,7 +218,7 @@ class Plotting(object):
                 title = 'Integrated occupancy'
                 z_max = 'maximum'
             elif self.run_config['scan_id'] in ['noise_occupancy_scan']:
-                title = 'Occupancy (%s pixels disabled)' %(len(self.n_enabled_pixels) - np.sum(self.n_enabled_pixels))
+                title = 'Occupancy (%s pixels disabled)' % (len(self.n_enabled_pixels) - np.sum(self.n_enabled_pixels))
                 z_max = None
             else:
                 title = 'Occupancy'

@@ -58,7 +58,7 @@ class NoiseOccScan(ScanBase):
 
         self.data.n_pixels = (stop_column - start_column) * (stop_row - start_row)
         self.data.min_occupancy = min_occupancy
-        
+
         self.pbar = tqdm(total=scan_timeout, unit='')
         start_time = time.time()
 
