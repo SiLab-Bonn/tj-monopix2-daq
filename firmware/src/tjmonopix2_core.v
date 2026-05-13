@@ -57,6 +57,7 @@ module tjmonopix2_core #(
     input wire CLK160,
     input wire CLK320,
     input wire CLKCMD,
+    input wire EXT_TRIGGER_CLK,
     output wire MGT_REF_SEL,
 
     // I2C
@@ -415,8 +416,10 @@ rrp_arbiter #(
 );
 
 // ----- TLU ----- //
+wire TRIGGER_CLK;
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
+assign TRIGGER_CLK = EXT_TRIGGER_CLK;
 tlu_controller #(
     .BASEADDR(TLU_BASEADDR),
     .HIGHADDR(TLU_HIGHADDR),
@@ -433,7 +436,7 @@ tlu_controller #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .TRIGGER_CLK(CLK40),
+    .TRIGGER_CLK(TRIGGER_CLK),
 
     .FIFO_READ(TLU_FIFO_READ),
     .FIFO_EMPTY(TLU_FIFO_EMPTY),
@@ -462,7 +465,7 @@ wire VETO_TLU_PULSE;
 
 // set acknowledge when veto returns to low
 pulse_gen_rising i_pulse_gen_rising_tlu_veto(
-    .clk_in(CLK40),
+    .clk_in(TRIGGER_CLK),
     .in(~VETO_TLU_PULSE),
     .out(TRIGGER_ACKNOWLEDGE_FLAG)
 );
@@ -479,7 +482,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK40),
+    .PULSE_CLK(TRIGGER_CLK),
     .EXT_START(EXT_START_PULSE_VETO),
     .PULSE(VETO_TLU_PULSE)
 );
