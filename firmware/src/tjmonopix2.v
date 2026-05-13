@@ -166,15 +166,13 @@ BUFG BUFG_inst_CLK125RX   ( .O(CLK125RX),   .I(rgmii_rxc)     );
 BUFG BUFG_inst_CLK200     ( .O(CLK200),     .I(CLK200_PLL)    );
 
 // -------  PLL for clk synthesis  ------- //
-(* KEEP = "{TRUE}" *) wire CLK640;
 (* KEEP = "{TRUE}" *) wire CLK320;
 (* KEEP = "{TRUE}" *) wire CLK160;
-(* KEEP = "{TRUE}" *) wire CLK32;
 (* KEEP = "{TRUE}" *) wire CLK40;
 (* KEEP = "{TRUE}" *) wire CLK16;
 
 wire PLL_FEEDBACK2, LOCKED2;
-wire CLK16_PLL, CLK32_PLL, CLK40_PLL, CLK160_PLL, CLK320_PLL, CLK640_PLL;
+wire CLK16_PLL, CLK40_PLL, CLK160_PLL, CLK320_PLL,
 
 PLLE2_BASE #(
     .BANDWIDTH("OPTIMIZED"),  // OPTIMIZED, HIGH, LOW
@@ -210,11 +208,11 @@ PLLE2_BASE #(
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
     .CLKOUT0(CLK16_PLL),
-    .CLKOUT1(CLK32_PLL),
+    .CLKOUT1(),
     .CLKOUT2(CLK40_PLL),
     .CLKOUT3(CLK160_PLL),
     .CLKOUT4(CLK320_PLL),
-    .CLKOUT5(CLK640_PLL),
+    .CLKOUT5(),
 
     .CLKFBOUT(PLL_FEEDBACK2),
     
@@ -233,11 +231,9 @@ PLLE2_BASE #(
 
 BUFG BUFG_inst_BUS_CKL (.O(BUS_CLK), .I(BUS_CLK_PLL));
 BUFG BUFG_inst_CLK16   (.O(CLK16),   .I(CLK16_PLL));
-BUFG BUFG_inst_CLK32   (.O(CLK32),   .I(CLK32_PLL));
 BUFG BUFG_inst_CLK40   (.O(CLK40),   .I(CLK40_PLL));
 BUFG BUFG_inst_CLK160  (.O(CLK160),  .I(CLK160_PLL));
 BUFG BUFG_inst_CLK320  (.O(CLK320),  .I(CLK320_PLL));
-BUFG BUFG_inst_CLK640  (.O(CLK640),  .I(CLK640_PLL));
 
 // MGT CLK (from Si570 or SMA input)
 wire CLKCMD, CLKCMD_ibufds;
