@@ -126,7 +126,7 @@ class BDAQ53(Dut):
         """
         if clock not in ["internal", "external"]:
             raise ValueError("Invalid trigger clock selection")
-        
+
         self["DAQ_CONTROL"]["TRIGGER_CLK_SEL"] = 0 if clock == 'internal' else 1
 
     def set_LEMO_MUX(self, connector='LEMO_MUX_TX0', value=0):
