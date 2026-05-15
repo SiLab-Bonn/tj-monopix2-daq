@@ -203,7 +203,7 @@ PLLE2_BASE #(
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT5_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT5_DIVIDE(2),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
@@ -212,7 +212,7 @@ PLLE2_BASE #(
     .CLKOUT2(CLK40_PLL),
     .CLKOUT3(CLK160_PLL),
     .CLKOUT4(CLK320_PLL),
-    .CLKOUT5(CLK640_PLL),
+    .CLKOUT5(),
 
     .CLKFBOUT(PLL_FEEDBACK2),
 
