@@ -44,6 +44,7 @@ class ExtTriggerScan(ScanBase):
         self.daq.configure_tlu_veto_pulse(veto_length=500)
         if max_triggers:
             self.daq.configure_tlu_module(max_triggers=max_triggers, trigger_mode=trigger_mode)
+        self.daq.configure_ptdc_module()
 
     def _scan(self, scan_timeout=False, max_triggers=1000, **_):
         def timed_out():
@@ -62,6 +63,8 @@ class ExtTriggerScan(ScanBase):
 
         with self.readout():
             self.stop_scan.clear()
+            self.daq.enable_ptdc_module()
+            self.daq.calibrate_ptdc_module()
             self.daq.enable_tlu_module()
 
             while not (self.stop_scan.is_set() or timed_out()):
@@ -90,6 +93,7 @@ class ExtTriggerScan(ScanBase):
         if scan_timeout or max_triggers:
             self.pbar.close()
         self.daq.disable_tlu_module()
+        self.daq.disable_ptdc_module()
         self.log.success('Scan finished')
 
     def _analyze(self):

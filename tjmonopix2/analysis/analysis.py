@@ -12,7 +12,7 @@ import numpy as np
 import tables as tb
 from pixel_clusterizer.clusterizer import HitClusterizer
 from tjmonopix2.analysis import analysis_utils as au
-from tjmonopix2.analysis.interpreter import RawDataInterpreter
+from tjmonopix2.analysis.interpreter import RawDataInterpreter, PTDC_CALIB, PTDC_HEADER
 from tjmonopix2.analysis.events import build_events
 from tjmonopix2.system import logger
 from tqdm import tqdm
@@ -318,8 +318,22 @@ class Analysis(object):
                     hist_cs_tot = np.zeros(shape=(cs_tot_size, ), dtype=np.uint32)
                     hist_cs_shape = np.zeros(shape=(300, ), dtype=np.int32)
 
+                if self.analyze_tdc:
+                    # Calibrate TDL before interpreting
+                    first_data_words = in_file.root.raw_data[:500000]
+                    tdl_words = first_data_words[first_data_words & 0xFE000000 == PTDC_HEADER + PTDC_CALIB]
+                    tdl_values = tdl_words & 0x7F
+
+                    value, cnt = np.unique(tdl_values, return_counts=True)
+                    calib_vec = np.zeros(100, dtype=np.uint32)
+                    for i in range(100):
+                        calib_vec[i] = np.sum(cnt[:i])
+                    lut = calib_vec / np.sum(cnt)
+                else:
+                    lut = np.array([0.], dtype=np.float64)  # Match type of LUT for numba static typing
+
                 rx_id = int(self.chip_settings["receiver"][2])
-                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], rx_id=rx_id)
+                interpreter = RawDataInterpreter(n_scan_params=n_scan_params, trigger_data_format=self.tlu_config['DATA_FORMAT'], rx_id=rx_id, ptdc_tdl_lut=lut)
                 self.last_chunk = False
                 pbar = tqdm(total=n_words, unit=' Words', unit_scale=True)
                 upd = 0

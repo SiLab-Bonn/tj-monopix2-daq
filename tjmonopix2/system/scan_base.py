@@ -212,6 +212,7 @@ class ScanBase(object):
         self.initialized = False
 
         self.daq = None  # readout system, defined during scan init if not existing
+        self.ptdc = False
 
         self.last_exception = None  # query last exception
 
@@ -401,9 +402,20 @@ class ScanBase(object):
         '''
             Calls all required steps exluding the init/close step
         '''
+        if self.ptdc:
+            self.daq.enable_ptdc_module()
+            time.sleep(0.1)
+            self.daq.configure_ptdc_module()
+            time.sleep(0.1)
+            self.daq.calibrate_ptdc_module()
+            time.sleep(0.1)
+            self.ptdc_callib_vector = self.daq.get_ptdc_callib()
+            self.daq.reset_fifo()
         self.configure()
         self.scan()
         self.analyze()
+        if self.ptdc:
+            self.daq.disable_ptdc_module()
 
         # Get readout status once, for all receiver channels
         with self._logging_through_handlers():
@@ -819,6 +831,10 @@ class ScanBase(object):
         row['attribute'] = 'receiver'
         row['value'] = self.chip.receiver
         row.append()
+        if self.ptdc:
+            row['attribute'] = 'tdl_callib'
+            row['value'] = self.ptdc_callib_vector
+            row.append()
 
         # Scan configuration as provided during scan __init__
         scan_cfg_table = h5_file.create_table(scan_node, name='scan_config', title='Scan configuration', description=RunConfigTable)
