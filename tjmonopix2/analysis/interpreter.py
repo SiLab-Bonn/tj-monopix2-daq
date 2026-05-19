@@ -8,6 +8,7 @@ class_spec = [
     ('eof', numba.boolean),
     ('token_id', numba.uint32),
     ('tj_data_flag', numba.uint8),
+    ('ptdc_data_flag', numba.uint8),
     ('error_cnt', numba.int32),
     ('col', numba.int16),
     ('row', numba.int16),
@@ -18,9 +19,15 @@ class_spec = [
     ('trigger_data_format', numba.uint8),
     ('rx_id', numba.uint8),
 
+    ('ptdc_tdl_lut', numba.float64[:]),
+    ('ptdc_trigger_time', numba.int32),
+    ('ptdc_rising_time', numba.int32),
+    ('ptdc_falling_time', numba.int32),
+
     ('hist_occ', numba.uint32[:, :, :]),
     ('hist_tot', numba.uint16[:, :, :, :]),
     ('hist_tdc', numba.uint32[:]),
+    ('hist_trigger_dist', numba.uint32[:]),
     ('n_triggers', numba.int64),
     ('n_tdc', numba.int64),
 ]
@@ -108,12 +115,14 @@ class RawDataInterpreter(object):
         self.error_cnt = 0
         self.token_id = 0
         self.tj_data_flag = 0
+        self.ptdc_data_flag = 0
 
         self.n_scan_params = n_scan_params
         self.trigger_data_format = trigger_data_format
         self.rx_id = rx_id
 
         # Peviously calculated look-up table for tapped delay line bin width
+        # print(ptdc_tdl_lut)
         self.ptdc_tdl_lut = ptdc_tdl_lut
 
         self.n_triggers = 0

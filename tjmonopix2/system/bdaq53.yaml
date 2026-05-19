@@ -52,10 +52,10 @@ hw_drivers:
     interface : intf
     base_addr : 0x0600
 
-  - name      : tdc
-    type      : tdc_s3
-    interface : intf
-    base_addr : 0x0700
+  # - name      : tdc
+  #   type      : tdc_s3
+  #   interface : intf
+  #   base_addr : 0x0700
 
   - name      : pTDC
     type      : tdl_tdc

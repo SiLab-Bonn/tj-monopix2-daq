@@ -101,7 +101,7 @@ class ExtTriggerScan(ScanBase):
         if tot_calib_file is not None:
             self.configuration['bench']['analysis']['cluster_hits'] = True
 
-        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', tot_calib_file=tot_calib_file, **self.configuration['bench']['analysis']) as a:
+        with analysis.Analysis(raw_data_file=self.output_filename + '.h5', tot_calib_file=tot_calib_file, analyze_tdc=True, **self.configuration['bench']['analysis']) as a:
             a.analyze_data()
 
         if self.configuration['bench']['analysis']['create_pdf']:
