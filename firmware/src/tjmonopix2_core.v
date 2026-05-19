@@ -19,6 +19,8 @@
 `include "tdc_s3/tdc_s3.v"
 `include "tdc_s3/tdc_s3_core.v"
 
+`include "tdl_tdc/tdl_tdc.v"
+
 `include "pulse_gen/pulse_gen.v"
 `include "pulse_gen/pulse_gen_core.v"
 `include "pulse_gen_rising.v"
@@ -56,10 +58,12 @@ module tjmonopix2_core #(
     input wire CLK40,
     input wire CLK160,
     input wire CLK320,
+    input wire CLK160_TDC,   // from Si570 CLK
+    input wire CLK480_TDC,   // derived from Si570 CLK
+    input wire CLKTDC_CALIB, // uncorrelated to CLK160 and CLK480
     input wire CLKCMD,
     input wire EXT_TRIGGER_CLK,
     output wire MGT_REF_SEL,
-    input wire CLKILA,
 
     // I2C
     inout wire I2C_SCL,
@@ -155,6 +159,9 @@ localparam CMD_HIGHADDR = 32'h4000 - 1;
 
 localparam I2C_BASEADDR = 32'h4000;
 localparam I2C_HIGHADDR = 32'h5000 - 1;
+
+localparam TDL_TDC_BASEADDR = 32'h5000;
+localparam TDL_TDC_HIGHADDR = 32'h5100;
 
 localparam ABUSWIDTH = 32;
 
@@ -402,17 +409,20 @@ rrp_arbiter #(
     .WRITE_REQ({
         !TDC_FIFO_EMPTY,
         ~RX_FIFO_EMPTY,
-        !TLU_FIFO_EMPTY
+        !TLU_FIFO_EMPTY,
+        ~PTDC_FIFO_EMPTY
     }),
     .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ}),
     .DATA_IN({
         TDC_FIFO_DATA,
         RX_FIFO_DATA,
-        TLU_FIFO_DATA}),
+        TLU_FIFO_DATA,
+        PTDC_FIFO_DATA}),
     .READ_GRANT({
         TDC_FIFO_READ,
         RX_FIFO_READ,  // TODO: ~FULL
-        TLU_FIFO_READ
+        TLU_FIFO_READ,
+        PTDC_FIFO_READ
     }),
     .READY_OUT(ARB_READY_OUT),
     .WRITE_OUT(ARB_WRITE_OUT),
@@ -493,43 +503,36 @@ pulse_gen #(
 localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
 wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
 
-tdc_s3 #(
-    .BASEADDR(TDC_BASEADDR),
-    .HIGHADDR(TDC_HIGHADDR),
-    .ABUSWIDTH(ABUSWIDTH),
-    .CLKDV(CLKDV),
-    .DATA_IDENTIFIER(4'b0010),
-    .FAST_TDC(1),
-    .FAST_TRIGGER(1),
-    .BROADCAST(0)         // for first TDC module: generate 640 MHz sampled trigger signal to share with other modules using TRIGGER input
-) i_tdc (
-    .CLK320(CLK320),      // 320 MHz
-    .CLK160(CLK160),      // 160 MHz
-    .DV_CLK(CLK40),       // 40 MHz
-    .TDC_IN(LVDS_HITOR),  // HITOR
-    .TDC_OUT(),
-    .TRIG_IN(LEMO_RX[0]),
-    .TRIG_OUT(),
+// TDC
+wire PTDC_FIFO_READ, PTDC_FIFO_EMPTY;
+wire [31:0] PTDC_FIFO_DATA;
 
-    // input/output trigger signals for broadcasting mode
-    .FAST_TRIGGER_IN(16'b0),
-    .FAST_TRIGGER_OUT(),  // collect 640 MHz sampled trigger signal to pass it to other modules
+// ----- TDL TDC ----- //
+tdl_tdc #(
+	.BASEADDR(TDL_TDC_BASEADDR),
+	.HIGHADDR(TDL_TDC_HIGHADDR),
+	.ABUSWIDTH(32),
+	.DATA_IDENTIFIER(4'b0110) // TODO: change identifier when doing multi-chip
+) i_tdl_tdc (
+	.BUS_CLK(BUS_CLK),
+	.bus_add(BUS_ADD),
+	.bus_data(BUS_DATA),
+	.bus_rst(BUS_RST),
+	.bus_wr(BUS_WR),
+	.bus_rd(BUS_RD),
 
-    .FIFO_READ(TDC_FIFO_READ),
-    .FIFO_EMPTY(TDC_FIFO_EMPTY),
-    .FIFO_DATA(TDC_FIFO_DATA),
+	.CLK480(CLK480_TDC),
+	.CLK160(CLK160_TDC),
+	.CALIB_CLK(CLKTDC_CALIB), // Must be uncorrelated to CLK160 & CLK480
+	.tdc_in(LVDS_HITOR), // (sig_out_buf), // (sig_in),
+	.trig_in(LEMO_RX[0]), // (trig_out_buf), // (trig_in),
 
-    .BUS_CLK(BUS_CLK),
-    .BUS_RST(BUS_RST),
-    .BUS_ADD(BUS_ADD),
-    .BUS_DATA(BUS_DATA),
-    .BUS_RD(BUS_RD),
-    .BUS_WR(BUS_WR),
-
-    .ARM_TDC(1'b0),
-    .EXT_EN(1'b0),
-
-    .TIMESTAMP(TIMESTAMP[15:0])
+	.timestamp(TIMESTAMP[24:0]),
+	.ext_en(1'b0),
+	.arm_tdc(1'b0),
+	.fifo_read(PTDC_FIFO_READ),
+	.fifo_empty(PTDC_FIFO_EMPTY),
+	.fifo_data(PTDC_FIFO_DATA)
 );
 
 // fast readout
