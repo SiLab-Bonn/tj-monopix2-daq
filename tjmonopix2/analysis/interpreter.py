@@ -214,28 +214,8 @@ class RawDataInterpreter(object):
                 # Prepare for next data block. Increase hit index
                 hit_index += 1
 
-            ##############################
-            # Part 3: interpret TDC word #
-            ##############################
-            elif is_tdc(raw_data_word):
-                tdc_value = get_tdc_value(raw_data_word)
-
-                hit_data[hit_index]["col"] = 0x3FE  # 1022 as TDC identifier
-                hit_data[hit_index]["row"] = 0
-                hit_data[hit_index]["le"] = 0
-                hit_data[hit_index]["te"] = 0
-                hit_data[hit_index]["token_id"] = tdc_value
-                hit_data[hit_index]["timestamp"] = 0
-                hit_data[hit_index]["scan_param_id"] = scan_param_id
-                self.n_tdc += 1
-
-                self.hist_tdc[tdc_value] += 1
-
-                # Prepare for next data block. Increase hit index
-                hit_index += 1
-
             ###############################
-            # Part 4: interpret pTDC word #
+            # Part 3: interpret pTDC word #
             ###############################
             elif is_ptdc(raw_data_word):
 

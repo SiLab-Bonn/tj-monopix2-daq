@@ -16,9 +16,6 @@
 `include "tlu/tlu_controller_core.v"
 `include "tlu/tlu_controller_fsm.v"
 
-`include "tdc_s3/tdc_s3.v"
-`include "tdc_s3/tdc_s3_core.v"
-
 `include "tdl_tdc/tdl_tdc.v"
 
 `include "pulse_gen/pulse_gen.v"
@@ -131,9 +128,6 @@ localparam GPIO_DAQ_CONTROL_HIGHADDR = 32'h0600 - 1;
 
 localparam TLU_BASEADDR = 32'h0600;
 localparam TLU_HIGHADDR = 32'h0700 - 1;
-
-localparam TDC_BASEADDR = 32'h0700;
-localparam TDC_HIGHADDR = 32'h0800 - 1;
 
 localparam PULSER_VETO_BASEADDR = 32'h0800;
 localparam PULSER_VETO_HIGHADDR = 32'h0900-1;
