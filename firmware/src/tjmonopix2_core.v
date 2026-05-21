@@ -391,29 +391,22 @@ wire TLU_FIFO_READ, TLU_FIFO_EMPTY;
 wire [31:0] TLU_FIFO_DATA;
 wire TLU_FIFO_PREEMPT_REQ;
 
-// TDC
-wire TDC_FIFO_READ, TDC_FIFO_EMPTY;
-wire [31:0] TDC_FIFO_DATA;
-
 rrp_arbiter #(
     .WIDTH(N_CHIPS+2)
 ) rrp_arbiter (
     .RST(BUS_RST),
     .CLK(BUS_CLK),
     .WRITE_REQ({
-        !TDC_FIFO_EMPTY,
         ~RX_FIFO_EMPTY,
         !TLU_FIFO_EMPTY,
         ~PTDC_FIFO_EMPTY
     }),
-    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ}),
+    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
-        TDC_FIFO_DATA,
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
         PTDC_FIFO_DATA}),
     .READ_GRANT({
-        TDC_FIFO_READ,
         RX_FIFO_READ,  // TODO: ~FULL
         TLU_FIFO_READ,
         PTDC_FIFO_READ
