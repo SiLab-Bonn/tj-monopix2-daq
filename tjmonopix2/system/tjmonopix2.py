@@ -293,6 +293,47 @@ class RegisterObject(OrderedDict):
             yaml.dump({'registers': data}, f)
 
 
+@njit
+def _get_pixel_portal_data_kernel(enable, tdac):
+    """
+    Numba-fused kernel for portal values.
+
+    Parameters
+    ----------
+    enable : np.ndarray[bool]
+        Shape (N, 4). enable[i, c] is True if pixel i, column c is enabled.
+    tdac : np.ndarray[uint8]
+        Shape (N, 4). tdac[i, c] is the TDAC value for pixel i, column c.
+
+    Returns
+    -------
+    portal_values : np.ndarray[uint16]
+        Shape (N,). One 16-bit portal value per pixel.
+    """
+    N = enable.shape[0]
+    portal_values = np.empty(N, dtype=np.uint16)
+
+    for i in range(N):
+        value = 0
+        # We have 4 columns, each contributing 4 bits.
+        for c in range(4):
+            # get 3 TDAC bits for this column
+            if enable[i, c]:
+                t = tdac[i, c] & 0x7  # ensure only 3 bits
+                # Extract bits 2,1,0 as a 3-bit integer
+                bits = t & 0x7
+            else:
+                bits = 0
+
+            # add leading 0 bit to make 4 bits: [0, bit2, bit1, bit0]
+            nibble = bits  # bit pattern: 0bbb (since bits is 3 bits)
+            # Shift left 4 bits and add this nibble
+            value = (value << 4) | nibble
+        portal_values[i] = value
+
+    return portal_values
+
+
 class MaskObject(dict):
     def __init__(self, chip, masks, dimensions):
         self.chip = chip
@@ -418,27 +459,44 @@ class MaskObject(dict):
             else:
                 self.pix_to_write = np.logical_or(self.pix_to_write, np.not_equal(mask, self.was[name]))
 
-    def get_pixel_data(self, col, row):
-        tdac = str(bin(self['tdac'][col, row]))[2:].zfill(3)
+    def get_pixel_portal_data_vec(self, colgroups, rows):
+        """
+        Build pixel portal command for entire matrix.
+        """
+        colgroups = np.asarray(colgroups)
+        rows = np.asarray(rows)
 
-        return '0' + tdac if self['enable'][col, row] else '0000'
+        col_offsets = np.array([3, 2, 1, 0])
+        cols = (colgroups[:, np.newaxis] * 4 + col_offsets).astype(np.intp)  # (N, 4)
+        rows_exp = np.tile(rows[:, np.newaxis], (1, 4))  # (N, 4)
 
-    def get_pixel_portal_data(self, colgroup, row):
-        return int(
-            '0b'
-            + self.get_pixel_data(colgroup * 4 + 3, row)
-            + self.get_pixel_data(colgroup * 4 + 2, row)
-            + self.get_pixel_data(colgroup * 4 + 1, row)
-            + self.get_pixel_data(colgroup * 4, row), 2
-        )
+        enable_full = self['enable']
+        tdac_full = self['tdac']
 
-    def get_column_group_data(self, mask, colgroup):
-        dat = np.logical_or.reduce(self[mask], axis=1)[colgroup * 16: (colgroup + 1) * 16]
-        return np.packbits(dat, bitorder='little').view(np.uint16)[0]
+        enable = enable_full[cols, rows_exp]  # (N, 4), bool
+        tdac = tdac_full[cols, rows_exp].astype(np.uint8)  # (N, 4)
 
-    def get_row_group_data(self, mask, rowgroup):
-        dat = np.logical_or.reduce(self[mask], axis=0)[rowgroup * 16: (rowgroup + 1) * 16]
-        return np.packbits(dat, bitorder='little').view(np.uint16)[0]
+        # Call the njit kernel with the already-extracted arrays
+        return _get_pixel_portal_data_kernel(enable, tdac)
+
+    def get_vector_group_data_all(self, mask, axis):
+        """
+        Returns:
+            vector_data: 1D np.ndarray of uint16, length = number of groups.
+        """
+        vector_or = np.logical_or.reduce(self[mask], axis=axis)  # (N x 1) where each element is bool, true if any pixel in that axis is true
+        n_vector = vector_or.size
+        if n_vector % 16 != 0:
+            label = "rows" if axis == 0 else "columns"
+            raise ValueError(f"Number of {label} must be a multiple of 16.")
+
+        vector_or_2d = vector_or.reshape(-1, 16)  # (N_groups x 16) vector_or_2d[g, r] is True if vector r in group g has any active pixels
+
+        # np.packbits packs 8 booleans into 1 byte, so 16 rows -> 2 bytes per vector group
+        packed = np.packbits(vector_or_2d, axis=1, bitorder='little')  # shape after packing (N_vectorgroups x 2) bytes
+        vectorgroup_data = packed.view(np.uint16).squeeze(-1)  # view the pair of bytes as a single 16-bit unsigned integer.
+
+        return vectorgroup_data
 
     def update(self, force=False):
         ''' Write the actual pixel register configuration
@@ -463,66 +521,75 @@ class MaskObject(dict):
         hor_to_write = np.column_stack((np.where(hor_write_mask)))
 
         data = []
-        indata = self.chip.write_sync(write=False) * 10
+        self.chip.write_sync(write=False) * 10
+
         if len(pix_to_write) > 0:
-            written = set()
-            for (col, row) in pix_to_write:
-                colgroup = int(col / 4)
+            pix_to_write = np.column_stack(np.where(pix_write_mask))  # shape (N, 2)
+            cols = pix_to_write[:, 0]
+            rows = pix_to_write[:, 1]
+            colgroups = cols // 4
+            packed = ((colgroups & 0x7f) << 9) | (rows & 0x1ff)  # shape (N,)
+            portal_values = self.get_pixel_portal_data_vec(colgroups, rows)  # shape (N,)
 
-                # Speedup
-                if (colgroup, row) in written:
-                    continue
+            address = 17
+            cmd_register = self.chip.CMD_REGISTER
+            cmd_data = self.chip.cmd_data_map[self.chip.chip_id]
+            encoded_list = [encode_cmd(address, int(v)) for v in packed]  # list of lists/arrays
+            encoded_portal = [encode_cmd(16, int(v)) for v in portal_values]
+            full_cmd = []
+            for n, enc in enumerate(encoded_list):
+                full_cmd += [cmd_register, cmd_data] + enc
+                full_cmd += [cmd_register, cmd_data] + encoded_portal[n]
+                full_cmd += [0b10000001, 0b01111110]  # sync
+            self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
 
-                indata += self.chip._write_register(17, (colgroup & 0x7f) << 9 | (row & 0x1ff), write=False)  # Write colgroup and row at the same time for speedup
-                indata += self.chip.registers["PIXEL_PORTAL"].get_write_command(self.get_pixel_portal_data(colgroup, row))
-                indata += self.chip.write_sync(write=False)
-                written.add((colgroup, row))
-                if len(indata) > 4000:  # Write command to chip before it gets too long
-                    self.chip.write_command(indata)
-                    data.append(indata)
-                    indata = self.chip.write_sync(write=False)
-            self.chip.write_command(indata)
-            data.append(indata)
         if len(inj_to_write) > 0:
-            written = set()
-            for (col, row) in inj_to_write:
-                colgroup = int(col / 16)
-                rowgroup = int(row / 16)
+            inj_to_write = np.column_stack(np.where(inj_write_mask))  # shape (N, 2)
+            cols = inj_to_write[:, 0]
+            rows = inj_to_write[:, 1]
+            colgroups = cols // 16
+            rowgroups = rows // 16
+            colgroups_u = np.unique(colgroups)
+            rowgroups_u = np.unique(rowgroups)
+            packed = ((colgroups & 0x7f) << 9) | (rows & 0x1ff)  # shape (N,)
+            colgroup_data_all = self.get_vector_group_data_all('injection', 1)[colgroups_u]  # shape (N_colgroups,)
+            rowgroup_data_all = self.get_vector_group_data_all('injection', 0)[rowgroups_u]  # shape (N_rowgroups,)
 
-                # Speedup
-                if (colgroup, rowgroup) in written:
-                    continue
+            cmd_register = self.chip.CMD_REGISTER
+            cmd_data = self.chip.cmd_data_map[self.chip.chip_id]
+            encoded_list_col = [encode_cmd(82 + int(cg), int(v)) for cg, v in zip(colgroups_u, colgroup_data_all)]
+            encoded_list_row = [encode_cmd(114 + int(rg), int(v)) for rg, v in zip(rowgroups_u, rowgroup_data_all)]
+            full_cmd = []
+            for n, enc in enumerate(encoded_list_col):
+                full_cmd += [cmd_register, cmd_data] + enc
+                full_cmd += [cmd_register, cmd_data] + encoded_list_row[n]
+                full_cmd += [0b10000001, 0b01111110]  # sync
 
-                indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup))
-                indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup))
-                indata += self.chip.write_sync(write=False)
-                written.add((colgroup, rowgroup))
-                if len(indata) > 4000:  # Write command to chip before it gets too long
-                    self.chip.write_command(indata)
-                    data.append(indata)
-                    indata = self.chip.write_sync(write=False)
-            self.chip.write_command(indata)
-            data.append(indata)
+            self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
+
         if len(hor_to_write) > 0:
-            written = set()
-            for (col, row) in inj_to_write:
-                colgroup = int(col / 16)
-                rowgroup = int(row / 16)
+            hor_to_write = np.column_stack(np.where(hor_write_mask))  # shape (N, 2)
+            cols = hor_to_write[:, 0]
+            rows = hor_to_write[:, 1]
+            colgroups = cols // 16
+            rowgroups = rows // 16
+            colgroups_u = np.unique(colgroups)
+            rowgroups_u = np.unique(rowgroups)
+            packed = ((colgroups & 0x7f) << 9) | (rows & 0x1ff)  # shape (N,)
+            colgroup_data_all = self.get_vector_group_data_all('injection', 1)[colgroups_u]  # shape (N_colgroups,)
+            rowgroup_data_all = self.get_vector_group_data_all('injection', 0)[rowgroups_u]  # shape (N_rowgroups,)
 
-                # Speedup
-                if (colgroup, rowgroup) in written:
-                    continue
+            cmd_register = self.chip.CMD_REGISTER
+            cmd_data = self.chip.cmd_data_map[self.chip.chip_id]
+            encoded_list_col = [encode_cmd(18 + int(cg), int(v)) for cg, v in zip(colgroups_u, colgroup_data_all)]
+            encoded_list_row = [encode_cmd(50 + int(rg), int(v)) for rg, v in zip(rowgroups_u, rowgroup_data_all)]
+            full_cmd = []
+            for n, enc in enumerate(encoded_list_col):
+                full_cmd += [cmd_register, cmd_data] + enc
+                full_cmd += [cmd_register, cmd_data] + encoded_list_row[n]
+                full_cmd += [0b10000001, 0b01111110]  # sync
 
-                indata += self.chip._write_register(18 + colgroup, self.get_column_group_data('hitor', colgroup))
-                indata += self.chip._write_register(50 + rowgroup, self.get_row_group_data('hitor', rowgroup))
-                indata += self.chip.write_sync(write=False)
-                written.add((colgroup, rowgroup))
-                if len(indata) > 4000:  # Write command to chip before it gets too long
-                    self.chip.write_command(indata)
-                    data.append(indata)
-                    indata = self.chip.write_sync(write=False)
-            self.chip.write_command(indata)
-            data.append(indata)
+            self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
 
         # Set this mask as last mask to be able to find changes in next update()
         for name, mask in self.items():
@@ -893,43 +960,59 @@ class TJMonoPix2():
             temp[i] = self.daq["NTC"].get_temperature("C")
         return np.average(temp[temp != float("nan")])
 
-    # COMMAND DECODER
-    def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False):
+    def write_command(self, data, repetitions=1, wait_for_done=True, wait_for_ready=False, max_chunk_size=4096):
         '''
             Write data to the command encoder.
 
             Parameters:
             ----------
                 data : list
-                    Up to [get_cmd_size()] bytes
+                    Up to [get_cmd_size()] bytes per hardware transfer
                 repetitions : integer
                     Sets repetitions of the current request. 1...2^16-1. Default value = 1.
                 wait_for_done : boolean
                     Wait for completion after sending the command. Not advisable in case of repetition mode.
                 wait_for_ready : boolean
                     Wait for completion of preceding commands before sending the command.
+                max_chunk_size : integer
+                    Maximum chunk size per transfer, default 4096 bytes.
         '''
+        if not any(data):
+            return
+
         if isinstance(data[0], list):
-            for indata in data:
-                self.write_command(indata, repetitions, wait_for_done)
+            for i, indata in enumerate(data):
+                self.write_command(
+                    indata,
+                    repetitions=repetitions,
+                    wait_for_done=wait_for_done if i == len(data) - 1 else True,
+                    wait_for_ready=wait_for_ready if i == 0 else False,
+                    max_chunk_size=max_chunk_size
+                )
             return
 
         assert (0 < repetitions < 65536), "Repetition value must be 0<n<2^16"
+
         if repetitions > 1:
-            self.log.debug("Repeating command %i times." % (repetitions))
+            self.log.debug("Repeating command %i times." % repetitions)
 
         if wait_for_ready:
             while (not self.daq['cmd'].is_done()):
                 pass
 
-        self.daq['cmd'].set_data(data)
-        self.daq['cmd'].set_size(len(data))
-        self.daq['cmd'].set_repetitions(repetitions)
-        self.daq['cmd'].start()
+        # Chunk the data if needed
+        for start in range(0, len(data), max_chunk_size):
+            chunk = data[start:start + max_chunk_size]
 
-        if wait_for_done:
-            while (not self.daq['cmd'].is_done()):
-                pass
+            self.daq['cmd'].set_data(chunk)
+            self.daq['cmd'].set_size(len(chunk))
+            self.daq['cmd'].set_repetitions(repetitions)
+            self.daq['cmd'].start()
+
+            # Wait after each chunk so the hardware interface is safe
+            if wait_for_done or (start + max_chunk_size < len(data)):
+                while not self.daq['cmd'].is_done():
+                    pass
 
     def write_sync(self, write=True, repetitions=1):
         indata = [0b10000001, 0b01111110]
