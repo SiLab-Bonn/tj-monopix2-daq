@@ -351,7 +351,6 @@ class FifoReadout(object):
     def reset_sram_fifo(self, timeout=1):
         fifo_size = self.daq['FIFO']['FIFO_SIZE']
         self.log.debug('Resetting FIFO: size = %i', fifo_size)
-        self.update_timestamp()
         
         # First drain the FIFO before resetting
         self.log.debug('Draining FIFO before reset...')
@@ -371,7 +370,8 @@ class FifoReadout(object):
                 self.log.debug('FIFO emptied after reset')
                 return
             sleep(0.01)
-
+        
+        self.update_timestamp()
         self.log.warning('FIFO not empty after reset: size = %i', fifo_size)
 
     def reset_rx(self, channels=None):
