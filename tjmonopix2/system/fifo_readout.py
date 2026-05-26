@@ -351,13 +351,14 @@ class FifoReadout(object):
     def reset_sram_fifo(self, timeout=1):
         fifo_size = self.daq['FIFO']['FIFO_SIZE']
         self.log.debug('Resetting FIFO: size = %i', fifo_size)
-
+        self.update_timestamp()
+        
         # First drain the FIFO before resetting
         self.log.debug('Draining FIFO before reset...')
         start = time()
         while time() - start < 0.5:  # Try draining for 500ms
             data = self.daq['FIFO'].get_data()
-            if data.shape[0] == 0:
+            if len(data) == 0:
                 break
 
         self.daq.reset_fifo()
