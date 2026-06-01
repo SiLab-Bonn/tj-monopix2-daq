@@ -14,9 +14,9 @@
 `include "utils/generic_fifo.v"
 
 // Use basil simulation modules instead of Xilinx IP
-`include "utils/IDDR_sim.v"
-`include "utils/ODDR_sim.v"
-`include "utils/RAMB16_S1_S9_sim.v"
+`include "utils/IDDR.v"
+`include "utils/ODDR.v"
+`include "utils/RAMB16_S1_S9.v"
 
 `include "bram_fifo/bram_fifo.v"
 `include "bram_fifo/bram_fifo_core.v"
