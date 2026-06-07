@@ -282,7 +282,7 @@ class RawDataInterpreter(object):
         return hit_data
 
     def get_histograms(self):
-        return self.hist_occ, self.hist_tot, self.hist_tdc
+        return self.hist_occ, self.hist_tot, self.hist_tdc, self.hist_trigger_dist
 
     def get_n_triggers(self):
         return self.n_triggers
@@ -294,6 +294,7 @@ class RawDataInterpreter(object):
         self.hist_occ = np.zeros((512, 512, self.n_scan_params), dtype=numba.uint32)
         self.hist_tot = np.zeros((512, 512, self.n_scan_params, 128), dtype=numba.uint16)
         self.hist_tdc = np.zeros(4096, dtype=numba.uint32)
+        self.hist_trigger_dist = np.zeros(5000, dtype=numba.uint32)  # must match cut of 250 ns
         self.n_triggers = 0
         self.n_tdc = 0
 

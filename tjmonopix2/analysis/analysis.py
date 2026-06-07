@@ -396,13 +396,13 @@ class Analysis(object):
                     pbar.update(upd)
                 pbar.close()
 
-                hist_occ, hist_tot, hist_tdc = interpreter.get_histograms()
+                hist_occ, hist_tot, hist_tdc, hist_trigger_dist = interpreter.get_histograms()
 
-        self._create_additional_hit_data(hist_occ, hist_tot)
+        self._create_additional_hit_data(hist_occ, hist_tot, hist_trigger_dist)
         if self.cluster_hits:
             self._create_additional_cluster_data(hist_cs_size, hist_cs_tot, hist_cs_shape)
 
-    def _create_additional_hit_data(self, hist_occ, hist_tot):
+    def _create_additional_hit_data(self, hist_occ, hist_tot, hist_trigger_dist) -> None:
         with tb.open_file(self.analyzed_data_file, 'r+') as out_file:
             scan_id = self.run_config['scan_id']
 
@@ -421,14 +421,22 @@ class Analysis(object):
                                                       complevel=5,
                                                       fletcher32=False))
 
-            # if self.analyze_tdc:  # Only store if TDC analysis is used.
-            #     out_file.create_carray(out_file.root,
-            #                            name='HistTdcStatus',
-            #                            title='Tdc status Histogram',
-            #                            obj=hist_tdc_status,
-            #                            filters=tb.Filters(complib='blosc',
-            #                                               complevel=5,
-            #                                               fletcher32=False))
+            if self.analyze_tdc:  # Only store if TDC analysis is used.
+                out_file.create_carray(out_file.root,
+                                       name='HistTriggerDist',
+                                       title='Trigger Dist Histogram',
+                                       obj=hist_trigger_dist,
+                                       filters=tb.Filters(complib='blosc',
+                                                          complevel=5,
+                                                          fletcher32=False))
+
+                # out_file.create_carray(out_file.root,
+                #                        name='HistTdcStatus',
+                #                        title='Tdc status Histogram',
+                #                        obj=hist_tdc_status,
+                #                        filters=tb.Filters(complib='blosc',
+                #                                           complevel=5,
+                #                                           fletcher32=False))
 
             if scan_id in ['threshold_scan', 'calibrate_tot']:
                 n_injections = self.scan_config['n_injections']
