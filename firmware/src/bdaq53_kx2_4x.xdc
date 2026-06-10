@@ -38,6 +38,14 @@ set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgm
 set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0]
 set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1]
 
+# TDL
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */i_controller/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */input_mux_addr_buf_reg*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */calib_sig_gen/*  && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/* && IS_SEQUENTIAL ==1  }]
+set_false_path -from [get_cells -hier -filter {NAME =~ */conf_en_invert_tdc_synchronizer_dv_clk/* && IS_SEQUENTIAL ==1}] -to [get_cells -hier -filter {NAME =~ */tdl_sampler/carry_chain* && IS_SEQUENTIAL ==1}]
+set_false_path -from [get_clocks CLK160_TDC_PLL] -to [get_clocks CLK480_TDC_PLL]
+set_property LOC SLICE_X38Y2 [get_cells -hier -regexp .*FirstCell/CARRY4_inst]
+
 # LED
 # LED 0..3 are onboard LEDs: Bank 32, 33 running at 1.5 V)
 set_property PACKAGE_PIN U9 [get_ports {LED[0]}]
