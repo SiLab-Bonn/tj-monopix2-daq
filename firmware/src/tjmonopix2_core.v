@@ -401,7 +401,7 @@ rrp_arbiter #(
         !TLU_FIFO_EMPTY,
         ~PTDC_FIFO_EMPTY
     }),
-    .HOLD_REQ({2'b0, TLU_FIFO_PREEMPT_REQ, 1'b0}),
+    .HOLD_REQ({{N_CHIPS{1'b0}}, TLU_FIFO_PREEMPT_REQ, 1'b0}),
     .DATA_IN({
         RX_FIFO_DATA,
         TLU_FIFO_DATA,
