@@ -486,20 +486,15 @@ pulse_gen #(
     .PULSE(VETO_TLU_PULSE)
 );
 
-// ----- TDC ----- //
-localparam CLKDV = 4;  // division factor from 160 MHz clock to DV_CLK (here 40 MHz)
-wire [CLKDV * 4 - 1:0] FAST_TRIGGER_OUT;
-
-// TDC
+// ----- TDL TDC ----- //
 wire PTDC_FIFO_READ, PTDC_FIFO_EMPTY;
 wire [31:0] PTDC_FIFO_DATA;
 
-// ----- TDL TDC ----- //
 tdl_tdc #(
 	.BASEADDR(TDL_TDC_BASEADDR),
 	.HIGHADDR(TDL_TDC_HIGHADDR),
 	.ABUSWIDTH(32),
-	.DATA_IDENTIFIER(4'b0110) // TODO: change identifier when doing multi-chip
+	.DATA_IDENTIFIER(4'b0010)
 ) i_tdl_tdc (
 	.BUS_CLK(BUS_CLK),
 	.bus_add(BUS_ADD),
