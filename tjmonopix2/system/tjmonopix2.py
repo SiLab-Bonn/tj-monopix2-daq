@@ -292,7 +292,6 @@ class RegisterObject(OrderedDict):
         with open(outfile, 'w') as f:
             yaml.dump({'registers': data}, f)
 
-
 @njit
 def _get_pixel_portal_data_kernel(enable, tdac):
     """
@@ -332,7 +331,6 @@ def _get_pixel_portal_data_kernel(enable, tdac):
         portal_values[i] = value
 
     return portal_values
-
 
 class MaskObject(dict):
     def __init__(self, chip, masks, dimensions):
@@ -465,6 +463,7 @@ class MaskObject(dict):
         """
         colgroups = np.asarray(colgroups)
         rows = np.asarray(rows)
+        N = len(colgroups)
 
         col_offsets = np.array([3, 2, 1, 0])
         cols = (colgroups[:, np.newaxis] * 4 + col_offsets).astype(np.intp)  # (N, 4)
@@ -484,17 +483,16 @@ class MaskObject(dict):
         Returns:
             vector_data: 1D np.ndarray of uint16, length = number of groups.
         """
-        vector_or = np.logical_or.reduce(self[mask], axis=axis)  # (N x 1) where each element is bool, true if any pixel in that axis is true
-        n_vector = vector_or.size
+        vector_or = np.logical_or.reduce(self[mask], axis=axis) # (N x 1) where each element is bool, true if any pixel in that axis is true
+        n_vector= vector_or.size
         if n_vector % 16 != 0:
-            label = "rows" if axis == 0 else "columns"
-            raise ValueError(f"Number of {label} must be a multiple of 16.")
+            raise ValueError(f"Number of {"rows" if axis==0 else "columns"} must be a multiple of 16.")
 
-        vector_or_2d = vector_or.reshape(-1, 16)  # (N_groups x 16) vector_or_2d[g, r] is True if vector r in group g has any active pixels
+        vector_or_2d = vector_or.reshape(-1, 16) # (N_groups x 16) vector_or_2d[g, r] is True if vector r in group g has any active pixels
 
         # np.packbits packs 8 booleans into 1 byte, so 16 rows -> 2 bytes per vector group
-        packed = np.packbits(vector_or_2d, axis=1, bitorder='little')  # shape after packing (N_vectorgroups x 2) bytes
-        vectorgroup_data = packed.view(np.uint16).squeeze(-1)  # view the pair of bytes as a single 16-bit unsigned integer.
+        packed = np.packbits(vector_or_2d, axis=1, bitorder='little') # shape after packing (N_vectorgroups x 2) bytes
+        vectorgroup_data = packed.view(np.uint16).squeeze(-1) # view the pair of bytes as a single 16-bit unsigned integer.
 
         return vectorgroup_data
 
@@ -521,7 +519,7 @@ class MaskObject(dict):
         hor_to_write = np.column_stack((np.where(hor_write_mask)))
 
         data = []
-        self.chip.write_sync(write=False) * 10
+        indata = self.chip.write_sync(write=False) * 10
 
         if len(pix_to_write) > 0:
             pix_to_write = np.column_stack(np.where(pix_write_mask))  # shape (N, 2)
@@ -540,7 +538,7 @@ class MaskObject(dict):
             for n, enc in enumerate(encoded_list):
                 full_cmd += [cmd_register, cmd_data] + enc
                 full_cmd += [cmd_register, cmd_data] + encoded_portal[n]
-                full_cmd += [0b10000001, 0b01111110]  # sync
+                full_cmd += [0b10000001, 0b01111110] # sync
             self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
 
         if len(inj_to_write) > 0:
@@ -549,23 +547,33 @@ class MaskObject(dict):
             rows = inj_to_write[:, 1]
             colgroups = cols // 16
             rowgroups = rows // 16
-            colgroups_u = np.unique(colgroups)
-            rowgroups_u = np.unique(rowgroups)
-            packed = ((colgroups & 0x7f) << 9) | (rows & 0x1ff)  # shape (N,)
-            colgroup_data_all = self.get_vector_group_data_all('injection', 1)[colgroups_u]  # shape (N_colgroups,)
-            rowgroup_data_all = self.get_vector_group_data_all('injection', 0)[rowgroups_u]  # shape (N_rowgroups,)
+
+            # Deduplicate (colgroup, rowgroup) pairs, preserving the old loop semantics
+            seen = set()
+            unique_pairs = []
+            for cg, rg in zip(colgroups, rowgroups):
+                key = (int(cg), int(rg))
+                if key not in seen:
+                    seen.add(key)
+                    unique_pairs.append(key)
 
             cmd_register = self.chip.CMD_REGISTER
             cmd_data = self.chip.cmd_data_map[self.chip.chip_id]
-            encoded_list_col = [encode_cmd(82 + int(cg), int(v)) for cg, v in zip(colgroups_u, colgroup_data_all)]
-            encoded_list_row = [encode_cmd(114 + int(rg), int(v)) for rg, v in zip(rowgroups_u, rowgroup_data_all)]
-            full_cmd = []
-            for n, enc in enumerate(encoded_list_col):
-                full_cmd += [cmd_register, cmd_data] + enc
-                full_cmd += [cmd_register, cmd_data] + encoded_list_row[n]
-                full_cmd += [0b10000001, 0b01111110]  # sync
 
-            self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
+            colgroup_data_all = self.get_vector_group_data_all('injection', 1)  # full array indexed by colgroup
+            rowgroup_data_all = self.get_vector_group_data_all('injection', 0)  # full array indexed by rowgroup
+
+            full_cmd = []
+            for cg, rg in unique_pairs:
+                enc_col = encode_cmd(82 + cg, int(colgroup_data_all[cg]))
+                enc_row = encode_cmd(114 + rg, int(rowgroup_data_all[rg]))
+                full_cmd.extend(
+                    [cmd_register, cmd_data] + enc_col +
+                    [cmd_register, cmd_data] + enc_row +
+                    [0b10000001, 0b01111110]  # sync
+                )
+
+            self.chip.write_command(full_cmd)
 
         if len(hor_to_write) > 0:
             hor_to_write = np.column_stack(np.where(hor_write_mask))  # shape (N, 2)
@@ -573,23 +581,32 @@ class MaskObject(dict):
             rows = hor_to_write[:, 1]
             colgroups = cols // 16
             rowgroups = rows // 16
-            colgroups_u = np.unique(colgroups)
-            rowgroups_u = np.unique(rowgroups)
-            packed = ((colgroups & 0x7f) << 9) | (rows & 0x1ff)  # shape (N,)
-            colgroup_data_all = self.get_vector_group_data_all('injection', 1)[colgroups_u]  # shape (N_colgroups,)
-            rowgroup_data_all = self.get_vector_group_data_all('injection', 0)[rowgroups_u]  # shape (N_rowgroups,)
+
+            seen = set()
+            unique_pairs = []
+            for cg, rg in zip(colgroups, rowgroups):
+                key = (int(cg), int(rg))
+                if key not in seen:
+                    seen.add(key)
+                    unique_pairs.append(key)
 
             cmd_register = self.chip.CMD_REGISTER
             cmd_data = self.chip.cmd_data_map[self.chip.chip_id]
-            encoded_list_col = [encode_cmd(18 + int(cg), int(v)) for cg, v in zip(colgroups_u, colgroup_data_all)]
-            encoded_list_row = [encode_cmd(50 + int(rg), int(v)) for rg, v in zip(rowgroups_u, rowgroup_data_all)]
-            full_cmd = []
-            for n, enc in enumerate(encoded_list_col):
-                full_cmd += [cmd_register, cmd_data] + enc
-                full_cmd += [cmd_register, cmd_data] + encoded_list_row[n]
-                full_cmd += [0b10000001, 0b01111110]  # sync
 
-            self.chip.write_command(np.array(full_cmd, dtype=np.uint8))
+            colgroup_data_all = self.get_vector_group_data_all('hitor', 1)
+            rowgroup_data_all = self.get_vector_group_data_all('hitor', 0)
+
+            full_cmd = []
+            for cg, rg in unique_pairs:
+                enc_col = encode_cmd(18 + cg, int(colgroup_data_all[cg]))
+                enc_row = encode_cmd(50 + rg, int(rowgroup_data_all[rg]))
+                full_cmd.extend(
+                    [cmd_register, cmd_data] + enc_col +
+                    [cmd_register, cmd_data] + enc_row +
+                    [0b10000001, 0b01111110]  # sync
+                )
+
+            self.chip.write_command(full_cmd)
 
         # Set this mask as last mask to be able to find changes in next update()
         for name, mask in self.items():
