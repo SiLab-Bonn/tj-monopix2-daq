@@ -493,8 +493,8 @@ class MaskObject(dict):
                 if (colgroup, rowgroup) in written:
                     continue
 
-                indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup))
-                indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup))
+                indata += self.chip._write_register(82 + colgroup, self.get_column_group_data('injection', colgroup), write=False)
+                indata += self.chip._write_register(114 + rowgroup, self.get_row_group_data('injection', rowgroup), write=False)
                 indata += self.chip.write_sync(write=False)
                 written.add((colgroup, rowgroup))
                 if len(indata) > 4000:  # Write command to chip before it gets too long
@@ -513,8 +513,8 @@ class MaskObject(dict):
                 if (colgroup, rowgroup) in written:
                     continue
 
-                indata += self.chip._write_register(18 + colgroup, self.get_column_group_data('hitor', colgroup))
-                indata += self.chip._write_register(50 + rowgroup, self.get_row_group_data('hitor', rowgroup))
+                indata += self.chip._write_register(18 + colgroup, self.get_column_group_data('hitor', colgroup), write=False)
+                indata += self.chip._write_register(50 + rowgroup, self.get_row_group_data('hitor', rowgroup), write=False)
                 indata += self.chip.write_sync(write=False)
                 written.add((colgroup, rowgroup))
                 if len(indata) > 4000:  # Write command to chip before it gets too long
