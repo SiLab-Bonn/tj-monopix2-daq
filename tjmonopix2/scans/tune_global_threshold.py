@@ -70,7 +70,6 @@ class GDACTuning(ScanBase):
         self.chip.registers["VH"].write(VCAL_HIGH)
 
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
-        
 
         self.data.hist_occ = oa.OccupancyHistogramming(rx_id=int(self.chip.receiver[2]))
 
