@@ -109,14 +109,14 @@ class TJMonopix2(Receiver):
         self.occupancy_data = data['occupancy']
         self.tot_data = data['tot_hist']
         self.tdc_data = data['tdc_hist']
-        
+
         # Meta data
         self._update_rate(data['meta_data']['fps'],
                           data['meta_data']['hps'],
                           data['meta_data']['tps'],
                           data['meta_data']['total_hits'],
                           data['meta_data']['total_triggers'])
-                          
+
         self.timestamp_label.setText("Data Timestamp\n%s" % time.asctime(time.localtime(data['meta_data']['timestamp_stop'])))
         self.scan_parameter_label.setText("Parameter ID\n%d" % data['meta_data']['scan_param_id'])
         now = time.time()
@@ -124,7 +124,6 @@ class TJMonopix2(Receiver):
         self.plot_delay_label.setText("Plot Delay\n%s" % 'not realtime' if abs(self.plot_delay) > 5 else "Plot Delay\n%1.2f ms" % (self.plot_delay * 1.e3))
 
     def refresh_data(self):
-        
         if self.occupancy_data is not None:
             self.occupancy_img.setImage(self.occupancy_data[:, :], autoDownSample=True)
         if self.tot_data is not None:
