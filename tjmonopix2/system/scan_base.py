@@ -527,6 +527,8 @@ class ScanBase(object):
                     self.daq = MIO3(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
                 else:
                     self.daq = BDAQ53(conf=self.daq_conf_par, bench_config=self.configuration['bench'])
+                    self.daq['DAQ_CONTROL']['MPXOBX_ENABLE'] = 1
+                    self.daq['DAQ_CONTROL']['MPXOBX_RESET'] = 0
 
         # Instantiate TJ-Monopix2 chip
         for _ in self.iterate_chips():
@@ -571,6 +573,10 @@ class ScanBase(object):
         if not self.hardware_initialized or force:
             with self._logging_through_handlers():  # TODO: log power supply logs for chips of same module only
                 self.daq.init()
+                self.daq['DAQ_CONTROL']['MPXOBX_ENABLE'] = 1
+                self.daq['DAQ_CONTROL']['MPXOBX_RESET'] = 0
+                self.daq['DAQ_CONTROL'].write()
+
                 self.log.info('Initializing chips...')
 
             for _ in self.iterate_chips():
@@ -791,7 +797,7 @@ class ScanBase(object):
                 row['attribute'] = attr
                 try:
                     row['value'] = val
-                except TypeError:  # value cannot be implicitly converted to string
+                except (TypeError, ValueError):  # value cannot be implicitly converted to string
                     row['value'] = str(val)
                 row.append()
             node.flush()

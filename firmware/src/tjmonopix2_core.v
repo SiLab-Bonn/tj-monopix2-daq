@@ -99,6 +99,10 @@ module tjmonopix2_core #(
 
     output wire RESETB_EXT,
 
+    output wire TEST_ENABLE, 
+    output wire TEST_RESET,
+
+
     // LVDS IO
     input wire [N_RX-1:0] LVDS_DATA,
     input wire LVDS_HITOR,
@@ -280,7 +284,7 @@ assign GPIO_MODE = IO[14:12];
 `endif
 
 // GPIO module to access general base-board features
-wire [15:0] IO_CONTROL;
+wire [23:0] IO_CONTROL;
 `ifndef BDAQCORE
     assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
 `else
@@ -289,13 +293,15 @@ wire [15:0] IO_CONTROL;
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
 assign IO_CONTROL[3:0] = GPIO_SENSE;
+assign TEST_ENABLE = IO_CONTROL[16];
+assign TEST_RESET = IO_CONTROL[17];
 
 gpio #(
     .BASEADDR(GPIO_DAQ_CONTROL_BASEADDR),
     .HIGHADDR(GPIO_DAQ_CONTROL_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
-    .IO_WIDTH(16),
-    .IO_DIRECTION(16'hfff0)
+    .IO_WIDTH(24),
+    .IO_DIRECTION(24'hfff0ff)
 ) i_gpio_control (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
