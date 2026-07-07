@@ -243,7 +243,7 @@ PLLE2_BASE #(
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT5_DIVIDE(40),       // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT5_DIVIDE(5),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
@@ -697,23 +697,23 @@ tjmonopix2_core #(
 
 `ifdef SYNTHESIS
    reg LVDS_DATA_0_DBG;
-   reg LVDS_DATA_1_DBG;
-   reg LVDS_DATA_2_DBG;
-   reg LVDS_DATA_3_DBG;
+//    reg LVDS_DATA_1_DBG;
+//    reg LVDS_DATA_2_DBG;
+//    reg LVDS_DATA_3_DBG;
    always @(*) begin
         LVDS_DATA_0_DBG <= LVDS_DATA[0];
-        LVDS_DATA_1_DBG <= LVDS_DATA[1];
-        LVDS_DATA_2_DBG <= LVDS_DATA[2];
-        LVDS_DATA_3_DBG <= LVDS_DATA[3];
+        // LVDS_DATA_1_DBG <= LVDS_DATA[1];
+        // LVDS_DATA_2_DBG <= LVDS_DATA[2];
+        // LVDS_DATA_3_DBG <= LVDS_DATA[3];
    end
 
     ila_0 data_debugger (
         .clk(CLKILA), // input wire clk
 
-        .probe0({LVDS_DATA_0_DBG}), // input wire  probe0  
-        .probe1({LVDS_DATA_1_DBG}), // input wire  probe1 
-        .probe2({LVDS_DATA_2_DBG}), // input wire  probe2 
-        .probe3({LVDS_DATA_3_DBG})  // input wire  probe3
+        .probe0({LVDS_DATA_0_DBG}) // input wire  probe0  
+        // .probe1({LVDS_DATA_1_DBG}), // input wire  probe1 
+        // .probe2({LVDS_DATA_2_DBG}), // input wire  probe2 
+        // .probe3({LVDS_DATA_3_DBG})  // input wire  probe3
     );
 
 `endif
