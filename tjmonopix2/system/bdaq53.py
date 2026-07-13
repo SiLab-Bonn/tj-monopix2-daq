@@ -118,17 +118,6 @@ class BDAQ53(Dut):
                     chip_cfgs.append(v)
         return chip_cfgs
 
-    def sel_trigger_clk(self, clock='internal'):
-        """_summary_
-
-        Args:
-            clock (str, optional): _description_. Defaults to 'internal'.
-        """
-        if clock not in ["internal", "external"]:
-            raise ValueError("Invalid trigger clock selection")
-
-        self["DAQ_CONTROL"]["TRIGGER_CLK_SEL"] = 0 if clock == 'internal' else 1
-
     def set_LEMO_MUX(self, connector='LEMO_MUX_TX0', value=0):
         '''
         Sets the multiplexer in order to select which signal is routed to LEMO ports. So far only used

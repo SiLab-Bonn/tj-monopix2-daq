@@ -209,9 +209,6 @@ always @ (posedge BUS_CLK)
 
 // GPIO module to access general base-board features
 wire [16:0] IO_CONTROL;
-wire TRIGGER_CLK_SEL;
-assign TRIGGER_CLK_SEL = IO_CONTROL[16];
-// assign TRIGGER_CLK_SEL = 0;
 assign MGT_REF_SEL = IO_CONTROL[15];   // Default 0, use SMA input for MGT_REF_CLK0 (=TRIGGER_CLK)
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
@@ -418,7 +415,6 @@ rrp_arbiter #(
 
 // ----- TLU ----- //
 wire TRIGGER_CLK;
-// assign TRIGGER_CLK = TRIGGER_CLK_SEL ? EXT_TRIGGER_CLK : CLK40;
 assign TRIGGER_CLK = EXT_TRIGGER_CLK;
 
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
