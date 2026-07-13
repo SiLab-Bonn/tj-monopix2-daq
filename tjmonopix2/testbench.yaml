@@ -8,7 +8,7 @@ modules:
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
     chip_0: # Arbitrary name of chip, defines folder name with chip data
       chip_sn: "W11R07"
-      chip_id: 0
+      chip_id: 16
       receiver: "rx0"
       chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
       record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)

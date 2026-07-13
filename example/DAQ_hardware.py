@@ -19,7 +19,12 @@ with open(os.path.join('..', 'tjmonopix2', 'system', 'bdaq53.yaml'), 'r') as f:
 daq = BDAQ53(cnfg)
 daq.init()
 
-chip = TJMonoPix2(daq)
+daq['DAQ_CONTROL']['MPXOBX_ENABLE'] = 1
+daq['DAQ_CONTROL']['MPXOBX_RESET'] = 0
+
+daq['DAQ_CONTROL'].write()
+
+chip = TJMonoPix2(daq, chip_id=0)
 chip.init()
 
 # Testing

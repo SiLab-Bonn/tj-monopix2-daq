@@ -291,15 +291,15 @@ IBUFDS_GTE2 IBUFDS_refclk
 
 BUFG BUFG_inst_CLKCMD (
     .O(CLKCMD),
-    .I(CLKCMD_ibufds)
+    .I(CLK160)
 );
 
 // -------  LEMO TX ------- //
 wire RJ45_CLK, RJ45_BUSY;
 wire CMD_LOOP_START_PULSE;
 wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
-assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
-assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
+assign LEMO_TX0 = LVDS_DATA[0];
+assign LEMO_TX1 = CLKCMD;
 
 `ifdef BDAQ53
     // -------  Diff buffer for BDAQ  ------- //
