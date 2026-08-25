@@ -55,41 +55,18 @@ class tca9555(HardwareLayer):
     def init(self):
         super(tca9555, self).init()
 
-    def set_pin_mode(self, pin: int, mode: str) -> None:
-        if mode not in ["output", "input"]:
-            raise ValueError("mode has to be 'output' or 'input'")
-        if pin not in [pin for pin in range(16)]:
-            raise ValueError("pin has to be < 16 and > 0")
-        config_reg = 0x06
-        if pin > 7:
-            config_reg = 0x07
-            pin -= 8
-        val = self._read_register(config_reg)
-        prevVal = val
-        mask = 1 << pin
-        if mode == 'input':
-            val |= mask
-        else:
-            val &= ~mask
-        if val != prevVal:
-            return self._write_register(config_reg, val)
+    def enable_pins(self, pins: list):
+        self._write_register(0x06, 0x00)
+        res = 0
+        for pin in pins:
+            if pin > 7:
+                raise ValueError("pins has to be smaller than 7")
+            res = res + (1 << pin)
+        self._write_register(0x02, res)
 
-    def set_pin_value(self, pin: int) -> None:
-        if pin not in [pin for pin in range(7)]:
-            raise ValueError("pin has to be < 16 and > 0")
-        config_reg = 0x06
-        if pin > 7:
-            config_reg = 0x07
-            pin -= 8
-        val = self._read_register(config_reg)
-        prevVal = val
-        mask = 1 << pin
-        if val:
-            val |= mask # all values <> 0 are HIGH.
-        else:      
-            val &= ~mask
-        if val != prevVal:
-            self._write_register(config_reg, val)
+    def disable_all_pins(self):
+        self._write_register(0x06, 0x00)
+        self._write_register(0x02, 0)
 
     def _read_register(self, reg: int) -> int:
         self._intf.write(self._base_addr, [reg])
