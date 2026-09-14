@@ -101,10 +101,12 @@ set_property PACKAGE_PIN AA4 [get_ports FCLK_IN]
 set_property IOSTANDARD LVCMOS15 [get_ports FCLK_IN]
 
 # ------ Button & Spare & more
-# TODO: Reset push button not connected to FPGA on BDAQcore
+set_property PACKAGE_PIN AC23 [get_ports RESET_BUTTON]
+set_property IOSTANDARD LVCMOS25 [get_ports RESET_BUTTON]
+set_property PULLUP true [get_ports RESET_BUTTON]
 
 # User push button
-set_property PACKAGE_PIN Y26 [get_ports USER_BUTTON]
+set_property PACKAGE_PIN AC21 [get_ports USER_BUTTON]
 set_property IOSTANDARD LVCMOS25 [get_ports USER_BUTTON]
 set_property PULLUP true [get_ports USER_BUTTON]
 
