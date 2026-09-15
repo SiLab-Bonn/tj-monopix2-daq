@@ -92,7 +92,7 @@ set_property PACKAGE_PIN K5 [get_ports MGT_REFCLK1_N]
 # set_property PACKAGE_PIN F5 [get_ports MGT_REFCLK3_N]
 
 # ------ CLK MUX
-set_property PACKAGE_PIN D24 [get_ports MGT_REF_SEL]
+set_property PACKAGE_PIN AC24 [get_ports MGT_REF_SEL]
 set_property IOSTANDARD LVCMOS25 [get_ports MGT_REF_SEL]
 set_property PULLUP true [get_ports MGT_REF_SEL]
 
