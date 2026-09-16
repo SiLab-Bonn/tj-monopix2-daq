@@ -154,7 +154,7 @@ set_property IOSTANDARD LVDS_25 [get_ports TLU_BUSY_*]
 set_property IOSTANDARD LVDS_25 [get_ports TLU_CONT_*]
 set_property IOSTANDARD LVDS_25 [get_ports TLU_TRIG_*]
 set_property IOSTANDARD LVDS_25 [get_ports TLU_CLK_TX_*]
-set_property IOSTANDARD LVCMOS33 [get_ports TLU_SE*]
+set_property IOSTANDARD LVCMOS25 [get_ports TLU_SE*]
 
 # # TODO: delete
 # set_property PACKAGE_PIN AE23 [get_ports RJ45_TRIGGER]
