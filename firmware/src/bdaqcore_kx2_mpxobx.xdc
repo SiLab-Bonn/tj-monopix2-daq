@@ -229,12 +229,21 @@ set_property IOSTANDARD LVDS_25 [get_ports J_CMD*]
 set_property IOSTANDARD LVDS_25 [get_ports J_DATA*]
 set_property IOSTANDARD LVDS_25 [get_ports HITOR_*]
 
-# Enable and Reset for testslot
-set_property PACKAGE_PIN AD21 [get_ports TEST_ENABLE]
+# # Enable and Reset for testslot
+# set_property PACKAGE_PIN AD21 [get_ports TEST_ENABLE]
+# set_property IOSTANDARD LVCMOS25 [get_ports TEST_ENABLE]
+# set_property PULLUP true [get_ports TEST_ENABLE]
+
+# set_property PACKAGE_PIN AE21 [get_ports TEST_RESET]
+# set_property IOSTANDARD LVCMOS25 [get_ports TEST_RESET]
+# set_property PULLDOWN true [get_ports TEST_RESET]
+
+# Enable and Reset for testslot BDAQcore v1.1
+set_property PACKAGE_PIN V24 [get_ports TEST_ENABLE]
 set_property IOSTANDARD LVCMOS25 [get_ports TEST_ENABLE]
 set_property PULLUP true [get_ports TEST_ENABLE]
 
-set_property PACKAGE_PIN AE21 [get_ports TEST_RESET]
+set_property PACKAGE_PIN Y26 [get_ports TEST_RESET]
 set_property IOSTANDARD LVCMOS25 [get_ports TEST_RESET]
 set_property PULLDOWN true [get_ports TEST_RESET]
 

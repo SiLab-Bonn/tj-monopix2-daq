@@ -51,8 +51,8 @@ module tjmonopix2 #(
 
     input wire        LEMO_RX0, LEMO_RX1,
     output wire       LEMO_TX0, LEMO_TX1,
-    input wire        RJ45_RESET,
-    input wire        RJ45_TRIGGER, 
+    // input wire        RJ45_RESET,
+    // input wire        RJ45_TRIGGER, 
 
     output wire TEST_ENABLE, TEST_RESET,
 
@@ -121,6 +121,8 @@ module tjmonopix2 #(
     inout wire        mdio_phy_mdio,
     output wire       phy_rst_n
 );
+
+wire RJ45_RESET, RJ45_TRIGGER;
 
  // ------- RESET/CLOCK  ------- //
  (* KEEP = "{TRUE}" *) wire BUS_CLK;
@@ -369,7 +371,7 @@ assign LEMO_TX1 = CLKCMD;
                     .I(J_DATA_P[i]),
                     .IB(J_DATA_N[i])
                 );
-                assign LVDS_DATA[i] = ~LVDS_DATA_int;
+                assign LVDS_DATA[i] = LVDS_DATA_int;
             `else
             `ifdef _4RX
                 IBUFDS #(
@@ -695,27 +697,27 @@ tjmonopix2_core #(
 );
 
 
-`ifdef SYNTHESIS
-   reg LVDS_DATA_0_DBG;
-//    reg LVDS_DATA_1_DBG;
-//    reg LVDS_DATA_2_DBG;
-//    reg LVDS_DATA_3_DBG;
-   always @(*) begin
-        LVDS_DATA_0_DBG <= LVDS_DATA[0];
-        // LVDS_DATA_1_DBG <= LVDS_DATA[1];
-        // LVDS_DATA_2_DBG <= LVDS_DATA[2];
-        // LVDS_DATA_3_DBG <= LVDS_DATA[3];
-   end
+// `ifdef SYNTHESIS
+//    reg LVDS_DATA_0_DBG;
+// //    reg LVDS_DATA_1_DBG;
+// //    reg LVDS_DATA_2_DBG;
+// //    reg LVDS_DATA_3_DBG;
+//    always @(*) begin
+//         LVDS_DATA_0_DBG <= LVDS_DATA[0];
+//         // LVDS_DATA_1_DBG <= LVDS_DATA[1];
+//         // LVDS_DATA_2_DBG <= LVDS_DATA[2];
+//         // LVDS_DATA_3_DBG <= LVDS_DATA[3];
+//    end
 
-    ila_0 data_debugger (
-        .clk(CLKILA), // input wire clk
+//     ila_0 data_debugger (
+//         .clk(CLKILA), // input wire clk
 
-        .probe0({LVDS_DATA_0_DBG}) // input wire  probe0  
-        // .probe1({LVDS_DATA_1_DBG}), // input wire  probe1 
-        // .probe2({LVDS_DATA_2_DBG}), // input wire  probe2 
-        // .probe3({LVDS_DATA_3_DBG})  // input wire  probe3
-    );
+//         .probe0({LVDS_DATA_0_DBG}) // input wire  probe0  
+//         // .probe1({LVDS_DATA_1_DBG}), // input wire  probe1 
+//         // .probe2({LVDS_DATA_2_DBG}), // input wire  probe2 
+//         // .probe3({LVDS_DATA_3_DBG})  // input wire  probe3
+//     );
 
-`endif
+// `endif
 
 endmodule
