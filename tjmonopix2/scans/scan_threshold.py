@@ -27,6 +27,7 @@ scan_configuration = {
 
 class ThresholdScan(ScanBase):
     scan_id = 'threshold_scan'
+    is_parallel_scan = True  # Inject all chips at once using the broadcast chip ID
 
     def _configure(self, start_column=0, stop_column=512, start_row=0, stop_row=512, **_):
         self.chip.masks['enable'][start_column:stop_column, start_row:stop_row] = True
@@ -42,17 +43,19 @@ class ThresholdScan(ScanBase):
         Injects charges from VCAL_LOW_START to VCAL_LOW_STOP in steps of VCAL_LOW_STEP while keeping VCAL_HIGH constant.
         """
 
-        self.chip.registers["VH"].write(VCAL_HIGH)
-        vcal_low_range = range(VCAL_LOW_start, VCAL_LOW_stop, VCAL_LOW_step)
+        masks = ['injection'] if self.is_parallel_scan else ['injection', 'enable']  # Parallel: enable mask stays as set per chip in _configure()
+        with self.broadcast() as chip:
+            chip.registers["VH"].write(VCAL_HIGH)
+            vcal_low_range = range(VCAL_LOW_start, VCAL_LOW_stop, VCAL_LOW_step)
 
-        pbar = tqdm(total=get_scan_loop_mask_steps(self.chip) * len(vcal_low_range), unit='Mask steps')
-        for scan_param_id, vcal_low in enumerate(vcal_low_range):
-            self.chip.registers["VL"].write(vcal_low)
+            pbar = tqdm(total=get_scan_loop_mask_steps(chip) * len(vcal_low_range), unit='Mask steps')
+            for scan_param_id, vcal_low in enumerate(vcal_low_range):
+                chip.registers["VL"].write(vcal_low)
 
-            self.store_scan_par_values(scan_param_id=scan_param_id, vcal_high=VCAL_HIGH, vcal_low=vcal_low)
-            with self.readout(scan_param_id=scan_param_id):
-                shift_and_inject(chip=self.chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id)
-        pbar.close()
+                self.store_scan_par_values(scan_param_id=scan_param_id, vcal_high=VCAL_HIGH, vcal_low=vcal_low)
+                with self.readout(scan_param_id=scan_param_id):
+                    shift_and_inject(chip=chip, n_injections=n_injections, pbar=pbar, scan_param_id=scan_param_id, masks=masks)
+            pbar.close()
         self.log.success('Scan finished')
 
     def _analyze(self):

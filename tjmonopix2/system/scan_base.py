@@ -153,6 +153,7 @@ class ScanBase(object):
     '''
 
     is_parallel_scan = False  # Parallel readout of ExtTrigger-type scans etc.; must be overridden in the derived classes if needed
+    BROADCAST_CHIP_ID = 16  # Chip ID addressing all chips on the shared command line
 
     def __init__(self, daq_conf=None, bench_config=None, scan_config={}, scan_config_per_chip=None, suffix=''):
         '''
@@ -443,9 +444,14 @@ class ScanBase(object):
             Manually store the scan parameter values for the scan parameter id
             This allows to reconstruct the scan parameter values for a given parameter state vector
         '''
-        if self.scan_parameters.get(scan_param_id) and self.scan_parameters.get(scan_param_id) != kwargs:
-            raise ValueError('You cannot change the scan parameter value of a scan parameter id')
-        self.scan_parameters[scan_param_id] = kwargs
+        if self.is_parallel_scan:  # All chips are scanned at once and the chip handles can point to any chip
+            all_scan_parameters = [c.scan_parameters for c in self.chips.values()]
+        else:
+            all_scan_parameters = [self.scan_parameters]
+        for scan_parameters in all_scan_parameters:
+            if scan_parameters.get(scan_param_id) and scan_parameters.get(scan_param_id) != kwargs:
+                raise ValueError('You cannot change the scan parameter value of a scan parameter id')
+            scan_parameters[scan_param_id] = kwargs
 
     def iterate_chips(self):
         ''' Iterate through the chips and set all chip handles
@@ -457,6 +463,30 @@ class ScanBase(object):
         for c in self.chips.values():
             self._set_chip_handles(c)
             yield c
+
+    @contextmanager
+    def broadcast(self):
+        ''' Address all chips on the shared command line at once
+
+            Yields a chip handle whose commands are sent with the broadcast chip ID.
+            Use for writes and injections only: a register read gets a reply from every chip.
+            Register and mask values are only tracked in the yielded chip object.
+            Serial scans (is_parallel_scan = False) get the chip that is being scanned, with its own chip ID.
+
+            Usage:
+            with self.broadcast() as chip:
+                chip.inject(...)
+        '''
+        if not self.is_parallel_scan:
+            yield self.chip
+            return
+        chip = next(iter(self.chips.values())).chip
+        original_id = chip.chip_id
+        chip.chip_id = self.BROADCAST_CHIP_ID
+        try:
+            yield chip
+        finally:
+            chip.chip_id = original_id
 
     def n_chips(self):
         return len(self.chips)

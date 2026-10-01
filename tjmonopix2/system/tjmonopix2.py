@@ -347,6 +347,7 @@ class MaskObject(dict):
         active_pixels = []
 
         self._create_shift_pattern(pattern)
+        skip_check_mask = 'enable' if 'enable' in masks else masks[0]  # Mask that decides if a step is empty
 
         # Cache calculation to speed up repeated use
         if cache and self.mask_cache:
@@ -375,7 +376,7 @@ class MaskObject(dict):
                 if isinstance(pat, np.ndarray):  # If DoubleShiftPattern or ClassicShiftPattern is used
                     for mask in masks:
                         self[mask] = np.logical_and(np.logical_and(original_masks[mask], pat), fe_mask)
-                    if not np.any(self['enable'][:]) and skip_empty:   # Skip empty steps for speedup
+                    if not np.any(self[skip_check_mask][:]) and skip_empty:   # Skip empty steps for speedup
                         if cache:
                             self.mask_cache.append(('skipped', []))
                         yield 'skipped', active_pixels
