@@ -99,13 +99,9 @@ module tjmonopix2 #(
 
     // 2-row PMOD header for general purpose IOs
     // Reset button (on BDAQcore: USER button)
-    `ifndef BDAQCORE
-        inout wire [7:0] PMOD,
-        input wire       RESET_BUTTON,
-    `else
-        inout wire [3:0] PMOD,
-        input wire       USER_BUTTON,
-    `endif
+    
+    inout wire [7:0] PMOD,
+    input wire       RESET_BUTTON,
 
     inout wire        I2C_SDA,
     inout wire        I2C_SCL,
@@ -130,6 +126,7 @@ wire RJ45_RESET, RJ45_TRIGGER;
 wire RST;
 wire BUS_CLK_PLL, CLK125PLLTX, CLK125PLLTX90, CLK125PLLRX;
 wire PLL_FEEDBACK, LOCKED;
+wire USER_BUTTON;
 
 `ifdef BDAQCORE
     wire RESET_BUTTON;

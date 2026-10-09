@@ -87,9 +87,9 @@ set_property PACKAGE_PIN H5 [get_ports MGT_REFCLK0_N]
 set_property PACKAGE_PIN K6 [get_ports MGT_REFCLK1_P]
 set_property PACKAGE_PIN K5 [get_ports MGT_REFCLK1_N]
 
-# ------ Si511 (P / N inverted w.r.t. IC output)
-set_property PACKAGE_PIN F6 [get_ports MGT_REFCLK3_P]
-set_property PACKAGE_PIN F5 [get_ports MGT_REFCLK3_N]
+# # ------ Si511 (P / N inverted w.r.t. IC output)
+# set_property PACKAGE_PIN F6 [get_ports MGT_REFCLK3_P]
+# set_property PACKAGE_PIN F5 [get_ports MGT_REFCLK3_N]
 
 # ------ CLK MUX
 set_property PACKAGE_PIN AC24 [get_ports MGT_REF_SEL]
@@ -101,14 +101,14 @@ set_property PACKAGE_PIN AA4 [get_ports FCLK_IN]
 set_property IOSTANDARD LVCMOS15 [get_ports FCLK_IN]
 
 # ------ Button & Spare & more
-set_property PACKAGE_PIN AC23 [get_ports SW_RESET_B]
-set_property IOSTANDARD LVCMOS25 [get_ports SW_RESET_B]
-set_property PULLUP true [get_ports SW_RESET_B]
+set_property PACKAGE_PIN AC23 [get_ports RESET_BUTTON]
+set_property IOSTANDARD LVCMOS25 [get_ports RESET_BUTTON]
+set_property PULLUP true [get_ports RESET_BUTTON]
 
-# User push button
-set_property PACKAGE_PIN AC21 [get_ports USER_BUTTON]
-set_property IOSTANDARD LVCMOS25 [get_ports USER_BUTTON]
-set_property PULLUP true [get_ports USER_BUTTON]
+# # # User push button
+# set_property PACKAGE_PIN AC21 [get_ports USER_BUTTON]
+# set_property IOSTANDARD LVCMOS25 [get_ports USER_BUTTON]
+# set_property PULLUP true [get_ports USER_BUTTON]
 
 # I2C
 set_property PACKAGE_PIN L23 [get_ports I2C_SCL]
