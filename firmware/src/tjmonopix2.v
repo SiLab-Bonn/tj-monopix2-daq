@@ -51,8 +51,11 @@ module tjmonopix2 #(
 
     input wire        LEMO_RX0, LEMO_RX1,
     output wire       LEMO_TX0, LEMO_TX1,
-    input wire        RJ45_RESET,
-    input wire        RJ45_TRIGGER,
+    input wire        TLU_SPARE_P, TLU_SPARE_N,
+    input wire        TLU_TRIG_P, TLU_TRIG_N,
+    // input wire        TLU_SPARE_P, TLU_SPARE_N,
+    output wire       TLU_BUSY_P, TLU_BUSY_N,
+    input wire        TLU_CLK_TX_P, TLU_CLK_TX_N,
 
     `ifdef BDAQ53
         output wire [N_CHIPS-1:0] J_SER_CLK_P, J_SER_CLK_N,
@@ -290,12 +293,42 @@ BUFG BUFG_inst_CLKCMD (
     .I(CLKCMD_ibufds)
 );
 
+wire RJ45_CLK, RJ45_BUSY, RJ45_RESET, RJ45_TRIGGER;
+
+OBUFDS #(
+    .IOSTANDARD("LVDS_25"),
+    .SLEW("FAST")
+) i_OBUFDS_tlu_busy (
+    .O(TLU_BUSY_P),
+    .OB(TLU_BUSY_N),
+    .I(RJ45_BUSY)
+);
+
+IBUFDS #(
+    .DIFF_TERM("TRUE"),
+    .IBUF_LOW_PWR("FALSE"),
+    .IOSTANDARD("LVDS_25")
+) i_IBUFDS_tlu_trg (
+    .O(RJ45_TRIGGER),
+    .I(TLU_TRIG_P),
+    .IB(TLU_TRIG_N)
+);
+
+IBUFDS #(
+    .DIFF_TERM("TRUE"),
+    .IBUF_LOW_PWR("FALSE"),
+    .IOSTANDARD("LVDS_25")
+) i_IBUFDS_tlu_clk (
+    .O(RJ45_CLK),
+    .I(TLU_CLK_TX_P),
+    .IB(TLU_CLK_TX_N)
+);
+
 // -------  LEMO TX ------- //
-wire RJ45_CLK, RJ45_BUSY;
 wire CMD_LOOP_START_PULSE;
 wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
-assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
-assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
+// assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE);
+// assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0);
 
 `ifdef BDAQ53
     // -------  Diff buffer for BDAQ  ------- //
