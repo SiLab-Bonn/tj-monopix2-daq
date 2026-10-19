@@ -31,14 +31,12 @@ create_generated_clock -name I2C_CLK -source [get_pins {PLLE2_BASE_inst_comm/CLK
 create_generated_clock -name rgmii_txc -source [get_pins {rgmii/ODDR_inst/C}] -divide_by 1 [get_ports {rgmii_txc}]
 
 # Exclude asynchronous clock domains from timing (handled by CDCs)
-set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK640_PLL CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group [get_clocks -include_generated_clocks CLK_SMA] -group CLK_RGMII_RX
+set_clock_groups -asynchronous -group BUS_CLK_PLL -group I2C_CLK -group {CLK125PLLTX CLK125PLLTX90} -group {CLK320_PLL CLK160_PLL CLK40_PLL CLK32_PLL CLK16_PLL} -group [get_clocks -include_generated_clocks CLK_MGT_REF] -group [get_clocks -include_generated_clocks CLK_SMA] -group CLK_RGMII_RX
 
 # SiTCP
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports {rgmii_txd[*]}] 4.000
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX] -to [get_ports rgmii_tx_ctl] 4.000
 set_max_delay -datapath_only -from [get_clocks CLK125PLLTX90] -to [get_ports rgmii_txc] 4.000
-set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_0]
-set_property ASYNC_REG true [get_cells sitcp/SiTCP/GMII/GMII_TXCNT/irMacPauseExe_1]
 
 # LED
 # LED 0..3 are onboard LEDs: Bank 32, 33 running at 1.5 V)

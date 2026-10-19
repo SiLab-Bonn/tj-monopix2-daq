@@ -100,7 +100,7 @@ module tjmonopix2 #(
     // 2-row PMOD header for general purpose IOs
     // Reset button (on BDAQcore: USER button)
     
-    inout wire [7:0] PMOD,
+    inout wire [3:0] PMOD,
     input wire       RESET_BUTTON,
 
     inout wire        I2C_SDA,
