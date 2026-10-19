@@ -176,34 +176,34 @@ wire CLK16_PLL, CLK40_PLL, CLK160_PLL, CLK320_PLL;
 
 PLLE2_BASE #(
     .BANDWIDTH("OPTIMIZED"),  // OPTIMIZED, HIGH, LOW
-    .CLKFBOUT_MULT(16),       // Multiply value for all CLKOUT, (2-64)
+    .CLKFBOUT_MULT(32),       // Multiply value for all CLKOUT, (2-64)
     .CLKFBOUT_PHASE(0.0),     // Phase offset in degrees of CLKFB, (-360.000-360.000).
-    .CLKIN1_PERIOD(10.000),   // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
+    .CLKIN1_PERIOD(25.000),   // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
     .DIVCLK_DIVIDE(1),        // Master division value, (1-56)
     .REF_JITTER1(0.0),        // Reference input jitter in UI, (0.000-0.999).
     .STARTUP_WAIT("FALSE"),   // Delay DONE until PLL Locks, ("TRUE"/"FALSE")
 
-    .CLKOUT0_DIVIDE(100),     // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT0_DIVIDE(80),     // Divide amount for CLKOUT0 (1-128)
     .CLKOUT0_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT0_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT1_DIVIDE(50),      // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT1_DIVIDE(40),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT1_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT1_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT2_DIVIDE(40),      // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT2_DIVIDE(32),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT2_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT2_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT3_DIVIDE(10),      // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT3_DIVIDE(8),      // Divide amount for CLKOUT0 (1-128)
     .CLKOUT3_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT3_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT4_DIVIDE(5),       // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT4_DIVIDE(4),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT4_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT4_PHASE(0.0),      // Phase offset for CLKOUT0 (-360.000-360.000).
 
-    .CLKOUT5_DIVIDE(7),       // Divide amount for CLKOUT0 (1-128)
+    .CLKOUT5_DIVIDE(2),       // Divide amount for CLKOUT0 (1-128)
     .CLKOUT5_DUTY_CYCLE(0.5), // Duty cycle for CLKOUT0 (0.001-0.999).
     .CLKOUT5_PHASE(0.0)       // Phase offset for CLKOUT0 (-360.000-360.000).
 ) PLLE2_BASE_inst_clk (
@@ -219,8 +219,8 @@ PLLE2_BASE #(
     .LOCKED(LOCKED2),         // 1-bit output: LOCK
 
     // Input 100 MHz clock
-    .CLKIN1(FCLK_IN),
-
+    .CLKIN1(EXT_TRIGGER_CLK),
+    
     // Control Ports
     .PWRDWN(0),
     .RST(!RESET_BUTTON),
@@ -236,20 +236,32 @@ BUFG BUFG_inst_CLK160  ( .O(CLK160),  .I(CLK160_PLL)  );
 BUFG BUFG_inst_CLK320  ( .O(CLK320),  .I(CLK320_PLL)  );
 
 // MGT CLK (from Si570 or SMA input)
-wire CLKCMD, CLKCMD_ibufds;
+wire CLKCMD, CLK_SMA, EXT_TRIGGER_CLK;
 
 IBUFDS_GTE2 IBUFDS_refclk
 (
-    .O               (CLKCMD_ibufds),
+    .O               (CLKCMD),
+    .ODIV2           (),
+    .CEB             (1'b0),
+    .I               (MGT_REFCLK1_P),
+    .IB              (MGT_REFCLK1_N)
+);
+
+// SMA CLK input from AIDA2020 TLU (MGT_REF_SEL has to be 0!)
+assign MGT_REF_SEL = 1'b0;
+
+IBUFDS_GTE2 IBUFDS_aidatlu_clk  
+(
+    .O               (CLK_SMA),
     .ODIV2           (),
     .CEB             (1'b0),
     .I               (MGT_REFCLK0_P),
     .IB              (MGT_REFCLK0_N)
 );
 
-BUFG BUFG_inst_CLKCMD (
-    .O(CLKCMD),
-    .I(CLKCMD_ibufds)
+BUFG bufg_inst_clksma (
+    .I(CLK_SMA),
+    .O(EXT_TRIGGER_CLK)
 );
 
 // -------  LEMO TX ------- //
@@ -257,7 +269,7 @@ wire RJ45_CLK, RJ45_BUSY;
 wire CMD_LOOP_START_PULSE;
 wire [1:0] LEMO_MUX_TX1, LEMO_MUX_TX0, LEMO_MUX_RX1, LEMO_MUX_RX0;
 assign LEMO_TX0 = LEMO_MUX_TX0[1] ? (LEMO_MUX_TX0[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX0[0] ? CMD_LOOP_START_PULSE : RJ45_CLK);
-assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? 1'b0 : RJ45_BUSY);
+assign LEMO_TX1 = LEMO_MUX_TX1[1] ? (LEMO_MUX_TX1[0] ? 1'b0 : 1'b0) : (LEMO_MUX_TX1[0] ? EXT_TRIGGER_CLK : RJ45_BUSY);
 
 // -------  Diff buffer for BDAQ  ------- //
 wire CMD_OUT;
@@ -583,7 +595,9 @@ tjmonopix2_core #(
     .CLK160(CLK160),
     .CLK320(CLK320),
     .CLKCMD(CLKCMD),
-    .MGT_REF_SEL(MGT_REF_SEL),
+    // .CLKILA(CLK40),  // Integrated Logic analyzer sampling clock
+    .EXT_TRIGGER_CLK(EXT_TRIGGER_CLK),
+    .MGT_REF_SEL(),
 
     .I2C_SDA(I2C_SDA),
     .I2C_SCL(I2C_SCL),

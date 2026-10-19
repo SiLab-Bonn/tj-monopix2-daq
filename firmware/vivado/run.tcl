@@ -60,8 +60,8 @@ proc run_bit {part xdc_file size {lanes _1RX} {suffix ""}} {
     report_utilization -file "reports/report_utilization_$identifier.log"
     report_timing -file "reports/report_timing_$identifier.log"
 
-    write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_$identifier
-    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_$identifier.bit" -force -file $vivado_dir/../bit/tjmonopix2_$identifier
+    write_bitstream -force -bin_file -file $vivado_dir/../bit/tjmonopix2_aida_$identifier
+    write_cfgmem -format mcs -size 64 -interface SPIx4 -loadbit "up 0x0 $vivado_dir/../bit/tjmonopix2_aida_$identifier.bit" -force -file $vivado_dir/../bit/tjmonopix2_$identifier
     close_project
 }
 

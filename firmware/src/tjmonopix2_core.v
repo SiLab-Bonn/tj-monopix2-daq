@@ -57,7 +57,9 @@ module tjmonopix2_core #(
     input wire CLK160,
     input wire CLK320,
     input wire CLKCMD,
+    input wire EXT_TRIGGER_CLK,
     output wire MGT_REF_SEL,
+    input wire CLKILA,
 
     // I2C
     inout wire I2C_SCL,
@@ -205,8 +207,11 @@ always @ (posedge BUS_CLK)
 // -------  USER MODULES  ------- //
 
 // GPIO module to access general base-board features
-wire [15:0] IO_CONTROL;
-assign MGT_REF_SEL = ~IO_CONTROL[15]; // invert, because the default value '0' should correspond to the internal clock
+wire [16:0] IO_CONTROL;
+wire TRIGGER_CLK_SEL;
+assign TRIGGER_CLK_SEL = IO_CONTROL[16];
+// assign TRIGGER_CLK_SEL = 0;
+assign MGT_REF_SEL = IO_CONTROL[15];   // Default 0, use SMA input for MGT_REF_CLK0 (=TRIGGER_CLK)
 assign LEMO_MUX = IO_CONTROL[14:7];
 assign NTC_MUX = IO_CONTROL[6:4];
 assign IO_CONTROL[3:0] = GPIO_SENSE;
@@ -215,8 +220,8 @@ gpio #(
     .BASEADDR(GPIO_DAQ_CONTROL_BASEADDR),
     .HIGHADDR(GPIO_DAQ_CONTROL_HIGHADDR),
     .ABUSWIDTH(ABUSWIDTH),
-    .IO_WIDTH(16),
-    .IO_DIRECTION(16'hfff0)
+    .IO_WIDTH(17),
+    .IO_DIRECTION(17'h1fff0)
 ) i_gpio_control (
     .BUS_CLK(BUS_CLK),
     .BUS_RST(BUS_RST),
@@ -370,7 +375,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK160),
+    .PULSE_CLK(CLKCMD),
     .EXT_START(CMD_LOOP_START),
     .PULSE(CMD_LOOP_START_PULSE)
 );
@@ -415,6 +420,10 @@ rrp_arbiter #(
 );
 
 // ----- TLU ----- //
+wire TRIGGER_CLK;
+// assign TRIGGER_CLK = TRIGGER_CLK_SEL ? EXT_TRIGGER_CLK : CLK40;
+assign TRIGGER_CLK = EXT_TRIGGER_CLK;
+
 wire TRIGGER_ACKNOWLEDGE_FLAG,TRIGGER_ACCEPTED_FLAG;
 wire [63:0] TIMESTAMP;
 tlu_controller #(
@@ -433,7 +442,7 @@ tlu_controller #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .TRIGGER_CLK(CLK40),
+    .TRIGGER_CLK(TRIGGER_CLK),
 
     .FIFO_READ(TLU_FIFO_READ),
     .FIFO_EMPTY(TLU_FIFO_EMPTY),
@@ -461,11 +470,7 @@ assign EXT_START_PULSE_VETO = TRIGGER_ACCEPTED_FLAG;
 wire VETO_TLU_PULSE;
 
 // set acknowledge when veto returns to low
-pulse_gen_rising i_pulse_gen_rising_tlu_veto(
-    .clk_in(CLK40),
-    .in(~VETO_TLU_PULSE),
-    .out(TRIGGER_ACKNOWLEDGE_FLAG)
-);
+pulse_gen_rising i_pulse_gen_rising_tlu_veto(.clk_in(TRIGGER_CLK), .in(~VETO_TLU_PULSE), .out(TRIGGER_ACKNOWLEDGE_FLAG));
 
 pulse_gen #(
     .BASEADDR(PULSER_VETO_BASEADDR),
@@ -479,7 +484,7 @@ pulse_gen #(
     .BUS_RD(BUS_RD),
     .BUS_WR(BUS_WR),
 
-    .PULSE_CLK(CLK40),
+    .PULSE_CLK(TRIGGER_CLK),
     .EXT_START(EXT_START_PULSE_VETO),
     .PULSE(VETO_TLU_PULSE)
 );
@@ -567,5 +572,26 @@ generate
         );
     end
 endgenerate
+
+// `ifdef SYNTHESIS
+//     reg EXT_TRG_CLK_DBG, TLU_TRG_DBG, TLU_RST_DBG, TLU_BSY_DBG, TLU_CLK_DBG;
+//     reg [63:0] TS_DBG;
+
+//     always @(*) begin
+//         EXT_TRG_CLK_DBG <= EXT_TRIGGER_CLK;
+//         TLU_TRG_DBG <= RJ45_TRIGGER;
+//         TLU_CLK_DBG <= RJ45_CLK;
+//         TLU_BSY_DBG <= RJ45_BUSY;
+//         TLU_RST_DBG <= RJ45_RESET;
+//         TS_DBG <= TIMESTAMP;
+//     end
+
+//     aidamode_debugger i_aidamode_debugger (
+//         .clk(CLKILA), // input wire clk
+
+//         .probe0({TLU_CLK_DBG, TLU_BSY_DBG, TLU_TRG_DBG, TLU_RST_DBG, EXT_TRG_CLK_DBG}), // input wire [3:0]  probe0  
+//         .probe1(TS_DBG) // input wire [63:0]  probe1
+//     );
+// `endif
 
 endmodule
