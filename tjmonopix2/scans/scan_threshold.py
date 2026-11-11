@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 32,
+    'stop_column': 224,
     'start_row': 0,
     'stop_row': 512,
 

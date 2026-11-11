@@ -12,11 +12,12 @@ from tjmonopix2.system.scan_base import ScanBase
 from tqdm import tqdm
 
 scan_configuration = {
-    'start_column': 50,
-    'stop_column': 100,
-    'start_row': 50,
-    'stop_row': 100,
+    'start_column': 0,
+    'stop_column': 225,
+    'start_row': 0,
+    'stop_row': 512,
 }
+
 
 
 class AnalogScan(ScanBase):
@@ -38,8 +39,6 @@ class AnalogScan(ScanBase):
         self.chip.registers["VH"].write(150)
         self.chip.registers["SEL_PULSE_EXT_CONF"].write(0)
 
-        for i in range(16):
-            self.chip._write_register(171 + i, 0x0000)
 
     def _scan(self, n_injections=100, **_):
         pbar = tqdm(total=get_scan_loop_mask_steps(self.chip), unit='Mask steps')

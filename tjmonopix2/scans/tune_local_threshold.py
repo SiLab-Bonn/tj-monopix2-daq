@@ -19,15 +19,15 @@ from tjmonopix2.analysis import online as oa
 
 scan_configuration = {
     'start_column': 0,
-    'stop_column': 64,
+    'stop_column': 224,
     'start_row': 0,
     'stop_row': 512,
 
     'n_injections': 100,
 
     # Target threshold
-    'VCAL_LOW': 30,
-    'VCAL_HIGH': 55
+    'VCAL_LOW': 1,
+    'VCAL_HIGH': 35,
 }
 
 

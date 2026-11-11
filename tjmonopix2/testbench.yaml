@@ -6,11 +6,11 @@ general: # General configuration
 modules:
   module_0: # Arbitrary name of module, defines folder name with chip sub folders
     identifier: "unknown" # Module/wafer/PCB identifier, has to be given (e.g. SCC number)
-    chip_0: # Arbitrary name of chip, defines folder name with chip data
-      chip_sn: "W11R07"
+    W11R01: # Arbitrary name of chip, defines folder name with chip data
+      chip_sn: "W11R01"
       chip_id: 16
       receiver: "rx0"
-      chip_config_file: # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
+      chip_config_file: "output_data/module_0/W11R01/20261111_143209_local_threshold_tuning.h5" #"output_data/module_0/chip_0/20261111_122911_analog_scan.h5" #"/mnt/data/DESY_JUNE_2025/w12r11_dc_std/20250628_213055_threshold_scan_interpreted.h5" # If defined: use config from in file (either .cfg.yaml or .h5). If not defined use chip config of latest scan and std. config if no previous scan exists
       record_chip_status: True # Add chip statuses to the output files after the scan (link errors and powering infos)
       use_good_pixels_diff: False
       send_data: "tcp://127.0.0.1:5500" # Socket address of online monitor

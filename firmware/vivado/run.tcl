@@ -74,9 +74,9 @@ if {$argc == 0} {
     # Standalone mode, directly calling tcl file
     #          FPGA model          constraints file     flash size  lanes       suffix
     # run_bit    xc7k160tfbg676-1    mio3_kx1.xdc         64          _1RX        ""
-    run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc       64          _1RX        ""
-    run_bit    xc7k160tffg676-2    bdaq53_kx2_4x.xdc    64          _4RX        ""
-    run_bit    xc7k160tffg676-2    bdaqcore_kx2.xdc     64          _1RX        ""
+    # run_bit    xc7k160tffg676-2    bdaq53_kx2.xdc       64          _1RX        ""
+    # run_bit    xc7k160tffg676-2    bdaq53_kx2_4x.xdc    64          _4RX        ""
+    run_bit    xc7k160tffg676-2    bdaqcore_kx2_v1p1_og.xdc     64          _1RX        "TST_MPXOBX"
     # run_bit    xc7k160tfbg676-1    bdaq53_kx1.xdc     64          _1RX        ""
     # run_bit    xc7k325tffg676-2    bdaq53_kx1.xdc     64          _1RX        325
 } else {

@@ -66,8 +66,8 @@ class BDAQ53(Dut):
         self.fw_version, self.board_version = self['system'].get_daq_version()
         self.log.success('Found board %s running firmware version %s' % (self.board_version, self.fw_version))
 
-        if self.fw_version != VERSION.split('.')[0] + '.' + VERSION.split('.')[1]:  # Compare only the first two blocks
-            raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
+        # if self.fw_version != VERSION.split('.')[0] + '.' + VERSION.split('.')[1]:  # Compare only the first two blocks
+        #     raise Exception("Firmware version (%s) is different than software version (%s)! Please update." % (self.fw_version, VERSION))
 
         # Initialize readout
         if len(self.receivers) > self['system']['N_CHIPS']:

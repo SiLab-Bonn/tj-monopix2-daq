@@ -18,8 +18,8 @@ from tjmonopix2.analysis import online as oa
 
 
 scan_configuration = {
-    'start_column': 32,
-    'stop_column': 64,
+    'start_column': 16,
+    'stop_column': 258,
     'start_row': 0,
     'stop_row': 512,
 
